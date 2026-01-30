@@ -90,6 +90,21 @@ import UIKit
     }
     
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+        
+        
+        if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
+            
+            let location = gesture.location(in: self)
+            let center = self.drawer.deteminItemDetailCenter(item: tapedItem)
+            let rect = CGRect.init(x: center.x-tapedItem.detailSize.width*0.5, y: center.y-tapedItem.detailSize.height*0.5, width: tapedItem.detailSize.width, height: tapedItem.detailSize.height)
+            if rect.contains(location){
+                chartModel.tapedItem?.style = .normal
+                chartModel.tapedItem = nil
+                self.setNeedsDisplay()
+                return
+            }
+        }
+        
         let point = gesture.location(in: self)
         let dataPoint = dataPointFromPointInView(point: point)
         let item = nearestItem(in: self.drawer.pointsShouldDraw, to: dataPoint.x)
