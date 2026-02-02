@@ -31,19 +31,25 @@ class LineChartDrawer {
     
     //处理数据，获取可视范围数据，获取没有数据的区域，数据量多的时候重采样
     func dealData(data:[ChartPointModel]){
-        let ys = data.map { $0.y }
-        chartModel.minY = ys.min() ?? 0
-        chartModel.maxY = ys.max() ?? 0
+       
         let leftData = data.last(where: {$0.x<=chartModel.minX}) ?? ChartPointModel()
         let rightData = data.first(where: {$0.x>=chartModel.maxX}) ?? ChartPointModel()
 
         let vasivledata = data.filter({
             ($0.x>=leftData.x)&&($0.x<=rightData.x)
         })
-        if chartModel.isAutoYRange{
+        switch chartModel.yRangeType {
+        case .selfAdaptAll:
+            let ys = data.map { $0.y }
+            chartModel.minY = ys.min() ?? 0
+            chartModel.maxY = ys.max() ?? 0
+        case .selfAdaptVisible:
             let ys = vasivledata.map { $0.y }
             chartModel.minY = ys.min() ?? 0
             chartModel.maxY = ys.max() ?? 0
+        case .fixed(let min, let max):
+            chartModel.minY = min
+            chartModel.maxY = max
         }
         (layer.delegate as? LineChartView)?.delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
         emptyAreas = filterPointsByXDistance(vasivledata)
@@ -395,11 +401,16 @@ class LineChartDrawer {
         
         ctx.fillPath()
         ctx.restoreGState()
+        let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs?(x: item.x, y: item.y)
         let detailPoint = deteminItemDetailCenter(item: item)
+        item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
         drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
         UIGraphicsPushContext(ctx)
-        drawTextVisuallyCentered("x=\(round(detailPoint.x))", center: .init(x: detailPoint.x, y: detailPoint.y-6), font: .systemFont(ofSize: 12), color: .white)
-        drawTextVisuallyCentered("y=   \(round(detailPoint.y))", center: .init(x: detailPoint.x, y: detailPoint.y+6), font: .systemFont(ofSize: 12), color: .white)
+
+        drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-6), anchor: .center, font: item.detailFont, color: item.detailColor)
+        drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+6), anchor: .center, font: item.detailFont, color: item.detailColor)
+//        drawTextVisuallyCentered("x=\(round(detailPoint.x))", center: .init(x: detailPoint.x, y: detailPoint.y-6), font: .systemFont(ofSize: 12), color: .white)
+//        drawTextVisuallyCentered("y=   \(round(detailPoint.y))", center: .init(x: detailPoint.x, y: detailPoint.y+6), font: .systemFont(ofSize: 12), color: .white)
         UIGraphicsPopContext()
         
     }
@@ -421,6 +432,17 @@ class LineChartDrawer {
             y = point.y-item.detailSize.height*0.5-yOffset
         }
         return .init(x: x, y: y)
+    }
+    
+    func deteminItemDetaiFrameSize(strs:[String])->CGSize{
+        var height:CGFloat = 0
+        var width:CGFloat = 0
+        for str in strs {
+            let size = self.getStringSize(str: str, font: chartModel.tapedItem?.detailFont ?? .systemFont(ofSize: 12))
+            height += size.height
+            width = max(size.width, width)
+        }
+        return .init(width: width+12, height: height+24)
     }
     
     //绘制轴线的刻度文本
@@ -465,44 +487,72 @@ class LineChartDrawer {
         }
         
         switch chartModel.bottomAxisLabelStyel {
-        case .top(_, _):
+        case .top(_, _,_):
             break
-        case .bottom(let color, let font):
+        case .bottom(let color, let font,let offset):
             for item in stamps{
                 let x = chartModel.chartContentInsert.left+(item - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
-                let y = layer.bounds.height-chartModel.chartContentInsert.bottom*0.5
-                let date = Date.init(timeIntervalSinceReferenceDate: item)
+                let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+                let date = Date.init(timeIntervalSince1970: item)
                 let str = date.toString(format: dateFormat)
                 UIGraphicsPushContext(ctx)
-                drawTextVisuallyCentered(str, center: CGPoint.init(x: x, y: y), font: font, color: color)
+                drawText(str, point: CGPoint.init(x: x, y: y), anchor: .center, font: font, color: color)
                 UIGraphicsPopContext()
                 ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
                 ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-10))
             }
             ctx.strokePath()
-        case .left(_, _):
+            
+        case .left(_, _,_):
             break
-        case .right(_, _):
+        case .right(_, _,_):
             break
         }
         
         switch chartModel.rightAxisLabelStyel {
-        case .top(_, _):
+        case .top(_, _,_):
             break
-        case .bottom(_, _):
+        case .bottom(_, _,_):
             break
-        case .left( _,  _):
+        case .left( _,  _,_):
             break
-        case .right( _,  _):
+        case .right(let color, let font,let offset):
             ctx.saveGState()
             for horizontalLine in chartModel.horizontalLines {
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
                 UIGraphicsPushContext(ctx)
-                drawTextVisuallyCentered("\(horizontalLine.y)℃", center: CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right*0.5, y: point.y), font: .systemFont(ofSize: 12), color: .red)
+                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr?(y: horizontalLine.y) ?? ""
+                drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right*0.5+(offset ?? 0), y: point.y), anchor: .center, font: font, color: color)
                 UIGraphicsPopContext()
 
             }
             ctx.restoreGState()
+            break
+        }
+        
+        switch chartModel.bottomAxisMaxMinStyel {
+        case .top( _,  _,_):
+            break
+        case .bottom(let color, let font, let offset):
+            let minx = chartModel.chartContentInsert.left+(chartModel.minX - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
+                let miny = layer.bounds.height+(offset ?? 0)
+                let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
+                let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
+                UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxcentery, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
+            let maxx = chartModel.chartContentInsert.left+(chartModel.maxX - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
+                let maxy = layer.bounds.height+(offset ?? 0)
+                let maxdate = Date.init(timeIntervalSince1970: chartModel.minX)
+                let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
+                UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
+        case .left( _,  _,_):
+            break
+        case .right( _,  _,_):
             break
         }
         
@@ -531,11 +581,21 @@ class LineChartDrawer {
         ctx.fillPath()
 
     }
+
     
+    func getStringSize(str:String,font:UIFont)->CGSize{
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+        ]
+
+        let size = (str as NSString).size(withAttributes: attrs)
+        return size
+    }
     //绘制文本
-    func drawTextVisuallyCentered(
+    func drawText(
         _ text: String,
-        center: CGPoint,
+        point: CGPoint,
+        anchor:TextDrawAnchor,
         font: UIFont,
         color: UIColor
     ) {
@@ -549,11 +609,51 @@ class LineChartDrawer {
         let ascent = font.ascender
         let descent = abs(font.descender)
         let textHeight = ascent + descent
-
-        let origin = CGPoint(
-            x: center.x - size.width / 2,
-            y: center.y - size.height / 2
-        )
+        var origin:CGPoint
+        switch anchor {
+        case .minxminy:
+            origin = point
+        case .maxxminy:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y
+            )
+        case .minxmaxy:
+            origin = CGPoint(
+                x: point.x,
+                y: point.y - size.height
+            )
+        case .maxxmaxy:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y - size.height
+            )
+        case .centerxminy:
+            origin = CGPoint(
+                x: point.x - size.width * 0.5,
+                y: point.y
+            )
+        case .minxcentery:
+            origin = CGPoint(
+                x: point.x,
+                y: point.y - size.height * 0.5
+            )
+        case .maxxcentery:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y - size.height * 0.5
+            )
+        case .centerxmaxy:
+            origin = CGPoint(
+                x: point.x - size.width * 0.5,
+                y: point.y - size.height
+            )
+        case .center:
+            origin = CGPoint(
+                x: point.x - size.width / 2,
+                y: point.y - size.height / 2
+            )
+        }
 
         (text as NSString).draw(at: origin, withAttributes: attrs)
     }
@@ -562,6 +662,18 @@ class LineChartDrawer {
         let x = chartModel.chartContentInsert.left+(point.x - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
         let y = layer.bounds.height - (chartModel.chartContentInsert.bottom+(point.y - chartModel.minY)/(chartModel.maxY-chartModel.minY)*(layer.bounds.height - chartModel.chartContentInsert.bottom - chartModel.chartContentInsert.top))
         return .init(x: x, y: y)
+    }
+    
+    enum TextDrawAnchor{
+        case minxminy
+        case maxxminy
+        case minxmaxy
+        case maxxmaxy
+        case centerxminy
+        case minxcentery
+        case maxxcentery
+        case centerxmaxy
+        case center
     }
 
 }

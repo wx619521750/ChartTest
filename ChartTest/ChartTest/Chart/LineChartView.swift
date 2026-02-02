@@ -11,6 +11,9 @@ import UIKit
     @objc optional func lineChartViewDateModeChanged(mode:DateMode)
    @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
    @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
+    @objc optional func lineChartViewHLineFormatStr(y:Double)->String
+    @objc optional func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
+
 }
 
 
@@ -278,7 +281,7 @@ import UIKit
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
     //图标内容的insert
-    var chartContentInsert:UIEdgeInsets = .init(top: 10, left: 10, bottom: 20, right: 40)
+    var chartContentInsert:UIEdgeInsets = .init(top: 10, left: 10, bottom: 40, right: 40)
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //底部轴线类型
@@ -288,13 +291,21 @@ import UIKit
     //右部轴线类型
     var rightAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //顶部轴线文字配置
-    var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12))
+    var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -12)
     //底部轴线文字配置
-    var bottomAxisLabelStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12))
+    var bottomAxisLabelStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: 12)
     //左部轴线文字配置
-    var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12))
+    var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
-    var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12))
+    var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    //顶部轴线文字配置
+    var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    //底部轴线文字配置
+    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: -12)
+    //左部轴线文字配置
+    var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    //右部轴线文字配置
+    var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     //横向线段配置
     var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2])),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]))]
     //竖向线段配置
@@ -313,9 +324,16 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var isAutoYRange = true
+    var yRangeType:YRangeType = .fixed(min: -30, max: 200)
     
     
+}
+
+
+enum YRangeType{
+    case selfAdaptAll
+    case selfAdaptVisible
+    case fixed(min:Double,max:Double)
 }
 
 //图表线模型
@@ -352,6 +370,8 @@ class ChartLineModel{
     var y:Double = 0
     //点击后显示的半透明块的大小
     var detailSize:CGSize = .init(width: 80, height: 40)
+    var detailFont:UIFont = .systemFont(ofSize: 12)
+    var detailColor:UIColor = .white
     var canTouch:Bool = false
     var style:Style = .normal
 }
@@ -433,10 +453,10 @@ enum LineStyle {
 }
 
 enum AxisLabelStyle{
-    case top(color:UIColor,font:UIFont)
-    case bottom(color:UIColor,font:UIFont)
-    case left(color:UIColor,font:UIFont)
-    case right(color:UIColor,font:UIFont)
+    case top(color:UIColor,font:UIFont,offset:CGFloat?)
+    case bottom(color:UIColor,font:UIFont,offset:CGFloat?)
+    case left(color:UIColor,font:UIFont,offset:CGFloat?)
+    case right(color:UIColor,font:UIFont,offset:CGFloat?)
 }
 
 class ChartPoint:NSObject{

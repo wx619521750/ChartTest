@@ -32,7 +32,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 for str in value{
                     var strs = str.components(separatedBy: ",")
                     let dateStr = key+strs[0]
-                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSinceReferenceDate ?? 0
+                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
                     y = Double(strs[1]) ?? 0
                     let item = ChartPointModel()
                     item.style = .normal
@@ -71,7 +71,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     lazy var lineChartView: LineChartView = {
         let view = LineChartView()
-        view.frame = .init(x: 20, y: 100, width: UIScreen.main.bounds.width-40, height: 200)
+        view.frame = .init(x: 20, y: 100, width: UIScreen.main.bounds.width-40, height: 240)
         view.backgroundColor = .white
         view.delegate = self
         return view
@@ -86,7 +86,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }()
     
     lazy var segmentView: SegmentView = {
-        let view = SegmentView.init(frame: .init(x: 20, y: 300, width: UIScreen.main.bounds.width-40, height: 44))
+        let view = SegmentView.init(frame: .init(x: 20, y: 340, width: UIScreen.main.bounds.width-40, height: 44))
         view.titles = ["hour","day","week","month","year"]
         view.delegate = self
         return view
@@ -94,7 +94,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     lazy var minDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 344, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 384, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -103,7 +103,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }()
     lazy var maxDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 388, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 428, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -162,5 +162,13 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         maxDatePicker.date = maxdate
     }
 
+    func lineChartViewHLineFormatStr(y: Double) -> String {
+        return "\(y)℃"
+    }
+    
+    func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> [String] {
+        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm:ss")
+        return ["\(y)℃","\(date)"]
+    }
 }
 
