@@ -462,7 +462,7 @@ enum AxisLabelStyle{
     case none
 }
 
-class ChartPoint:NSObject{
+@objcMembers class ChartPoint:NSObject{
     var x:CGFloat = 0
     var y:CGFloat = 0
 }
