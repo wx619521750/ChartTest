@@ -402,8 +402,8 @@ class LineChartDrawer {
         ctx.fillPath()
         ctx.restoreGState()
         let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs?(x: item.x, y: item.y)
-        let detailPoint = deteminItemDetailCenter(item: item)
         item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
+        let detailPoint = deteminItemDetailCenter(item: item)
         drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
         UIGraphicsPushContext(ctx)
 

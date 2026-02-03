@@ -167,6 +167,8 @@ import UIKit
                    let center = self.drawer.deteminItemDetailCenter(item: tapedItem)
                    let rect = CGRect.init(x: center.x-tapedItem.detailSize.width*0.5, y: center.y-tapedItem.detailSize.height*0.5, width: tapedItem.detailSize.width, height: tapedItem.detailSize.height)
                    self.isLabelPaning = rect.contains(location)
+               }else{
+                   self.isLabelPaning = false
                }
 
            case .changed:
