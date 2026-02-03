@@ -11,8 +11,8 @@ import UIKit
     @objc optional func lineChartViewDateModeChanged(mode:DateMode)
    @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
    @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
-    @objc optional func lineChartViewHLineFormatStr(y:Double)->String
-    @objc optional func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
+    @objc func lineChartViewHLineFormatStr(y:Double)->String
+    @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
 
 }
 

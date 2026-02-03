@@ -401,7 +401,7 @@ class LineChartDrawer {
         
         ctx.fillPath()
         ctx.restoreGState()
-        let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs?(x: item.x, y: item.y)
+        let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
         item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
         let detailPoint = deteminItemDetailCenter(item: item)
         drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
@@ -521,7 +521,7 @@ class LineChartDrawer {
             for horizontalLine in chartModel.horizontalLines {
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
                 UIGraphicsPushContext(ctx)
-                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr?(y: horizontalLine.y) ?? ""
+                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) ?? ""
                 drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right*0.5+(offset ?? 0), y: point.y), anchor: .center, font: font, color: color)
                 UIGraphicsPopContext()
 
