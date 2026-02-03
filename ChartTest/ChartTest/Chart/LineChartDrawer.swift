@@ -407,10 +407,8 @@ class LineChartDrawer {
         drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
         UIGraphicsPushContext(ctx)
 
-        drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-6), anchor: .center, font: item.detailFont, color: item.detailColor)
-        drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+6), anchor: .center, font: item.detailFont, color: item.detailColor)
-//        drawTextVisuallyCentered("x=\(round(detailPoint.x))", center: .init(x: detailPoint.x, y: detailPoint.y-6), font: .systemFont(ofSize: 12), color: .white)
-//        drawTextVisuallyCentered("y=   \(round(detailPoint.y))", center: .init(x: detailPoint.x, y: detailPoint.y+6), font: .systemFont(ofSize: 12), color: .white)
+        drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
+        drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
         UIGraphicsPopContext()
         
     }
@@ -442,7 +440,7 @@ class LineChartDrawer {
             height += size.height
             width = max(size.width, width)
         }
-        return .init(width: width+12, height: height+24)
+        return .init(width: width+12, height: height+12)
     }
     
     //绘制轴线的刻度文本
@@ -507,6 +505,8 @@ class LineChartDrawer {
             break
         case .right(_, _,_):
             break
+        case .none:
+            break
         }
         
         switch chartModel.rightAxisLabelStyel {
@@ -527,6 +527,8 @@ class LineChartDrawer {
 
             }
             ctx.restoreGState()
+            break
+        case .none:
             break
         }
         
@@ -553,6 +555,8 @@ class LineChartDrawer {
         case .left( _,  _,_):
             break
         case .right( _,  _,_):
+            break
+        case .none:
             break
         }
         
@@ -650,8 +654,8 @@ class LineChartDrawer {
             )
         case .center:
             origin = CGPoint(
-                x: point.x - size.width / 2,
-                y: point.y - size.height / 2
+                x: point.x - size.width * 0.5,
+                y: point.y - size.height * 0.5
             )
         }
 

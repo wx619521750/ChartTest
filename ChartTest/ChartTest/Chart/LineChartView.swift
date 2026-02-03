@@ -457,6 +457,7 @@ enum AxisLabelStyle{
     case bottom(color:UIColor,font:UIFont,offset:CGFloat?)
     case left(color:UIColor,font:UIFont,offset:CGFloat?)
     case right(color:UIColor,font:UIFont,offset:CGFloat?)
+    case none
 }
 
 class ChartPoint:NSObject{
