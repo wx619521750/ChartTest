@@ -303,6 +303,8 @@ import UIKit
     var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    var horizontalAxisFullFrame = true
+    var verticalAxisFullFrame = false
     //顶部轴线文字配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //底部轴线文字配置
@@ -329,7 +331,7 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .selfAdaptVisible
+    var yRangeType:YRangeType = .selfAdaptAll
     
     
 }

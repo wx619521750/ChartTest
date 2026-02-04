@@ -132,15 +132,27 @@ class LineChartDrawer {
         case .line(let width, let color):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
-            ctx.move(to: CGPoint(x: 0, y: chartModel.chartContentInsert.top))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width, y: chartModel.chartContentInsert.top))
+            if chartModel.horizontalAxisFullFrame{
+                ctx.move(to: CGPoint(x: 0, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width, y: chartModel.chartContentInsert.top))
+                
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: chartModel.chartContentInsert.top))
+            }
             ctx.strokePath()
         case .dashLine(let width, let color, let lengths):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
             ctx.setLineDash(phase: 0, lengths: lengths)
-            ctx.move(to: CGPoint(x: 0, y: chartModel.chartContentInsert.top))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width, y: chartModel.chartContentInsert.top))
+            if chartModel.horizontalAxisFullFrame{
+                ctx.move(to: CGPoint(x: 0, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width, y: chartModel.chartContentInsert.top))
+                
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: chartModel.chartContentInsert.top))
+            }
             ctx.strokePath()
         case .none:
             break
@@ -151,15 +163,25 @@ class LineChartDrawer {
         case .line(let width, let color):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
-            ctx.move(to: CGPoint(x: 0, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            if chartModel.horizontalAxisFullFrame{
+                ctx.move(to: CGPoint(x: 0, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .dashLine(let width, let color, let lengths):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
             ctx.setLineDash(phase: 0, lengths: lengths)
-            ctx.move(to: CGPoint(x: 0, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            if chartModel.horizontalAxisFullFrame{
+                ctx.move(to: CGPoint(x: 0, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .none:
             break
@@ -170,15 +192,25 @@ class LineChartDrawer {
         case .line(let width, let color):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
-            ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: 0))
-            ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height))
+            if chartModel.verticalAxisFullFrame{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: 0))
+                ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height))
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .dashLine(let width, let color, let lengths):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
             ctx.setLineDash(phase: 0, lengths: lengths)
-            ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: 0))
-            ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height))
+            if chartModel.verticalAxisFullFrame{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: 0))
+                ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height))
+            }else{
+                ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: chartModel.chartContentInsert.left, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .none:
             break
@@ -189,15 +221,25 @@ class LineChartDrawer {
         case .line(let width, let color):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
-            ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: 0))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height))
+            if chartModel.verticalAxisFullFrame{
+                ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: 0))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height))
+            }else{
+                ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .dashLine(let width, let color, let lengths):
             ctx.setStrokeColor(color.cgColor)
             ctx.setLineWidth(width)
             ctx.setLineDash(phase: 0, lengths: lengths)
-            ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: 0))
-            ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height))
+            if chartModel.verticalAxisFullFrame{
+                ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: 0))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height))
+            }else{
+                ctx.move(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            }
             ctx.strokePath()
         case .none:
             break
