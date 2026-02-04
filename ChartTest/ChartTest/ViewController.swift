@@ -163,7 +163,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
 
     func lineChartViewHLineFormatStr(y: Double) -> String {
-        return "\(y)℃"
+        return "Max\n\(y)℃"
     }
     
     func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> [String] {

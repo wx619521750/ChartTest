@@ -283,7 +283,7 @@ import UIKit
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
     //图标内容的insert
-    var chartContentInsert:UIEdgeInsets = .init(top: 10, left: 10, bottom: 40, right: 40)
+    var chartContentInsert:UIEdgeInsets = .init(top: 10, left: 10, bottom: 40, right: 60)
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //底部轴线类型
@@ -293,9 +293,9 @@ import UIKit
     //右部轴线类型
     var rightAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //顶部轴线文字配置
-    var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -12)
+    var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //底部轴线文字配置
-    var bottomAxisLabelStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: 12)
+    var bottomAxisLabelStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: 0)
     //左部轴线文字配置
     var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置

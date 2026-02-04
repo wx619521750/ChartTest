@@ -494,7 +494,7 @@ class LineChartDrawer {
                 let date = Date.init(timeIntervalSince1970: item)
                 let str = date.toString(format: dateFormat)
                 UIGraphicsPushContext(ctx)
-                drawText(str, point: CGPoint.init(x: x, y: y), anchor: .center, font: font, color: color)
+                drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, font: font, color: color)
                 UIGraphicsPopContext()
                 ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
                 ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-10))
@@ -522,7 +522,7 @@ class LineChartDrawer {
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
                 UIGraphicsPushContext(ctx)
                 let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) ?? ""
-                drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right*0.5+(offset ?? 0), y: point.y), anchor: .center, font: font, color: color)
+                drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery, font: font, color: color)
                 UIGraphicsPopContext()
 
             }
