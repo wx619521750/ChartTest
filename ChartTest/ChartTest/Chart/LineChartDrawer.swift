@@ -372,14 +372,17 @@ class LineChartDrawer {
         guard case let .circle(radius ,width ,color) =  item.style else{return}
         ctx.saveGState()
         let point = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-        let clipRect = CGRect(
-            x: chartModel.chartContentInsert.left,
-            y: chartModel.chartContentInsert.top,
-            width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
-        )
-
-        ctx.clip(to: clipRect)
+//        let clipRect = CGRect(
+//            x: chartModel.chartContentInsert.left,
+//            y: chartModel.chartContentInsert.top,
+//            width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
+//            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
+//        )
+//
+//        ctx.clip(to: clipRect)
+        if chartModel.chartContentInsert.left>point.x||point.x>layer.bounds.width-chartModel.chartContentInsert.right||chartModel.chartContentInsert.top>point.y||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
+            return
+        }
         ctx.setLineWidth(width)
         ctx.setStrokeColor(color.cgColor)
         ctx.addEllipse(in: CGRect(
@@ -518,14 +521,19 @@ class LineChartDrawer {
             break
         case .right(let color, let font,let offset):
             ctx.saveGState()
+            UIGraphicsPushContext(ctx)
             for horizontalLine in chartModel.horizontalLines {
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
-                UIGraphicsPushContext(ctx)
-                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) ?? ""
-                drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery, font: font, color: color)
-                UIGraphicsPopContext()
+                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
+                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery)
+                }else{
+                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
+                        continue}
+                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery,font: font,color: color)
+                }
 
             }
+            UIGraphicsPopContext()
             ctx.restoreGState()
             break
         case .none:
@@ -660,6 +668,62 @@ class LineChartDrawer {
         }
 
         (text as NSString).draw(at: origin, withAttributes: attrs)
+    }
+    
+    //绘制文本
+    func drawText(
+        _ text: NSAttributedString,
+        point: CGPoint,
+        anchor:TextDrawAnchor,
+    ) {
+        let size = text.size()
+        var origin:CGPoint
+        switch anchor {
+        case .minxminy:
+            origin = point
+        case .maxxminy:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y
+            )
+        case .minxmaxy:
+            origin = CGPoint(
+                x: point.x,
+                y: point.y - size.height
+            )
+        case .maxxmaxy:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y - size.height
+            )
+        case .centerxminy:
+            origin = CGPoint(
+                x: point.x - size.width * 0.5,
+                y: point.y
+            )
+        case .minxcentery:
+            origin = CGPoint(
+                x: point.x,
+                y: point.y - size.height * 0.5
+            )
+        case .maxxcentery:
+            origin = CGPoint(
+                x: point.x - size.width,
+                y: point.y - size.height * 0.5
+            )
+        case .centerxmaxy:
+            origin = CGPoint(
+                x: point.x - size.width * 0.5,
+                y: point.y - size.height
+            )
+        case .center:
+            origin = CGPoint(
+                x: point.x - size.width * 0.5,
+                y: point.y - size.height * 0.5
+            )
+        }
+
+        text.draw(in: .init(origin: origin, size: size))
     }
     
     func ptPointFromPoint(point:CGPoint)->CGPoint{

@@ -9,6 +9,8 @@ import UIKit
 
 class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate {
 
+    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -161,10 +163,21 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         minDatePicker.date  = mindate
         maxDatePicker.date = maxdate
     }
-
+    
     func lineChartViewHLineFormatStr(y: Double) -> String {
-        return "Max\n\(y)℃"
+        let str = "Max\n\(y)℃"
+        return str
     }
+    
+    func lineChartViewHLineFormatAttributeStr(y: Double) -> NSAttributedString {
+        let str = "Max\n\(y)℃"
+        let paragraphStyle = NSMutableParagraphStyle()
+               paragraphStyle.alignment = .center
+        let attrStr = NSMutableAttributedString.init(string: str)
+        attrStr.addAttributes([.foregroundColor:UIColor.red,.font:UIFont.systemFont(ofSize: 14),.paragraphStyle:paragraphStyle], range: NSRange.init(location: 0, length: 3))
+        return attrStr
+    }
+
     
     func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> [String] {
         let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm:ss")

@@ -9,9 +9,12 @@ import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
     @objc optional func lineChartViewDateModeChanged(mode:DateMode)
-   @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
-   @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
+    @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
+    @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
+    //实现这个方法会覆盖lineChartViewHLineFormatStr方法
+    @objc optional func lineChartViewHLineFormatAttributeStr(y:Double)->NSAttributedString
     @objc func lineChartViewHLineFormatStr(y:Double)->String
+
     @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
 
 }
@@ -326,7 +329,7 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .fixed(min: -30, max: 200)
+    var yRangeType:YRangeType = .selfAdaptVisible
     
     
 }
