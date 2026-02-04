@@ -566,6 +566,9 @@ class LineChartDrawer {
             UIGraphicsPushContext(ctx)
             for horizontalLine in chartModel.horizontalLines {
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
+                if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
+                    continue
+                }
                 if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
                     drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery)
                 }else{

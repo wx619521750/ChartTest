@@ -331,7 +331,7 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .selfAdaptAll
+    var yRangeType:YRangeType = .selfAdaptVisible
     
     
 }
