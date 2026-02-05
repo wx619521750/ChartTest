@@ -89,6 +89,7 @@ import UIKit
             chartModel.minX = chartModel.maxX-3600*24*30*12
         }
         self.setNeedsDisplay()
+        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
     }
     private func addTapGesture(){
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
@@ -331,7 +332,7 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .selfAdaptVisible
+    var yRangeType:YRangeType = .selfAdaptAll
     
     
 }
@@ -472,44 +473,75 @@ enum AxisLabelStyle{
     var y:CGFloat = 0
 }
 
-
+@objc enum XSChartType: Int {
+    case radon = 1
+    case temperature
+    case humidity
+}
 
 //提供给oc 定义样式
 extension ChartModel{
-    @objc convenience init(points:[ChartPoint],type:Int) {
-        self.init()
-        switch type{
-        case 1:
-            var points = [ChartPointModel]()
-            for point in points{
-                let item = ChartPointModel()
-                item.style = .normal
-                item.x = point.x
-                item.y = point.y
-                item.style = .normal
-                item.detailSize = .init(width: 10, height: 20)
-                points.append(item)
-            }
-            lineModel.points = points
-            lineModel.datalineStyle = .straight(width: 1, color: .red)
-        case 2:
-            var points = [ChartPointModel]()
-            for point in points{
-                let item = ChartPointModel()
-                item.style = .normal
-                item.x = point.x
-                item.y = point.y
-                item.style = .normal
-                item.detailSize = .init(width: 10, height: 20)
-                points.append(item)
-            }
-            lineModel.points = points
-            lineModel.datalineStyle = .straight(width: 1, color: .red)
-            
-        default:
-            break
-        }
+    @objc convenience init(points:[ChartPoint],type:XSChartType) {
+        self.init(points: points, type: type, radonYMax: 500, radonHLine1Y: 150, radonHLine2Y: 75)
     }
-    
+
+    @objc convenience init(points:[ChartPoint], type:XSChartType, radonYMax: Double, radonHLine1Y: Double, radonHLine2Y: Double) {
+            self.init()
+            switch type{
+            case .radon:
+                var modelPoints = [ChartPointModel]()
+                for point in points {
+                    let item = ChartPointModel()
+                    item.style = .normal
+                    item.x = point.x
+                    item.y = point.y
+                    modelPoints.append(item)
+                }
+                lineModel.points = modelPoints
+                lineModel.datalineStyle = .bezier(width: 1, color: .red)
+                yRangeType = .fixed(min: 0, max: radonYMax)
+                horizontalLines = [.init(y: CGFloat(radonHLine1Y), lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2])),.init(y: CGFloat(radonHLine2Y), lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]))]
+                verticalColorRnages = [.init(showType: .line, top: CGFloat(radonYMax), bottom: CGFloat(radonHLine1Y), color: .red),
+                                                                .init(showType: .line, top: CGFloat(radonHLine1Y), bottom: CGFloat(radonHLine2Y), color: .yellow),
+                                                                .init(showType: .line, top: CGFloat(radonHLine2Y), bottom: 0, color: .green)]
+            case .temperature:
+                var modelPoints = [ChartPointModel]()
+                for point in points {
+                    let item = ChartPointModel()
+                    item.style = .normal
+                    item.x = point.x
+                    item.y = point.y
+                    modelPoints.append(item)
+                }
+                lineModel.points = modelPoints
+                yRangeType = .selfAdaptVisible
+                lineModel.datalineStyle = .bezier(width: 1, color: .red)
+                topAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
+                bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
+                horizontalLines = []
+                verticalColorRnages = [.init(showType: .line, top: 100, bottom: -50, color: .systemBlue)]
+                
+                
+            case .humidity:
+                var modelPoints = [ChartPointModel]()
+                for point in points {
+                    let item = ChartPointModel()
+                    item.style = .normal
+                    item.x = point.x
+                    item.y = point.y
+                    modelPoints.append(item)
+                }
+                lineModel.points = modelPoints
+                yRangeType = .selfAdaptVisible
+                lineModel.datalineStyle = .bezier(width: 1, color: .red)
+                topAxisLineStyle = .none
+                bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
+                horizontalLines = []
+                verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .systemBlue)]
+                
+            default:
+                break
+            }
+        }
     
 }
