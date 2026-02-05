@@ -599,7 +599,7 @@ class LineChartDrawer {
             ctx.strokePath()
             let maxx = chartModel.chartContentInsert.left+(chartModel.maxX - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
                 let maxy = layer.bounds.height+(offset ?? 0)
-                let maxdate = Date.init(timeIntervalSince1970: chartModel.minX)
+                let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
                 let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
                 UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery, font: font, color: color)
