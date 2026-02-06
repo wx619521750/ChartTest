@@ -348,7 +348,7 @@ enum YRangeType{
 class ChartLineModel{
 //    var datalineStyle:DataLineStyle = .straight(width: 2, color: UIColor.blue)
     //线段类型
-    var datalineStyle:DataLineStyle = .bezier(width: 2, color: .blue)
+    var datalineStyle:DataLineStyle = .bezier(width: 2, color: .black)
     //数据点数组
     var points:[ChartPointModel] = [ChartPointModel]()
     

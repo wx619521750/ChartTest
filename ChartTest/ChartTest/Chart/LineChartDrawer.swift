@@ -293,6 +293,12 @@ class LineChartDrawer {
         }
         ctx.replacePathWithStrokedPath()
         ctx.clip()
+        switch chartModel.lineModel.datalineStyle {
+        case .straight(let width, let color),.bezier(let width, let color):
+            ctx.setFillColor(color.cgColor)
+            ctx.addRect(.init(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top, width: layer.bounds.width-chartModel.chartContentInsert.right, height: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            ctx.fillPath()
+        }
         for verticalColorRnage in chartModel.verticalColorRnages {
             let toppt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.top ))
             let bottompt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.bottom ))
