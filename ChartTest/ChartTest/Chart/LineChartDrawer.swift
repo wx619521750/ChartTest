@@ -339,16 +339,45 @@ class LineChartDrawer {
         )
 
         ctx.clip(to: clipRect)
-        ctx.setFillColor(UIColor.lightGray.cgColor)
         for point in emptyAreas{
             let point1 = ptPointFromPoint(point: .init(x: point.x, y: 0))
             let point2 = ptPointFromPoint(point: .init(x: point.y, y: 0))
-            ctx.addRect(.init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom))
+            let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom)
+            ctx.addRect(gapRect)
+            if let color = (layer.delegate as? UIView)?.backgroundColor?.cgColor{
+                ctx.setFillColor(color)
+            }
+            ctx.fillPath()
+            drawDiagonalLines(in: ctx, rect: gapRect, spacing: 5)
+            UIGraphicsPushContext(ctx)
+            if gapRect.width>10{
+                drawText(NSAttributedString.init(string: "G\nA\nP"), point: .init(x: gapRect.minX+gapRect.width*0.5, y: gapRect.minY+gapRect.height*0.5), anchor: .center)
+            }
+            UIGraphicsPopContext()
         }
-        ctx.fillPath()
+        
         ctx.restoreGState()
         
     }
+    
+    /// 绘制斜线
+       /// - Parameters:
+       ///   - ctx: 图形上下文
+       ///   - rect: 绘制区域
+       ///   - angle: 倾斜角度（度）
+       ///   - spacing: 线间距
+       private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
+           ctx.setLineWidth(1)
+           ctx.setStrokeColor(UIColor.lightGray.cgColor)
+           var y = rect.minY-rect.width
+           while y>=rect.minY-rect.width&&y<=rect.maxY {
+               ctx.move(to: .init(x: rect.origin.x, y: y))
+               ctx.addLine(to: .init(x: rect.origin.x+rect.width, y: y+rect.width))
+               ctx.strokePath()
+               y+=spacing
+           }
+           
+       }
     
     
     //绘制水平垂直的线条
