@@ -287,7 +287,7 @@ import UIKit
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
     //图标内容的insert
-    var chartContentInsert:UIEdgeInsets = .init(top: 10, left: 10, bottom: 40, right: 60)
+    var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 40)
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //底部轴线类型
@@ -306,16 +306,17 @@ import UIKit
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     var horizontalAxisFullFrame = true
     var verticalAxisFullFrame = false
+    var showGraduation = false
     //顶部轴线文字配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //底部轴线文字配置
-    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: -12)
+    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset:20)
     //左部轴线文字配置
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
     var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     //横向线段配置
-    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2])),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]))]
+    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: -4)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: -4))]
     //竖向线段配置
     var verticalLines:[VerticalLine] = []
     //竖向线段颜色配置
@@ -332,7 +333,7 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .selfAdaptAll
+    var yRangeType:YRangeType = .selfAdaptVisible
     
     
 }
@@ -424,9 +425,11 @@ class VerticalColorRange{
 class HorizontalLine{
     var y:CGFloat = 0
     var lineStyle:LineStyle
-    init(y: CGFloat, lineStyle: LineStyle) {
+    var lableStyle:AxisLabelStyle
+    init(y: CGFloat, lineStyle: LineStyle, lableStyle: AxisLabelStyle = .none) {
         self.y = y
         self.lineStyle = lineStyle
+        self.lableStyle = lableStyle
     }
 }
 //竖向指示线模型
@@ -459,7 +462,7 @@ enum LineStyle {
     case dashLine(width:CGFloat,color:UIColor,lengths:[CGFloat])
     case none
 }
-
+//offset 表示向外偏移量
 enum AxisLabelStyle{
     case top(color:UIColor,font:UIFont,offset:CGFloat?)
     case bottom(color:UIColor,font:UIFont,offset:CGFloat?)

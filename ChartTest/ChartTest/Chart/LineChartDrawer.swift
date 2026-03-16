@@ -21,12 +21,12 @@ class LineChartDrawer {
         self.chartModel = chartModel
         self.layer = layer
         dealData(data: chartModel.lineModel.points)
-        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
         drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
         drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
         drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
+        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
     }
     
     //处理数据，获取可视范围数据，获取没有数据的区域，数据量多的时候重采样
@@ -293,12 +293,7 @@ class LineChartDrawer {
         }
         ctx.replacePathWithStrokedPath()
         ctx.clip()
-        switch chartModel.lineModel.datalineStyle {
-        case .straight(let width, let color),.bezier(let width, let color):
-            ctx.setFillColor(color.cgColor)
-            ctx.addRect(.init(x: chartModel.chartContentInsert.left, y: chartModel.chartContentInsert.top, width: layer.bounds.width-chartModel.chartContentInsert.right, height: layer.bounds.height-chartModel.chartContentInsert.bottom))
-            ctx.fillPath()
-        }
+
         for verticalColorRnage in chartModel.verticalColorRnages {
             let toppt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.top ))
             let bottompt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.bottom ))
@@ -382,17 +377,8 @@ class LineChartDrawer {
     
     //绘制水平垂直的线条
     func drawHVLine(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
-        ctx.saveGState()
         for horizontalLine in chartModel.horizontalLines {
-            let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
-            let clipRect = CGRect(
-                x: chartModel.chartContentInsert.left,
-                y: chartModel.chartContentInsert.top,
-                width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-                height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
-            )
-
-            ctx.clip(to: clipRect)
+            var point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
             switch horizontalLine.lineStyle {
             case .line(let width, let color):
                 ctx.setLineWidth(width)
@@ -409,8 +395,53 @@ class LineChartDrawer {
             ctx.move(to: startPoint)
             ctx.addLine(to: endPoint)
             ctx.strokePath()
+            UIGraphicsPushContext(ctx)
+
+            switch horizontalLine.lableStyle {
+            case .top(let _, let _, let _):
+                break
+            case .bottom(let _, let _, let _):
+                break
+            case .left(let color, let font, let offset):
+                point.x = chartModel.chartContentInsert.left+(offset ?? 0)
+                if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
+                    continue
+                }
+                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
+                    UIGraphicsPushContext(ctx)
+                    drawText(str, point:  CGPoint.init(x: chartModel.chartContentInsert.left+(offset ?? 0), y: point.y), anchor: .maxxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                    UIGraphicsPopContext()
+                }else{
+                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
+                        continue}
+                    let attrStr = NSAttributedString.init(string: str, attributes: [.foregroundColor:color,.font:font])
+                    UIGraphicsPushContext(ctx)
+                    drawText(attrStr, point:  CGPoint.init(x: chartModel.chartContentInsert.left+(offset ?? 0), y: point.y), anchor: .maxxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                    UIGraphicsPopContext()
+                }
+            case .right(let color, let font, let offset):
+                point.x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
+                let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
+                if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
+                    continue
+                }
+                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
+                    UIGraphicsPushContext(ctx)
+                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                    UIGraphicsPopContext()
+                }else{
+                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
+                        continue}
+                    let attrStr = NSAttributedString.init(string: str, attributes: [.foregroundColor:color,.font:font])
+                    UIGraphicsPushContext(ctx)
+                    drawText(attrStr, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                    UIGraphicsPopContext()
+                }
+            case .none:
+                break
+            }
+
         }
-        ctx.restoreGState()
         ctx.saveGState()
         let clipRect = CGRect(
             x: chartModel.chartContentInsert.left,
@@ -569,15 +600,17 @@ class LineChartDrawer {
             break
         case .bottom(let color, let font,let offset):
             for item in stamps{
-                let x = chartModel.chartContentInsert.left+(item - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
+                let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
                 let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
                 let date = Date.init(timeIntervalSince1970: item)
                 let str = date.toString(format: dateFormat)
                 UIGraphicsPushContext(ctx)
                 drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, font: font, color: color)
                 UIGraphicsPopContext()
-                ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-                ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-10))
+                if chartModel.showGraduation{
+                    ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                    ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-10))
+                }
             }
             ctx.strokePath()
             
@@ -597,24 +630,7 @@ class LineChartDrawer {
         case .left( _,  _,_):
             break
         case .right(let color, let font,let offset):
-            ctx.saveGState()
-            UIGraphicsPushContext(ctx)
-            for horizontalLine in chartModel.horizontalLines {
-                let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
-                if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
-                    continue
-                }
-                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
-                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery)
-                }else{
-                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
-                        continue}
-                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery,font: font,color: color)
-                }
-
-            }
-            UIGraphicsPopContext()
-            ctx.restoreGState()
+           
             break
         case .none:
             break
@@ -624,25 +640,66 @@ class LineChartDrawer {
         case .top( _,  _,_):
             break
         case .bottom(let color, let font, let offset):
-            let minx = chartModel.chartContentInsert.left+(chartModel.minX - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
-                let miny = layer.bounds.height+(offset ?? 0)
+            let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
+                let miny = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
                 let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
                 let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
                 UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxcentery, font: font, color: color)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxminy, font: font, color: color)
                 UIGraphicsPopContext()
             ctx.strokePath()
-            let maxx = chartModel.chartContentInsert.left+(chartModel.maxX - chartModel.minX)/(chartModel.maxX-chartModel.minX)*(layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right)
-                let maxy = layer.bounds.height+(offset ?? 0)
+            let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
+                let maxy = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
                 let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
                 let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
                 UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery, font: font, color: color)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy, font: font, color: color)
                 UIGraphicsPopContext()
             ctx.strokePath()
         case .left( _,  _,_):
             break
         case .right( _,  _,_):
+            break
+        case .none:
+            break
+        }
+        
+        switch chartModel.rightAxisMaxMinStyel {
+        case .top( _,  _,_):
+            break
+        case .bottom(_, _, _):
+           break
+        case .left(let color, let font, let offset):
+            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
+            let minstr = "\(chartModel.minY)"
+                UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxmaxy, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
+            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let maxy = chartModel.chartContentInsert.top
+            let maxstr = "\(chartModel.maxY)"
+                UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
+            break
+        case .right(let color, let font, let offset):
+            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
+            let minstr = "\(chartModel.minY)"
+                UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
+            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let maxy = chartModel.chartContentInsert.top
+            let maxstr = "\(chartModel.maxY)"
+                UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .minxminy, font: font, color: color)
+                UIGraphicsPopContext()
+            ctx.strokePath()
             break
         case .none:
             break
@@ -754,56 +811,86 @@ class LineChartDrawer {
     func drawText(
         _ text: NSAttributedString,
         point: CGPoint,
-        anchor:TextDrawAnchor,
+        anchor: TextDrawAnchor,
+        backgroundColor: UIColor? = nil,
+        padding: UIEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
     ) {
-        let size = text.size()
-        var origin:CGPoint
+        // 1. 计算文本大小
+        let textSize = text.size()
+        
+        // 2. 计算带内边距的背景大小
+        let backgroundSize = CGSize(
+            width: textSize.width + padding.left + padding.right,
+            height: textSize.height + padding.top + padding.bottom
+        )
+        
+        // 3. 根据锚点计算背景的绘制原点
+        var backgroundOrigin: CGPoint
         switch anchor {
         case .minxminy:
-            origin = point
+            backgroundOrigin = point
         case .maxxminy:
-            origin = CGPoint(
-                x: point.x - size.width,
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width,
                 y: point.y
             )
         case .minxmaxy:
-            origin = CGPoint(
+            backgroundOrigin = CGPoint(
                 x: point.x,
-                y: point.y - size.height
+                y: point.y - backgroundSize.height
             )
         case .maxxmaxy:
-            origin = CGPoint(
-                x: point.x - size.width,
-                y: point.y - size.height
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width,
+                y: point.y - backgroundSize.height
             )
         case .centerxminy:
-            origin = CGPoint(
-                x: point.x - size.width * 0.5,
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width * 0.5,
                 y: point.y
             )
         case .minxcentery:
-            origin = CGPoint(
+            backgroundOrigin = CGPoint(
                 x: point.x,
-                y: point.y - size.height * 0.5
+                y: point.y - backgroundSize.height * 0.5
             )
         case .maxxcentery:
-            origin = CGPoint(
-                x: point.x - size.width,
-                y: point.y - size.height * 0.5
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width,
+                y: point.y - backgroundSize.height * 0.5
             )
         case .centerxmaxy:
-            origin = CGPoint(
-                x: point.x - size.width * 0.5,
-                y: point.y - size.height
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width * 0.5,
+                y: point.y - backgroundSize.height
             )
         case .center:
-            origin = CGPoint(
-                x: point.x - size.width * 0.5,
-                y: point.y - size.height * 0.5
+            backgroundOrigin = CGPoint(
+                x: point.x - backgroundSize.width * 0.5,
+                y: point.y - backgroundSize.height * 0.5
             )
         }
-
-        text.draw(in: .init(origin: origin, size: size))
+        
+        // 4. 创建背景绘制区域
+        let backgroundRect = CGRect(origin: backgroundOrigin, size: backgroundSize)
+        
+        // 5. 如果有背景色，绘制圆角背景 - 自动计算圆角半径
+        if let bgColor = backgroundColor {
+            // 自动计算圆角半径：使用背景高度的一半（胶囊形状）
+            let cornerRadius = backgroundSize.height / 2
+            let path = UIBezierPath(roundedRect: backgroundRect, cornerRadius: cornerRadius)
+            bgColor.setFill()
+            path.fill()
+        }
+        
+        // 6. 计算文本绘制位置（在背景内部居中）
+        let textOrigin = CGPoint(
+            x: backgroundOrigin.x + padding.left,
+            y: backgroundOrigin.y + padding.top
+        )
+        
+        // 7. 绘制文本
+        text.draw(in: CGRect(origin: textOrigin, size: textSize))
     }
     
     func ptPointFromPoint(point:CGPoint)->CGPoint{
@@ -835,9 +922,16 @@ extension LineChartDrawer{
         calendar: Calendar = .current
     ) -> [TimeInterval] {
         guard start < end else { return [] }
+        var startDate = Date()
+        var endDate = Date()
+        if chartModel.horizontalAxisFullFrame{
+            startDate = Date(timeIntervalSince1970: start - (end-start)/(layer.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*chartModel.chartContentInsert.left)
+            endDate = Date(timeIntervalSince1970: end+(end-start)/(layer.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*chartModel.chartContentInsert.right)
+        }else{
+            startDate = Date(timeIntervalSince1970: start)
+            endDate = Date(timeIntervalSince1970: end)
+        }
 
-        let startDate = Date(timeIntervalSince1970: start)
-        let endDate = Date(timeIntervalSince1970: end)
 
         var current: Date?
 

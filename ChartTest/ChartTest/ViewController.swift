@@ -45,6 +45,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             }
         }
         chartModel.lineModel.points = points
+        chartModel.topAxisLineStyle = .none
+        chartModel.rightAxisLineStyle = .none
+        chartModel.leftAxisLineStyle = .none
+        chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
         lineChartView.chartModel = chartModel
     }
     
@@ -165,18 +169,23 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
     
     func lineChartViewHLineFormatStr(y: Double) -> String {
-        let str = "Max\n\(y)℃"
+        let str = "\(y)"
         return str
     }
     
-    func lineChartViewHLineFormatAttributeStr(y: Double) -> NSAttributedString {
-        let str = "Max\n\(y)℃"
-        let paragraphStyle = NSMutableParagraphStyle()
-               paragraphStyle.alignment = .center
-        let attrStr = NSMutableAttributedString.init(string: str)
-        attrStr.addAttributes([.foregroundColor:UIColor.red,.font:UIFont.systemFont(ofSize: 14),.paragraphStyle:paragraphStyle], range: NSRange.init(location: 0, length: 3))
-        return attrStr
-    }
+//    func lineChartViewHLineFormatAttributeStr(y: Double) -> NSAttributedString {
+////        let str = "Max\n\(y)℃"
+////        let paragraphStyle = NSMutableParagraphStyle()
+////               paragraphStyle.alignment = .center
+////        let attrStr = NSMutableAttributedString.init(string: str)
+////        attrStr.addAttributes([.foregroundColor:UIColor.red,.font:UIFont.systemFont(ofSize: 14),.paragraphStyle:paragraphStyle], range: NSRange.init(location: 0, length: 3))
+////        return attrStr
+//        let str = "\(y)"
+//        let paragraphStyle = NSMutableParagraphStyle()
+//               paragraphStyle.alignment = .center
+//        let attrStr = NSMutableAttributedString.init(string: str)
+//        return attrStr
+//    }
 
     
     func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> [String] {
