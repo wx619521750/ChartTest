@@ -93,7 +93,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     lazy var segmentView: SegmentView = {
         let view = SegmentView.init(frame: .init(x: 20, y: 340, width: UIScreen.main.bounds.width-40, height: 44))
         view.titles = ["hour","day","week","month","year"]
-        view.tag = 102
+        view.tag = 101
 
         view.delegate = self
         return view
