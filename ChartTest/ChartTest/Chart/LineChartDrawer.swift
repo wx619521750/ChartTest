@@ -716,50 +716,72 @@ class LineChartDrawer {
         default:break
         }
         
-        switch chartModel.rightAxisDataMaxMinStyel {
-            
-        case .left(let color, let font, let offset):
-            let ys = data.map { $0.y }
-            let dataMinY = ys.min() ?? 0
-            let dataMaxY = ys.max() ?? 0
-            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-            let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
-            let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
-            UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-            UIGraphicsPopContext()
-            ctx.strokePath()
-            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-            let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-            let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
-            UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-            UIGraphicsPopContext()
-            ctx.strokePath()
-            break
-        case .right(let color, let font, let offset):
-            let ys = data.map { $0.y }
-            let dataMinY = ys.min() ?? 0
-            let dataMaxY = ys.max() ?? 0
-            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-            let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
-            let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
-            UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-            UIGraphicsPopContext()
-            ctx.strokePath()
-            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-            let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-            let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
-            UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-            UIGraphicsPopContext()
-            ctx.strokePath()
-            break
-        default:break
+        let vasivledata = data.filter({
+            ($0.x>=chartModel.minX)&&($0.x<=chartModel.maxX)&&$0.isCurrentDatePoint == false
+        })
+        if vasivledata.count>0{
+            switch chartModel.rightAxisDataMaxMinStyel {
+                
+            case .left(let color, let font, let offset):
+                let ys = data.map { $0.y }
+                let dataMinY = ys.min() ?? 0
+                let dataMaxY = ys.max() ?? 0
+                let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
+                let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+                UIGraphicsPushContext(ctx)
+                drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                UIGraphicsPopContext()
+                ctx.strokePath()
+                let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
+                let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+                UIGraphicsPushContext(ctx)
+                drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                UIGraphicsPopContext()
+                ctx.strokePath()
+                break
+            case .right(let color, let font, let offset):
+                let ys = data.map { $0.y }
+                let dataMinY = ys.min() ?? 0
+                let dataMaxY = ys.max() ?? 0
+                let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
+                let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+                UIGraphicsPushContext(ctx)
+                drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                UIGraphicsPopContext()
+                ctx.strokePath()
+                let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+                let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
+                let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+                UIGraphicsPushContext(ctx)
+                drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+                UIGraphicsPopContext()
+                ctx.strokePath()
+                break
+            default:break
+            }
         }
         
+        
     }
+    
+    func rightAxisDataMaxMinOffset()->(Double,Double){
+        let ys = self.pointsShouldDraw.map { $0.y }
+        let dataMinY = ys.min() ?? 0
+        let dataMaxY = ys.max() ?? 0
+        var maxOffset:Double = 0
+        var minOffert:Double = 0
+        return (minOffert,maxOffset)
+    }
+    
+    func horizontalLinesOffset()->(Double,Double){
+        var maxOffset:Double = 0
+        var minOffert:Double = 0
+        return (minOffert,maxOffset)
+    }
+    
     //绘制半透明框
     func drawTooltip(
         ctx: CGContext,
