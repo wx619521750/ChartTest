@@ -50,6 +50,12 @@ class LineChartDrawer {
         case .fixed(let min, let max):
             chartModel.minY = min
             chartModel.maxY = max
+        case .selfAdaptVisibleWithMinMax(let min,let max):
+            let ys = vasivledata.map { $0.y }
+            let dataMin = ys.min() ?? 0
+            let dataMax = ys.max() ?? 0
+            chartModel.minY = min<dataMin ? min:dataMin
+            chartModel.maxY = max>dataMax ? max:dataMax
         }
         (layer.delegate as? LineChartView)?.delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
         emptyAreas = filterPointsByXDistance(vasivledata)
@@ -343,7 +349,7 @@ class LineChartDrawer {
                 ctx.setFillColor(color)
             }
             ctx.fillPath()
-            drawDiagonalLines(in: ctx, rect: gapRect, spacing: 5)
+            drawDiagonalLines(in: ctx, rect: gapRect, spacing: 15)
             UIGraphicsPushContext(ctx)
             if gapRect.width>10{
                 drawText(NSAttributedString.init(string: "G\nA\nP"), point: .init(x: gapRect.minX+gapRect.width*0.5, y: gapRect.minY+gapRect.height*0.5), anchor: .center)
@@ -363,7 +369,7 @@ class LineChartDrawer {
        ///   - spacing: 线间距
        private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
            ctx.setLineWidth(1)
-           ctx.setStrokeColor(UIColor.lightGray.cgColor)
+           ctx.setStrokeColor(UIColor.lightGray.withAlphaComponent(0.5).cgColor)
            var y = rect.minY-rect.width
            while y>=rect.minY-rect.width&&y<=rect.maxY {
                ctx.move(to: .init(x: rect.origin.x, y: y))
@@ -378,6 +384,15 @@ class LineChartDrawer {
     //绘制水平垂直的线条
     func drawHVLine(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         for horizontalLine in chartModel.horizontalLines {
+            ctx.saveGState()
+            let clipRect = CGRect(
+                x: chartModel.chartContentInsert.left,
+                y: chartModel.chartContentInsert.top,
+                width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
+                height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
+            )
+
+            ctx.clip(to: clipRect)
             var point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
             switch horizontalLine.lineStyle {
             case .line(let width, let color):
@@ -396,6 +411,7 @@ class LineChartDrawer {
             ctx.addLine(to: endPoint)
             ctx.strokePath()
             UIGraphicsPushContext(ctx)
+            ctx.restoreGState()
 
             switch horizontalLine.lableStyle {
             case .top(let _, let _, let _):
@@ -476,6 +492,8 @@ class LineChartDrawer {
     
     //绘制圆点和数据详情
     func drawItemCircle(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
+        
+        
         guard  let item = data.first(where: {$0.style != .normal}) else{return}
         guard case let .circle(radius ,width ,color) =  item.style else{return}
         ctx.saveGState()
@@ -491,24 +509,46 @@ class LineChartDrawer {
         if chartModel.chartContentInsert.left>point.x||point.x>layer.bounds.width-chartModel.chartContentInsert.right||chartModel.chartContentInsert.top>point.y||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
             return
         }
-        ctx.setLineWidth(width)
-        ctx.setStrokeColor(color.cgColor)
-        ctx.addEllipse(in: CGRect(
-            x: point.x - radius,
-            y: point.y - radius,
-            width: radius * 2,
-            height: radius * 2
-        ))
-        ctx.strokePath()
         
-        ctx.setLineWidth(radius-width)
-        ctx.setFillColor(UIColor.white.cgColor)
-        ctx.addEllipse(in: CGRect(
-            x: point.x - (radius-width*0.5),
-            y: point.y - (radius-width*0.5),
-            width: (radius-width*0.5) * 2,
-            height: (radius-width*0.5) * 2
-        ))
+        if let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
+            ctx.setLineWidth(width)
+            ctx.setStrokeColor(UIColor.white.cgColor)
+            ctx.addEllipse(in: CGRect(
+                x: point.x - radius,
+                y: point.y - radius,
+                width: radius * 2,
+                height: radius * 2
+            ))
+            ctx.strokePath()
+            
+            ctx.setLineWidth(radius-width)
+            ctx.setFillColor(firstRange.color.cgColor)
+            ctx.addEllipse(in: CGRect(
+                x: point.x - (radius-width*0.5),
+                y: point.y - (radius-width*0.5),
+                width: (radius-width*0.5) * 2,
+                height: (radius-width*0.5) * 2
+            ))
+        }else{
+            ctx.setLineWidth(width)
+            ctx.setStrokeColor(color.cgColor)
+            ctx.addEllipse(in: CGRect(
+                x: point.x - radius,
+                y: point.y - radius,
+                width: radius * 2,
+                height: radius * 2
+            ))
+            ctx.strokePath()
+            
+            ctx.setLineWidth(radius-width)
+            ctx.setFillColor(UIColor.white.cgColor)
+            ctx.addEllipse(in: CGRect(
+                x: point.x - (radius-width*0.5),
+                y: point.y - (radius-width*0.5),
+                width: (radius-width*0.5) * 2,
+                height: (radius-width*0.5) * 2
+            ))
+        }
         
         ctx.fillPath()
         ctx.restoreGState()
@@ -672,16 +712,16 @@ class LineChartDrawer {
         case .left(let color, let font, let offset):
             let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
-            let minstr = "\(chartModel.minY)"
+            let minstr = NSAttributedString(string: "\(chartModel.minY)", attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxmaxy, font: font, color: color)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxmaxy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
                 UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let maxy = chartModel.chartContentInsert.top
-            let maxstr = "\(chartModel.maxY)"
+            let maxstr = NSAttributedString(string: "\(chartModel.maxY)", attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy, font: font, color: color)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
                 UIGraphicsPopContext()
             ctx.strokePath()
             break
@@ -813,6 +853,7 @@ class LineChartDrawer {
         point: CGPoint,
         anchor: TextDrawAnchor,
         backgroundColor: UIColor? = nil,
+        cornerRadius:CGFloat? = nil,
         padding: UIEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
     ) {
         // 1. 计算文本大小
@@ -877,8 +918,11 @@ class LineChartDrawer {
         // 5. 如果有背景色，绘制圆角背景 - 自动计算圆角半径
         if let bgColor = backgroundColor {
             // 自动计算圆角半径：使用背景高度的一半（胶囊形状）
-            let cornerRadius = backgroundSize.height / 2
-            let path = UIBezierPath(roundedRect: backgroundRect, cornerRadius: cornerRadius)
+            var corner = backgroundSize.height / 2
+            if let cornerRadius = cornerRadius{
+                corner = cornerRadius
+            }
+            let path = UIBezierPath(roundedRect: backgroundRect, cornerRadius: corner)
             bgColor.setFill()
             path.fill()
         }

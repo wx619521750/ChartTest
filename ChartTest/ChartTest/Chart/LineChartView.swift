@@ -117,8 +117,12 @@ import UIKit
         let item = nearestItem(in: self.drawer.pointsShouldDraw, to: dataPoint.x)
         chartModel.tapedItem?.style = .normal
         chartModel.tapedItem = item
-        chartModel.tapedItem?.style = .circle(radius: 4, width: 2, color: .gray)
-        chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [4,2]))]
+        chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
+        if let item = item,let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
+            chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: firstRange.color, lengths: [6,3]))]
+        }else{
+            chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [6,3]))]
+        }
         self.setNeedsDisplay()
     }
     
@@ -182,7 +186,7 @@ import UIKit
                    let item = nearestItem(in: self.drawer.pointsShouldDraw, to: dataPoint.x)
                    chartModel.tapedItem?.style = .normal
                    chartModel.tapedItem = item
-                   chartModel.tapedItem?.style = .circle(radius: 4, width: 2, color: .gray)
+                   chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
                    chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [4,2]))]
                    self.setNeedsDisplay()
                }else{
@@ -287,7 +291,7 @@ import UIKit
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
     //图标内容的insert
-    var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 40)
+    var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 0)
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //底部轴线类型
@@ -314,7 +318,7 @@ import UIKit
     //左部轴线文字配置
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
-    var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    var rightAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     //横向线段配置
     var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: -4)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: -4))]
     //竖向线段配置
@@ -342,6 +346,7 @@ import UIKit
 enum YRangeType{
     case selfAdaptAll
     case selfAdaptVisible
+    case selfAdaptVisibleWithMinMax(min:Double,max:Double)
     case fixed(min:Double,max:Double)
 }
 

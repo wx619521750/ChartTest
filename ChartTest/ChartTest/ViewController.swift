@@ -18,6 +18,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         view.addSubview(scrollView)
         scrollView.addSubview(lineChartView)
         scrollView.addSubview(segmentView)
+        scrollView.addSubview(segmentView1)
         scrollView.addSubview(minDatePicker)
         scrollView.addSubview(maxDatePicker)
         initData()
@@ -94,13 +95,23 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     lazy var segmentView: SegmentView = {
         let view = SegmentView.init(frame: .init(x: 20, y: 340, width: UIScreen.main.bounds.width-40, height: 44))
         view.titles = ["hour","day","week","month","year"]
+        view.tag = 102
+
+        view.delegate = self
+        return view
+    }()
+    
+    lazy var segmentView1: SegmentView = {
+        let view = SegmentView.init(frame: .init(x: 20, y: 340+44, width: UIScreen.main.bounds.width-40, height: 44))
+        view.titles = ["氡气","温度","湿度"]
+        view.tag = 102
         view.delegate = self
         return view
     }()
     
     lazy var minDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 384, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 384+44, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -109,7 +120,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }()
     lazy var maxDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 428, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 428+44, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -125,19 +136,35 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
     
     func segmentView(_ segmentView: SegmentView, selectedIndex: Int) {
-        switch selectedIndex{
-        case 0:
-            lineChartView.changeDateMode(mode: .hour)
-        case 1:
-            lineChartView.changeDateMode(mode: .day)
-        case 2:
-            lineChartView.changeDateMode(mode: .week)
-        case 3:
-            lineChartView.changeDateMode(mode: .month)
-        case 4:
-            lineChartView.changeDateMode(mode: .year)
-        default:break
-        
+        if segmentView.tag == 101{
+            
+            switch selectedIndex{
+            case 0:
+                lineChartView.changeDateMode(mode: .hour)
+            case 1:
+                lineChartView.changeDateMode(mode: .day)
+            case 2:
+                lineChartView.changeDateMode(mode: .week)
+            case 3:
+                lineChartView.changeDateMode(mode: .month)
+            case 4:
+                lineChartView.changeDateMode(mode: .year)
+            default:break
+                
+            }
+        }else{
+            switch selectedIndex{
+            case 0:
+                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
+                lineChartView.setNeedsDisplay()
+            case 1:
+                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                lineChartView.setNeedsDisplay()
+            case 2:
+                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                lineChartView.setNeedsDisplay()
+            default:break
+            }
         }
     }
     
