@@ -46,10 +46,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             }
         }
         chartModel.lineModel.points = points
-        chartModel.topAxisLineStyle = .none
-        chartModel.rightAxisLineStyle = .none
-        chartModel.leftAxisLineStyle = .none
-        chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+
         lineChartView.chartModel = chartModel
     }
     
@@ -132,7 +129,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         let selectedDate = sender.date
         print("选择的日期: \(selectedDate)")
 
-        lineChartView.changeXRange(min: minDatePicker.date.timeIntervalSinceReferenceDate, max:  maxDatePicker.date.timeIntervalSinceReferenceDate)
+        lineChartView.changeXRange(min: minDatePicker.date.timeIntervalSince1970, max:  maxDatePicker.date.timeIntervalSince1970)
     }
     
     func segmentView(_ segmentView: SegmentView, selectedIndex: Int) {
@@ -155,13 +152,82 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         }else{
             switch selectedIndex{
             case 0:
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
+                
+                lineChartView.chartModel.topAxisLineStyle = .none
+                lineChartView.chartModel.rightAxisLineStyle = .none
+                lineChartView.chartModel.leftAxisLineStyle = .none
+                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+                
+                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+                
+                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+                
+                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
+                //竖向线段颜色配置
+                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+                
+                
+                lineChartView.chartModel.horizontalAxisFullFrame = true
+                //垂直坐标轴是否全屏显示
+                lineChartView.chartModel.verticalAxisFullFrame = false
+                //是否显示刻度尺
+                lineChartView.chartModel.showGraduation = false
                 lineChartView.setNeedsDisplay()
             case 1:
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                
+                lineChartView.chartModel.topAxisLineStyle = .none
+                lineChartView.chartModel.rightAxisLineStyle = .none
+                lineChartView.chartModel.leftAxisLineStyle = .none
+                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+                
+                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+                
+                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+                
+                lineChartView.chartModel.horizontalLines = []
+                //竖向线段颜色配置
+                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+                
+                
+                lineChartView.chartModel.horizontalAxisFullFrame = true
+                //垂直坐标轴是否全屏显示
+                lineChartView.chartModel.verticalAxisFullFrame = false
+                //是否显示刻度尺
+                lineChartView.chartModel.showGraduation = false
                 lineChartView.setNeedsDisplay()
             case 2:
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                
+                lineChartView.chartModel.topAxisLineStyle = .none
+                lineChartView.chartModel.rightAxisLineStyle = .none
+                lineChartView.chartModel.leftAxisLineStyle = .none
+                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+                
+                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+                
+                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+                
+                lineChartView.chartModel.horizontalLines = []
+                //竖向线段颜色配置
+                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+                
+                
+                lineChartView.chartModel.horizontalAxisFullFrame = true
+                //垂直坐标轴是否全屏显示
+                lineChartView.chartModel.verticalAxisFullFrame = false
+                //是否显示刻度尺
+                lineChartView.chartModel.showGraduation = false
                 lineChartView.setNeedsDisplay()
             default:break
             }
@@ -189,8 +255,8 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     
     func lineChartViewXRangeChanged(min: Double, max: Double) {
-        let mindate = Date.init(timeIntervalSinceReferenceDate: min)
-        let maxdate = Date.init(timeIntervalSinceReferenceDate: max)
+        let mindate = Date.init(timeIntervalSince1970: min)
+        let maxdate = Date.init(timeIntervalSince1970: max)
         minDatePicker.date  = mindate
         maxDatePicker.date = maxdate
     }

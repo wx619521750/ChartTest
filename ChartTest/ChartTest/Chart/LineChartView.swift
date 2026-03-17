@@ -292,6 +292,8 @@ import UIKit
     var lineModel:ChartLineModel = ChartLineModel()
     //图标内容的insert
     var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 0)
+    
+    
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //底部轴线类型
@@ -300,6 +302,8 @@ import UIKit
     var leftAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //右部轴线类型
     var rightAxisLineStyle:LineStyle = .line(width: 1, color: .black)
+    
+    
     //顶部轴线文字配置
     var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //底部轴线文字配置
@@ -308,6 +312,7 @@ import UIKit
     var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    
 
     //顶部轴线最大最小值配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
@@ -316,11 +321,15 @@ import UIKit
     //左部轴线最大最小值配置
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线最大最小值配置
-    var rightAxisMaxMinStyel:AxisLabelStyle = .none
+    var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    
+    
     //右部数据最大最小值配置
     var rightAxisDataMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    
+    
     //横向线段配置
-    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: -4)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: -4))]
+    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
     //竖向线段配置
     var verticalLines:[VerticalLine] = []
     //竖向线段颜色配置
