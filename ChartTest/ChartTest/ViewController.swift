@@ -48,6 +48,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         chartModel.lineModel.points = points
 
         lineChartView.chartModel = chartModel
+        segmentView.selectIndex(index: 0, withDelegate: true)
     }
     
     func loadData() -> [String: [String]]? {
@@ -155,6 +156,8 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
                 
+                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
+                
                 lineChartView.chartModel.topAxisLineStyle = .none
                 lineChartView.chartModel.rightAxisLineStyle = .none
                 lineChartView.chartModel.leftAxisLineStyle = .none
@@ -181,6 +184,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
                 
+                lineChartView.chartModel.lineModel.datalineStyle = .straight(width: 2, color: .black)
+
+                
                 lineChartView.chartModel.topAxisLineStyle = .none
                 lineChartView.chartModel.rightAxisLineStyle = .none
                 lineChartView.chartModel.leftAxisLineStyle = .none
@@ -206,6 +212,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             case 2:
                 lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                
+                lineChartView.chartModel.lineModel.datalineStyle = .straight(width: 2, color: .black)
+
                 
                 lineChartView.chartModel.topAxisLineStyle = .none
                 lineChartView.chartModel.rightAxisLineStyle = .none

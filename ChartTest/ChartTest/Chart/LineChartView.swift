@@ -396,6 +396,7 @@ class ChartLineModel{
     }
     var x:Double = 0
     var y:Double = 0
+    
     //点击后显示的半透明块的大小
     var detailSize:CGSize = .init(width: 80, height: 40)
     var detailFont:UIFont = .systemFont(ofSize: 12)
