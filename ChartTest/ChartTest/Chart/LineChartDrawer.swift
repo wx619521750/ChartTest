@@ -414,10 +414,7 @@ class LineChartDrawer {
             ctx.restoreGState()
 
             switch horizontalLine.lableStyle {
-            case .top(let _, let _, let _):
-                break
-            case .bottom(let _, let _, let _):
-                break
+            
             case .left(let color, let font, let offset):
                 point.x = chartModel.chartContentInsert.left+(offset ?? 0)
                 if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
@@ -453,8 +450,7 @@ class LineChartDrawer {
                     drawText(attrStr, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: point.y), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: .init(top: 4, left: 8, bottom: 4, right: 8))
                     UIGraphicsPopContext()
                 }
-            case .none:
-                break
+            default:break
             }
 
         }
@@ -596,7 +592,7 @@ class LineChartDrawer {
     
     //绘制轴线的刻度文本
     func drawAxisLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
-       
+        
         var stamps = [TimeInterval]()
         let range = chartModel.maxX - chartModel.minX
         var dateFormat = "HH:mm"
@@ -636,8 +632,7 @@ class LineChartDrawer {
         }
         
         switch chartModel.bottomAxisLabelStyel {
-        case .top(_, _,_):
-            break
+            
         case .bottom(let color, let font,let offset):
             for item in stamps{
                 let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
@@ -654,95 +649,111 @@ class LineChartDrawer {
             }
             ctx.strokePath()
             
-        case .left(_, _,_):
-            break
-        case .right(_, _,_):
-            break
-        case .none:
-            break
-        }
-        
-        switch chartModel.rightAxisLabelStyel {
-        case .top(_, _,_):
-            break
-        case .bottom(_, _,_):
-            break
-        case .left( _,  _,_):
-            break
-        case .right(let color, let font,let offset):
-           
-            break
-        case .none:
+        default:
             break
         }
         
         switch chartModel.bottomAxisMaxMinStyel {
-        case .top( _,  _,_):
-            break
+            
         case .bottom(let color, let font, let offset):
             let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
-                let miny = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
-                let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
-                let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
-                UIGraphicsPushContext(ctx)
+            let miny = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+            let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
+            let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
+            UIGraphicsPushContext(ctx)
             drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxminy, font: font, color: color)
-                UIGraphicsPopContext()
+            UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
-                let maxy = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
-                let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
-                let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
-                UIGraphicsPushContext(ctx)
+            let maxy = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+            let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
+            let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
+            UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy, font: font, color: color)
-                UIGraphicsPopContext()
+            UIGraphicsPopContext()
             ctx.strokePath()
-        case .left( _,  _,_):
-            break
-        case .right( _,  _,_):
-            break
-        case .none:
+        default:
             break
         }
         
         switch chartModel.rightAxisMaxMinStyel {
-        case .top( _,  _,_):
-            break
-        case .bottom(_, _, _):
-           break
+            
         case .left(let color, let font, let offset):
             let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
+            let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
             let minstr = NSAttributedString(string: "\(chartModel.minY)", attributes: [.foregroundColor:color,.font:font])
-                UIGraphicsPushContext(ctx)
+            UIGraphicsPushContext(ctx)
             drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxmaxy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-                UIGraphicsPopContext()
+            UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxy = chartModel.chartContentInsert.top
+            let maxy = chartModel.chartContentInsert.top
             let maxstr = NSAttributedString(string: "\(chartModel.maxY)", attributes: [.foregroundColor:color,.font:font])
-                UIGraphicsPushContext(ctx)
+            UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
-                UIGraphicsPopContext()
+            UIGraphicsPopContext()
             ctx.strokePath()
             break
         case .right(let color, let font, let offset):
             let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
-            let minstr = "\(chartModel.minY)"
-                UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
-                UIGraphicsPopContext()
+            let miny = layer.bounds.height - chartModel.chartContentInsert.bottom
+            let minstr = NSAttributedString(string: "\(chartModel.minY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxmaxy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxy = chartModel.chartContentInsert.top
-            let maxstr = "\(chartModel.maxY)"
-                UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .minxminy, font: font, color: color)
-                UIGraphicsPopContext()
+            let maxy = chartModel.chartContentInsert.top
+            let maxstr = NSAttributedString(string: "\(chartModel.maxY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy,backgroundColor: .white,cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
             ctx.strokePath()
             break
-        case .none:
+        default:break
+        }
+        
+        switch chartModel.rightAxisDataMaxMinStyel {
+            
+        case .left(let color, let font, let offset):
+            let ys = data.map { $0.y }
+            let dataMinY = ys.min() ?? 0
+            let dataMaxY = ys.max() ?? 0
+            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+            let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
+            let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
+            ctx.strokePath()
+            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+            let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
+            let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
+            ctx.strokePath()
             break
+        case .right(let color, let font, let offset):
+            let ys = data.map { $0.y }
+            let dataMinY = ys.min() ?? 0
+            let dataMaxY = ys.max() ?? 0
+            let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+            let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
+            let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
+            ctx.strokePath()
+            let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
+            let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
+            let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+            UIGraphicsPushContext(ctx)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: .init(top: 4, left: 8, bottom: 4, right: 8))
+            UIGraphicsPopContext()
+            ctx.strokePath()
+            break
+        default:break
         }
         
     }
@@ -911,9 +922,16 @@ class LineChartDrawer {
                 y: point.y - backgroundSize.height * 0.5
             )
         }
+        if backgroundOrigin.y<chartModel.chartContentInsert.top{
+            backgroundOrigin.y = chartModel.chartContentInsert.top
+        }
+        if backgroundOrigin.y+backgroundSize.height>layer.bounds.height-chartModel.chartContentInsert.bottom{
+            backgroundOrigin.y = layer.bounds.height-chartModel.chartContentInsert.bottom-backgroundSize.height
+        }
         
         // 4. 创建背景绘制区域
         let backgroundRect = CGRect(origin: backgroundOrigin, size: backgroundSize)
+        
         
         // 5. 如果有背景色，绘制圆角背景 - 自动计算圆角半径
         if let bgColor = backgroundColor {
@@ -932,7 +950,7 @@ class LineChartDrawer {
             x: backgroundOrigin.x + padding.left,
             y: backgroundOrigin.y + padding.top
         )
-        
+       
         // 7. 绘制文本
         text.draw(in: CGRect(origin: textOrigin, size: textSize))
     }

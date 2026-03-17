@@ -308,17 +308,17 @@ import UIKit
     var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
-    var horizontalAxisFullFrame = true
-    var verticalAxisFullFrame = false
-    var showGraduation = false
-    //顶部轴线文字配置
+
+    //顶部轴线最大最小值配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
-    //底部轴线文字配置
+    //底部轴线最大最小值配置
     var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset:20)
-    //左部轴线文字配置
+    //左部轴线最大最小值配置
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
-    //右部轴线文字配置
-    var rightAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    //右部轴线最大最小值配置
+    var rightAxisMaxMinStyel:AxisLabelStyle = .none
+    //右部数据最大最小值配置
+    var rightAxisDataMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     //横向线段配置
     var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: -4)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: -4))]
     //竖向线段配置
@@ -337,8 +337,13 @@ import UIKit
     //保存当前点击的图标数据
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
-    var yRangeType:YRangeType = .selfAdaptVisible
-    
+    var yRangeType:YRangeType = .fixed(min: 19, max: 100)
+    //水平坐标轴是否全屏显示
+    var horizontalAxisFullFrame = true
+    //垂直坐标轴是否全屏显示
+    var verticalAxisFullFrame = false
+    //是否显示刻度尺
+    var showGraduation = false
     
 }
 
