@@ -54,6 +54,11 @@ import UIKit
     
     func dealData(){
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
+        let tempCurrentDatePoint = ChartPointModel()
+        tempCurrentDatePoint.x = Date().timeIntervalSince1970
+        tempCurrentDatePoint.y = chartModel.lineModel.points.last?.y ?? 0
+        tempCurrentDatePoint.isCurrentDatePoint = true
+        chartModel.lineModel.points.append(tempCurrentDatePoint)
         let xs = chartModel.lineModel.points.map { $0.x }
         chartModel.minX = (xs.min() ?? 0)
         chartModel.maxX = (xs.max() ?? 0)
@@ -187,7 +192,11 @@ import UIKit
                    chartModel.tapedItem?.style = .normal
                    chartModel.tapedItem = item
                    chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
-                   chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [4,2]))]
+                   if let item = item,let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
+                       chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: firstRange.color, lengths: [6,3]))]
+                   }else{
+                       chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [6,3]))]
+                   }
                    self.setNeedsDisplay()
                }else{
                    let translation = gesture.translation(in: self)
@@ -195,7 +204,16 @@ import UIKit
                    let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
                    let newMaxX = self.chartModel.maxX - offset
                    let newMinX = self.chartModel.minX - offset
-                   if  newMinX < (chartModel.lineModel.points.first?.x ?? 0) || newMaxX > (chartModel.lineModel.points.last?.x ?? 0){
+                   if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
+                       self.chartModel.minX = firstX
+                       self.setNeedsDisplay()
+                       delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+                       return
+                   }
+                   if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
+                       self.chartModel.maxX = lastX
+                       self.setNeedsDisplay()
+                       delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
                        return
                    }
                    self.chartModel.maxX -= offset
@@ -396,7 +414,7 @@ class ChartLineModel{
     }
     var x:Double = 0
     var y:Double = 0
-    
+    var isCurrentDatePoint =  false
     //点击后显示的半透明块的大小
     var detailSize:CGSize = .init(width: 80, height: 40)
     var detailFont:UIFont = .systemFont(ofSize: 12)

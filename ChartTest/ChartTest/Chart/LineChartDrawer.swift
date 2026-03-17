@@ -31,10 +31,10 @@ class LineChartDrawer {
     
     //处理数据，获取可视范围数据，获取没有数据的区域，数据量多的时候重采样
     func dealData(data:[ChartPointModel]){
-       
+        
         let leftData = data.last(where: {$0.x<=chartModel.minX}) ?? ChartPointModel()
         let rightData = data.first(where: {$0.x>=chartModel.maxX}) ?? ChartPointModel()
-
+        data.first(where: {$0.isCurrentDatePoint})?.x = Date().timeIntervalSince1970
         let vasivledata = data.filter({
             ($0.x>=leftData.x)&&($0.x<=rightData.x)
         })
@@ -71,6 +71,9 @@ class LineChartDrawer {
         for i in 0..<(points.count - 1) {
             let currentPoint = points[i]
             let nextPoint = points[i + 1]
+            if nextPoint.isCurrentDatePoint{
+                continue
+            }
             
             // 检查后一个点比前一个点的x值是否大于threshold
             if nextPoint.x - currentPoint.x > threshold {
@@ -276,7 +279,7 @@ class LineChartDrawer {
             ctx.setStrokeColor(color.cgColor)
             for (index,item) in data.enumerated(){
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0{
+                if index == 0||item.isCurrentDatePoint{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }
                 ctx.addLine(to: .init(x: pt.x, y: pt.y))
@@ -287,7 +290,7 @@ class LineChartDrawer {
             for (index,item) in data.enumerated(){
                 print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0{
+                if index == 0||item.isCurrentDatePoint{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     let preItem = data[index-1]
