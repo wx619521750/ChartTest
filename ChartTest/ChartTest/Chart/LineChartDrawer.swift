@@ -415,7 +415,7 @@ class LineChartDrawer {
             ctx.strokePath()
             UIGraphicsPushContext(ctx)
             ctx.restoreGState()
-            let padding = UIEdgeInsets.init(top: 4, left: 8, bottom: 4, right: 8)
+            let padding = UIEdgeInsets.init(top: 4, left: 6, bottom: 4, right: 6)
             switch horizontalLine.lableStyle {
             
             case .left(let color, let font, let offset):
