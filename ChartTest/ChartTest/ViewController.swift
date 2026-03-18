@@ -48,7 +48,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         chartModel.lineModel.points = points
 
         lineChartView.chartModel = chartModel
-        segmentView.selectIndex(index: 0, withDelegate: true)
+        segmentView1.selectIndex(index: 0, withDelegate: true)
     }
     
     func loadData() -> [String: [String]]? {
@@ -181,10 +181,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.showGraduation = false
                 lineChartView.setNeedsDisplay()
             case 1:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
                 
-                lineChartView.chartModel.lineModel.datalineStyle = .straight(width: 2, color: .black)
+                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
 
                 
                 lineChartView.chartModel.topAxisLineStyle = .none
@@ -210,10 +210,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.showGraduation = false
                 lineChartView.setNeedsDisplay()
             case 2:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisible
                 
-                lineChartView.chartModel.lineModel.datalineStyle = .straight(width: 2, color: .black)
+                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
 
                 
                 lineChartView.chartModel.topAxisLineStyle = .none
@@ -227,9 +227,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 
                 lineChartView.chartModel.horizontalLines = []
                 //竖向线段颜色配置
-                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
-                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
-                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .red)]
                 
                 
                 lineChartView.chartModel.horizontalAxisFullFrame = true
