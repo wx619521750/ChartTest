@@ -58,6 +58,7 @@ import UIKit
         tempCurrentDatePoint.x = Date().timeIntervalSince1970
         tempCurrentDatePoint.y = chartModel.lineModel.points.last?.y ?? 0
         tempCurrentDatePoint.isCurrentDatePoint = true
+        
         chartModel.lineModel.points.append(tempCurrentDatePoint)
         let xs = chartModel.lineModel.points.map { $0.x }
         chartModel.minX = (xs.min() ?? 0)
