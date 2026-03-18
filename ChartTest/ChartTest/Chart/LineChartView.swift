@@ -206,13 +206,18 @@ import UIKit
                    let newMaxX = self.chartModel.maxX - offset
                    let newMinX = self.chartModel.minX - offset
                    if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
-                       self.chartModel.minX = firstX
+                       let distance = firstX - self.chartModel.minX
+                       self.chartModel.minX += distance
+                       self.chartModel.maxX += distance
                        self.setNeedsDisplay()
                        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
                        return
                    }
                    if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
-                       self.chartModel.maxX = lastX
+                       let distance = lastX - self.chartModel.maxX
+
+                       self.chartModel.minX += distance
+                       self.chartModel.maxX += distance
                        self.setNeedsDisplay()
                        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
                        return
