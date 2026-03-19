@@ -530,7 +530,7 @@ import UIKit
     //顶部轴线最大最小值配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //底部轴线最大最小值配置
-    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset:20)
+    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset:0)
     //左部轴线最大最小值配置
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线最大最小值配置

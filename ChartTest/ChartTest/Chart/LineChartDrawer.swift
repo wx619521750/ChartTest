@@ -249,7 +249,7 @@ class LineChartDrawer {
             drawDiagonalLines(in: ctx, rect: gapRect, spacing: 10)
             UIGraphicsPushContext(ctx)
             if gapRect.width>10{
-                drawText(NSAttributedString.init(string: "G\nA\nP"), point: .init(x: gapRect.minX+gapRect.width*0.5, y: gapRect.minY+gapRect.height*0.5), anchor: .center)
+                drawText(NSAttributedString.init(string: "G\nA\nP",attributes: [.foregroundColor:UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0),.font:UIFont.systemFont(ofSize: 13)]), point: .init(x: gapRect.minX+gapRect.width*0.5, y: gapRect.minY+gapRect.height*0.5), anchor: .center)
             }
             UIGraphicsPopContext()
         }
@@ -266,7 +266,7 @@ class LineChartDrawer {
        ///   - spacing: 线间距
        private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
            ctx.setLineWidth(1)
-           ctx.setStrokeColor(UIColor.lightGray.withAlphaComponent(0.5).cgColor)
+           ctx.setStrokeColor(UIColor(red: 226/255.0, green: 226/255.0, blue: 226/255.0, alpha: 1.0).cgColor)
            var y = rect.minY-rect.width
            while y>=rect.minY-rect.width&&y<=rect.maxY {
                ctx.move(to: .init(x: rect.origin.x, y: y))
@@ -527,7 +527,8 @@ class LineChartDrawer {
             stamps = alignedTimestamps(start: chartModel.minX, end: chartModel.maxX, step: .months(2))
             dateFormat = "MMM"
         }else{
-            stamps = alignedTimestamps(start: chartModel.minX, end: chartModel.maxX, step: .months(2))
+            let count = range/6/(3600*24*30)
+            stamps = alignedTimestamps(start: chartModel.minX, end: chartModel.maxX, step: .months(Int(count)))
             dateFormat = "MMM"
         }
         
@@ -557,19 +558,19 @@ class LineChartDrawer {
             
         case .bottom(let color, let font, let offset):
             let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
-            let miny = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+            let miny = layer.bounds.height-(offset ?? 0)
             let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
             let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxminy, font: font, color: color)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
             UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
-            let maxy = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+            let maxy = layer.bounds.height-(offset ?? 0)
             let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
             let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxminy, font: font, color: color)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, font: font, color: color)
             UIGraphicsPopContext()
             ctx.strokePath()
         default:
