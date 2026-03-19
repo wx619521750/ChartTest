@@ -238,8 +238,8 @@ class LineChartDrawer {
 
         ctx.clip(to: clipRect)
         for point in chartModel.lineModel.emptyAreas{
-            let point1 = ptPointFromPoint(point: .init(x: point.x, y: 0))
-            let point2 = ptPointFromPoint(point: .init(x: point.y, y: 0))
+            let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
+            let point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
             let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom)
             ctx.addRect(gapRect)
             if let color = (layer.delegate as? UIView)?.backgroundColor?.cgColor{

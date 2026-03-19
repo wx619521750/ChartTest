@@ -138,10 +138,10 @@ import UIKit
     }
     
     //通过两点的距离获取空数据区域
-    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [CGPoint] {
+    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [horizontalEmptyAreaModel] {
         guard points.count > 1 else { return [] }
         
-        var result: [CGPoint] = []
+        var result: [horizontalEmptyAreaModel] = []
         
         for i in 0..<(points.count - 1) {
             let currentPoint = points[i]
@@ -153,7 +153,8 @@ import UIKit
             // 检查后一个点比前一个点的x值是否大于threshold
             if nextPoint.x - currentPoint.x > threshold {
                 // 创建一个新点：x = 前一个点的x, y = 后一个点的x
-                let newPoint = CGPoint(x: currentPoint.x, y: nextPoint.x)
+                let newPoint = horizontalEmptyAreaModel.init(left: currentPoint.x, right: nextPoint.x)
+                
                 result.append(newPoint)
             }
         }
@@ -593,10 +594,21 @@ class ChartLineModel{
     
     var pointsShouldDraw:[ChartPointModel] = [ChartPointModel]()
     //数据空白区域
-    var emptyAreas = [CGPoint]()
+    var emptyAreas = [horizontalEmptyAreaModel]()
 
 
     
+}
+
+class horizontalEmptyAreaModel{
+    var left:CGFloat = 0
+    var right:CGFloat = 0
+    var tapded = false
+    init(left: CGFloat, right: CGFloat, tapded: Bool = false) {
+        self.left = left
+        self.right = right
+        self.tapded = tapded
+    }
 }
 
 //图标点模型
