@@ -394,14 +394,6 @@ class LineChartDrawer {
         guard case let .circle(radius ,width ,color) =  item.style else{return}
         ctx.saveGState()
         let point = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-//        let clipRect = CGRect(
-//            x: chartModel.chartContentInsert.left,
-//            y: chartModel.chartContentInsert.top,
-//            width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-//            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
-//        )
-//
-//        ctx.clip(to: clipRect)
         if chartModel.chartContentInsert.left>point.x||point.x>layer.bounds.width-chartModel.chartContentInsert.right||chartModel.chartContentInsert.top>point.y||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
             return
         }
@@ -425,6 +417,13 @@ class LineChartDrawer {
                 width: (radius-width*0.5) * 2,
                 height: (radius-width*0.5) * 2
             ))
+            ctx.fillPath()
+            ctx.setStrokeColor(firstRange.color.cgColor)
+            ctx.setLineWidth(1)
+            ctx.setLineDash(phase: 0, lengths: [6,3])
+            ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
+            ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            ctx.strokePath()
         }else{
             ctx.setLineWidth(width)
             ctx.setStrokeColor(color.cgColor)
@@ -444,9 +443,16 @@ class LineChartDrawer {
                 width: (radius-width*0.5) * 2,
                 height: (radius-width*0.5) * 2
             ))
+            ctx.fillPath()
+            ctx.setStrokeColor(color.cgColor)
+            ctx.setLineWidth(1)
+            ctx.setLineDash(phase: 0, lengths: [6,3])
+            ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
+            ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+            ctx.strokePath()
         }
         
-        ctx.fillPath()
+        
         ctx.restoreGState()
         let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
         item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])

@@ -320,11 +320,7 @@ import UIKit
         chartModel.tapedItem?.style = .normal
         chartModel.tapedItem = item
         chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
-        if let item = item,let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
-            chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: firstRange.color, lengths: [6,3]))]
-        }else{
-            chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [6,3]))]
-        }
+
         self.setNeedsDisplay()
     }
     
