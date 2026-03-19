@@ -14,125 +14,19 @@ class LineChartDrawer {
     var chartModel = ChartModel()
     var layer = CALayer()
     //需要绘制的数据
-    var pointsShouldDraw:[ChartPointModel] = [ChartPointModel]()
-    //数据空白区域
-    var emptyAreas = [CGPoint]()
+
     func draw(layer:CALayer,ctx:CGContext,chartModel:ChartModel){
         self.chartModel = chartModel
         self.layer = layer
-        dealData(data: chartModel.lineModel.points)
-        drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
-        drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
-        drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
-        drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
-        drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
-        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: pointsShouldDraw)
+        drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
     }
     
-    //处理数据，获取可视范围数据，获取没有数据的区域，数据量多的时候重采样
-    func dealData(data:[ChartPointModel]){
-        
-        let leftData = data.last(where: {$0.x<=chartModel.minX}) ?? ChartPointModel()
-        let rightData = data.first(where: {$0.x>=chartModel.maxX}) ?? ChartPointModel()
-        data.first(where: {$0.isCurrentDatePoint})?.x = Date().timeIntervalSince1970
-        let vasivledata = data.filter({
-            ($0.x>=leftData.x)&&($0.x<=rightData.x)
-        })
-        switch chartModel.yRangeType {
-        case .selfAdaptAll:
-            let ys = data.map { $0.y }
-            chartModel.minY = ys.min() ?? 0
-            chartModel.maxY = ys.max() ?? 0
-        case .selfAdaptVisible:
-            let ys = vasivledata.map { $0.y }
-            chartModel.minY = ys.min() ?? 0
-            chartModel.maxY = ys.max() ?? 0
-        case .fixed(let min, let max):
-            chartModel.minY = min
-            chartModel.maxY = max
-        case .selfAdaptVisibleWithMinMax(let min,let max):
-            let ys = vasivledata.map { $0.y }
-            let dataMin = ys.min() ?? 0
-            let dataMax = ys.max() ?? 0
-            chartModel.minY = min<dataMin ? min:dataMin
-            chartModel.maxY = max>dataMax ? max:dataMax
-        }
-        (layer.delegate as? LineChartView)?.delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
-        emptyAreas = filterPointsByXDistance(vasivledata)
-        pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
-    }
-    
-    //通过两点的距离获取空数据区域
-    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [CGPoint] {
-        guard points.count > 1 else { return [] }
-        
-        var result: [CGPoint] = []
-        
-        for i in 0..<(points.count - 1) {
-            let currentPoint = points[i]
-            let nextPoint = points[i + 1]
-            if nextPoint.isCurrentDatePoint{
-                continue
-            }
-            
-            // 检查后一个点比前一个点的x值是否大于threshold
-            if nextPoint.x - currentPoint.x > threshold {
-                // 创建一个新点：x = 前一个点的x, y = 后一个点的x
-                let newPoint = CGPoint(x: currentPoint.x, y: nextPoint.x)
-                result.append(newPoint)
-            }
-        }
-        
-        return result
-    }
-    //数据量多的时候重载样
-    func resampleLTTB(
-        data: [ChartPointModel],
-        threshold: Int
-    ) -> [ChartPointModel] {
-        guard threshold < data.count else { return data }
-
-        let bucketSize = Double(data.count - 2) / Double(threshold - 2)
-        var result: [ChartPointModel] = []
-        result.append(data.first!)
-
-        var a = 0
-
-        for i in 0..<(threshold - 2) {
-            let rangeStart = Int(Double(i + 1) * bucketSize) + 1
-            let rangeEnd = Int(Double(i + 2) * bucketSize) + 1
-
-            let nextStart = Int(Double(i + 2) * bucketSize) + 1
-            let nextEnd = Int(Double(i + 3) * bucketSize) + 1
-
-            let avgX = data[rangeStart..<min(nextEnd, data.count)]
-                .map(\.x).reduce(0, +) / CGFloat(nextEnd - rangeStart)
-            let avgY = data[rangeStart..<min(nextEnd, data.count)]
-                .map(\.y).reduce(0, +) / CGFloat(nextEnd - rangeStart)
-
-            var maxArea: CGFloat = -1
-            var selected = data[rangeStart]
-            for j in rangeStart..<min(rangeEnd, data.count) {
-                let area = abs(
-                    (data[a].x - avgX) * (data[j].y - data[a].y) -
-                    (data[a].x - data[j].x) * (avgY - data[a].y)
-                )
-                if area > maxArea {
-                    maxArea = area
-                    selected = data[j]
-                }
-                //添加正在展示的点
-                if data[j].x == chartModel.tapedItem?.x&&chartModel.tapedItem?.style != .normal{
-                    result.append(data[j])
-                }
-            }
-            result.append(selected)
-            a = data.firstIndex { $0.x == selected.x && $0.y == selected.y }!
-        }
-
-        result.append(data.last!)
-        return result
-    }
+   
     
     //绘制坐标轴
     func drawAxis(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
@@ -279,7 +173,7 @@ class LineChartDrawer {
             ctx.setStrokeColor(color.cgColor)
             for (index,item) in data.enumerated(){
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.isCurrentDatePoint{
+                if index == 0||item.dataType == .latestDate{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }
                 ctx.addLine(to: .init(x: pt.x, y: pt.y))
@@ -290,7 +184,7 @@ class LineChartDrawer {
             for (index,item) in data.enumerated(){
                 print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.isCurrentDatePoint{
+                if index == 0||item.dataType == .latestDate{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     let preItem = data[index-1]
@@ -343,7 +237,7 @@ class LineChartDrawer {
         )
 
         ctx.clip(to: clipRect)
-        for point in emptyAreas{
+        for point in chartModel.lineModel.emptyAreas{
             let point1 = ptPointFromPoint(point: .init(x: point.x, y: 0))
             let point2 = ptPointFromPoint(point: .init(x: point.y, y: 0))
             let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom)
@@ -352,7 +246,7 @@ class LineChartDrawer {
                 ctx.setFillColor(color)
             }
             ctx.fillPath()
-            drawDiagonalLines(in: ctx, rect: gapRect, spacing: 15)
+            drawDiagonalLines(in: ctx, rect: gapRect, spacing: 10)
             UIGraphicsPushContext(ctx)
             if gapRect.width>10{
                 drawText(NSAttributedString.init(string: "G\nA\nP"), point: .init(x: gapRect.minX+gapRect.width*0.5, y: gapRect.minY+gapRect.height*0.5), anchor: .center)
@@ -720,7 +614,7 @@ class LineChartDrawer {
         }
         
         let vasivledata = data.filter({
-            ($0.x>=chartModel.minX)&&($0.x<=chartModel.maxX)&&$0.isCurrentDatePoint == false
+            ($0.x>=chartModel.minX)&&($0.x<=chartModel.maxX)&&$0.dataType == .data
         })
         if vasivledata.count>0{
             let padding:UIEdgeInsets = .init(top: 0, left: 0, bottom: 0, right: 0)
@@ -776,7 +670,7 @@ class LineChartDrawer {
     func rightAxisDataMaxMinDrawY(font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
 
-        let ys = self.pointsShouldDraw.map { $0.y }
+        let ys = chartModel.lineModel.pointsShouldDraw.map { $0.y }
         let dataMinY = ys.min() ?? 0
         let dataMaxY = ys.max() ?? 0
         var miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y

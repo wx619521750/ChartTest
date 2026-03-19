@@ -39,7 +39,8 @@ import UIKit
 
     override func draw(_ layer: CALayer, in ctx: CGContext) {
                 super.draw(layer, in: ctx)
-        self.drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
+        dealModels()
+        drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
     }
     override func draw(_ rect: CGRect) {
         super.draw(rect)
@@ -53,19 +54,162 @@ import UIKit
     }
     
     func dealData(){
-        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
-        let tempCurrentDatePoint = ChartPointModel()
-        tempCurrentDatePoint.x = Date().timeIntervalSince1970
-        tempCurrentDatePoint.y = chartModel.lineModel.points.last?.y ?? 0
-        tempCurrentDatePoint.isCurrentDatePoint = true
-        
-        chartModel.lineModel.points.append(tempCurrentDatePoint)
+        addLatestModel()
+        AddEmptyAreasModel()
         let xs = chartModel.lineModel.points.map { $0.x }
         chartModel.minX = (xs.min() ?? 0)
         chartModel.maxX = (xs.max() ?? 0)
+        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
+        dealModels()
         changeDateMode(mode: chartModel.dateMode)
         delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
         delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+    }
+    
+    func dealModels(){
+        var vasivledata = [ChartPointModel]()
+        let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
+        let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
+        chartModel.lineModel.points.first(where: {$0.dataType == .latestDate})?.x = Date().timeIntervalSince1970
+        if let leftData = leftData,let rightData = rightData{
+            vasivledata = chartModel.lineModel.points.filter({
+                ($0.x>=leftData.x)&&($0.x<=rightData.x)
+            })
+        }
+        if let leftData = leftData,rightData == nil{
+            vasivledata = chartModel.lineModel.points.filter({
+                ($0.x>=leftData.x)
+            })
+        }
+        if leftData == nil,let rightData = rightData{
+            vasivledata = chartModel.lineModel.points.filter({
+                ($0.x<=rightData.x)
+            })
+        }
+        switch chartModel.yRangeType {
+        case .selfAdaptAll:
+            let ys = chartModel.lineModel.points.map { $0.y }
+            chartModel.minY = ys.min() ?? 0
+            chartModel.maxY = ys.max() ?? 0
+        case .selfAdaptVisible:
+            let ys = vasivledata.map { $0.y }
+            chartModel.minY = ys.min() ?? 0
+            chartModel.maxY = ys.max() ?? 0
+        case .fixed(let min, let max):
+            chartModel.minY = min
+            chartModel.maxY = max
+        case .selfAdaptVisibleWithMinMax(let min,let max):
+            let ys = vasivledata.map { $0.y }
+            let dataMin = ys.min() ?? 0
+            let dataMax = ys.max() ?? 0
+            chartModel.minY = min<dataMin ? min:dataMin
+            chartModel.maxY = max>dataMax ? max:dataMax
+        }
+        delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
+        chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
+    }
+    
+    
+    
+    func addLatestModel(){
+        chartModel.lineModel.points.removeAll(where: {$0.dataType == .latestDate})
+        let tempCurrentDatePoint = ChartPointModel()
+        tempCurrentDatePoint.x = Date().timeIntervalSince1970
+        tempCurrentDatePoint.y = chartModel.lineModel.points.last?.y ?? 0
+        tempCurrentDatePoint.dataType = .latestDate
+        chartModel.lineModel.points.append(tempCurrentDatePoint)
+        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
+
+    }
+    
+    func AddEmptyAreasModel(){
+        chartModel.lineModel.emptyAreas = filterPointsByXDistance(chartModel.lineModel.points)
+        chartModel.lineModel.points.removeAll(where: {$0.dataType == .gap})
+        for point in chartModel.lineModel.emptyAreas {
+            let model = ChartPointModel.init()
+            model.x = (point.x+point.y)*0.5
+            model.y = 0
+            model.dataType = .gap
+            chartModel.lineModel.points.append(model)
+        }
+        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
+    }
+    
+    //通过两点的距离获取空数据区域
+    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [CGPoint] {
+        guard points.count > 1 else { return [] }
+        
+        var result: [CGPoint] = []
+        
+        for i in 0..<(points.count - 1) {
+            let currentPoint = points[i]
+            let nextPoint = points[i + 1]
+            if nextPoint.dataType != .data{
+                continue
+            }
+            
+            // 检查后一个点比前一个点的x值是否大于threshold
+            if nextPoint.x - currentPoint.x > threshold {
+                // 创建一个新点：x = 前一个点的x, y = 后一个点的x
+                let newPoint = CGPoint(x: currentPoint.x, y: nextPoint.x)
+                result.append(newPoint)
+            }
+        }
+        
+       
+        
+        return result
+    }
+    
+
+    
+    //数据量多的时候重载样
+    func resampleLTTB(
+        data: [ChartPointModel],
+        threshold: Int
+    ) -> [ChartPointModel] {
+        guard threshold < data.count else { return data }
+
+        let bucketSize = Double(data.count - 2) / Double(threshold - 2)
+        var result: [ChartPointModel] = []
+        result.append(data.first!)
+
+        var a = 0
+
+        for i in 0..<(threshold - 2) {
+            let rangeStart = Int(Double(i + 1) * bucketSize) + 1
+            let rangeEnd = Int(Double(i + 2) * bucketSize) + 1
+
+            let nextStart = Int(Double(i + 2) * bucketSize) + 1
+            let nextEnd = Int(Double(i + 3) * bucketSize) + 1
+
+            let avgX = data[rangeStart..<min(nextEnd, data.count)]
+                .map(\.x).reduce(0, +) / CGFloat(nextEnd - rangeStart)
+            let avgY = data[rangeStart..<min(nextEnd, data.count)]
+                .map(\.y).reduce(0, +) / CGFloat(nextEnd - rangeStart)
+
+            var maxArea: CGFloat = -1
+            var selected = data[rangeStart]
+            for j in rangeStart..<min(rangeEnd, data.count) {
+                let area = abs(
+                    (data[a].x - avgX) * (data[j].y - data[a].y) -
+                    (data[a].x - data[j].x) * (avgY - data[a].y)
+                )
+                if area > maxArea {
+                    maxArea = area
+                    selected = data[j]
+                }
+                //添加正在展示的点
+                if data[j].x == chartModel.tapedItem?.x&&chartModel.tapedItem?.style != .normal{
+                    result.append(data[j])
+                }
+            }
+            result.append(selected)
+            a = data.firstIndex { $0.x == selected.x && $0.y == selected.y }!
+        }
+
+        result.append(data.last!)
+        return result
     }
     
     
@@ -120,7 +264,7 @@ import UIKit
         
         let point = gesture.location(in: self)
         let dataPoint = dataPointFromPointInView(point: point)
-        let item = nearestItem(in: self.drawer.pointsShouldDraw, to: dataPoint.x)
+        let item = nearestItem(in: chartModel.lineModel.pointsShouldDraw, to: dataPoint.x)
         chartModel.tapedItem?.style = .normal
         chartModel.tapedItem = item
         chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
@@ -147,7 +291,7 @@ import UIKit
         guard !items.isEmpty else { return nil }
 
         return items.min {
-            abs($0.x - x) < abs($1.x - x)
+            abs($0.x - x) < abs($1.x - x)&&$0.dataType != .latestDate
         }
     }
     
@@ -189,7 +333,7 @@ import UIKit
                if isLabelPaning{
                    let point = gesture.location(in: self)
                    let dataPoint = dataPointFromPointInView(point: point)
-                   let item = nearestItem(in: self.drawer.pointsShouldDraw, to: dataPoint.x)
+                   let item = nearestItem(in: chartModel.lineModel.pointsShouldDraw, to: dataPoint.x)
                    chartModel.tapedItem?.style = .normal
                    chartModel.tapedItem = item
                    chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
@@ -205,6 +349,11 @@ import UIKit
                    let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
                    let newMaxX = self.chartModel.maxX - offset
                    let newMinX = self.chartModel.minX - offset
+                   if chartModel.canScrollToFuture{
+                       
+                   }else{
+                       
+                   }
                    if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
                        let distance = firstX - self.chartModel.minX
                        self.chartModel.minX += distance
@@ -378,6 +527,10 @@ import UIKit
     //是否显示刻度尺
     var showGraduation = false
     
+    var canScrollToFuture = false
+    
+
+    
 }
 
 
@@ -397,12 +550,20 @@ class ChartLineModel{
     var points:[ChartPointModel] = [ChartPointModel]()
     
     var pointsShouldDraw:[ChartPointModel] = [ChartPointModel]()
+    //数据空白区域
+    var emptyAreas = [CGPoint]()
+
 
     
 }
 
 //图标点模型
 @objcMembers class ChartPointModel {
+    enum DataType{
+        case latestDate
+        case gap
+        case data
+    }
     enum Style:Equatable {
         case normal
         case circle(radius:CGFloat,width:CGFloat,color:UIColor)
@@ -420,7 +581,7 @@ class ChartLineModel{
     }
     var x:Double = 0
     var y:Double = 0
-    var isCurrentDatePoint =  false
+    var dataType =  DataType.data
     //点击后显示的半透明块的大小
     var detailSize:CGSize = .init(width: 80, height: 40)
     var detailFont:UIFont = .systemFont(ofSize: 12)
