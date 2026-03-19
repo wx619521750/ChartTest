@@ -151,6 +151,94 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 
             }
         }else{
+//            switch selectedIndex{
+//            case 0:
+//                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+//                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
+//                
+//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
+//                
+//                lineChartView.chartModel.topAxisLineStyle = .none
+//                lineChartView.chartModel.rightAxisLineStyle = .none
+//                lineChartView.chartModel.leftAxisLineStyle = .none
+//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+//                
+//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+//                
+//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+//                
+//                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
+//                //竖向线段颜色配置
+//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+//                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+//                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+//                
+//                
+//                lineChartView.chartModel.horizontalAxisFullFrame = true
+//                //垂直坐标轴是否全屏显示
+//                lineChartView.chartModel.verticalAxisFullFrame = false
+//                //是否显示刻度尺
+//                lineChartView.chartModel.showGraduation = false
+//                lineChartView.setNeedsDisplay()
+//            case 1:
+//                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
+//                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+//                
+//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
+//
+//                
+//                lineChartView.chartModel.topAxisLineStyle = .none
+//                lineChartView.chartModel.rightAxisLineStyle = .none
+//                lineChartView.chartModel.leftAxisLineStyle = .none
+//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+//                
+//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+//                
+//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+//                
+//                lineChartView.chartModel.horizontalLines = []
+//                //竖向线段颜色配置
+//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+//                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+//                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
+//                
+//                
+//                lineChartView.chartModel.horizontalAxisFullFrame = true
+//                //垂直坐标轴是否全屏显示
+//                lineChartView.chartModel.verticalAxisFullFrame = false
+//                //是否显示刻度尺
+//                lineChartView.chartModel.showGraduation = false
+//                lineChartView.setNeedsDisplay()
+//            case 2:
+//                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
+//                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+//                
+//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
+//
+//                
+//                lineChartView.chartModel.topAxisLineStyle = .none
+//                lineChartView.chartModel.rightAxisLineStyle = .none
+//                lineChartView.chartModel.leftAxisLineStyle = .none
+//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [6,3])
+//                
+//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
+//                
+//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+//                
+//                lineChartView.chartModel.horizontalLines = []
+//                //竖向线段颜色配置
+//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .red)]
+//                
+//                
+//                lineChartView.chartModel.horizontalAxisFullFrame = true
+//                //垂直坐标轴是否全屏显示
+//                lineChartView.chartModel.verticalAxisFullFrame = false
+//                //是否显示刻度尺
+//                lineChartView.chartModel.showGraduation = false
+//                lineChartView.setNeedsDisplay()
+//            default:break
+//            }
+            
             switch selectedIndex{
             case 0:
                 lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
@@ -179,13 +267,14 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.verticalAxisFullFrame = false
                 //是否显示刻度尺
                 lineChartView.chartModel.showGraduation = false
+                lineChartView.chartModel.XRangeType = .unlimited
+
                 lineChartView.setNeedsDisplay()
             case 1:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
-                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
                 
                 lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
-
                 
                 lineChartView.chartModel.topAxisLineStyle = .none
                 lineChartView.chartModel.rightAxisLineStyle = .none
@@ -194,9 +283,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 
                 lineChartView.chartModel.rightAxisMaxMinStyel = .none
                 
-                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
                 
-                lineChartView.chartModel.horizontalLines = []
+                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
                 //竖向线段颜色配置
                 lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
                                                                 .init(showType: .line, top: 60, bottom: 20, color: .yellow),
@@ -208,13 +297,14 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.verticalAxisFullFrame = false
                 //是否显示刻度尺
                 lineChartView.chartModel.showGraduation = false
+                lineChartView.chartModel.XRangeType = .limitedByData
+
                 lineChartView.setNeedsDisplay()
             case 2:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 0, bottom: 40, right: 0)
-                lineChartView.chartModel.yRangeType = .selfAdaptVisible
+                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
                 
                 lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
-
                 
                 lineChartView.chartModel.topAxisLineStyle = .none
                 lineChartView.chartModel.rightAxisLineStyle = .none
@@ -223,11 +313,13 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 
                 lineChartView.chartModel.rightAxisMaxMinStyel = .none
                 
-                lineChartView.chartModel.rightAxisDataMaxMinStyel = .none
+                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
                 
-                lineChartView.chartModel.horizontalLines = []
+                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
                 //竖向线段颜色配置
-                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .red)]
+                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: .red),
+                                                                .init(showType: .line, top: 60, bottom: 20, color: .yellow),
+                                                                .init(showType: .line, top: 20, bottom: 0, color: .green)]
                 
                 
                 lineChartView.chartModel.horizontalAxisFullFrame = true
@@ -235,6 +327,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 lineChartView.chartModel.verticalAxisFullFrame = false
                 //是否显示刻度尺
                 lineChartView.chartModel.showGraduation = false
+                lineChartView.chartModel.XRangeType = .distaceByNow(3600*24*365)
                 lineChartView.setNeedsDisplay()
             default:break
             }

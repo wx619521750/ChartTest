@@ -54,8 +54,7 @@ import UIKit
     }
     
     func dealData(){
-        addLatestModel()
-        AddEmptyAreasModel()
+//        addBoundaryModel()
         let xs = chartModel.lineModel.points.map { $0.x }
         chartModel.minX = (xs.min() ?? 0)
         chartModel.maxX = (xs.max() ?? 0)
@@ -70,7 +69,7 @@ import UIKit
         var vasivledata = [ChartPointModel]()
         let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
         let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
-        chartModel.lineModel.points.first(where: {$0.dataType == .latestDate})?.x = Date().timeIntervalSince1970
+//        addBoundaryModel()
         if let leftData = leftData,let rightData = rightData{
             vasivledata = chartModel.lineModel.points.filter({
                 ($0.x>=leftData.x)&&($0.x<=rightData.x)
@@ -85,6 +84,9 @@ import UIKit
             vasivledata = chartModel.lineModel.points.filter({
                 ($0.x<=rightData.x)
             })
+        }
+        if leftData == nil, rightData == nil{
+            vasivledata = chartModel.lineModel.points
         }
         switch chartModel.yRangeType {
         case .selfAdaptAll:
@@ -105,34 +107,34 @@ import UIKit
             chartModel.minY = min<dataMin ? min:dataMin
             chartModel.maxY = max>dataMax ? max:dataMax
         }
+        chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
         delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
     }
     
     
     
-    func addLatestModel(){
-        chartModel.lineModel.points.removeAll(where: {$0.dataType == .latestDate})
-        let tempCurrentDatePoint = ChartPointModel()
-        tempCurrentDatePoint.x = Date().timeIntervalSince1970
-        tempCurrentDatePoint.y = chartModel.lineModel.points.last?.y ?? 0
-        tempCurrentDatePoint.dataType = .latestDate
-        chartModel.lineModel.points.append(tempCurrentDatePoint)
-        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
-
-    }
-    
-    func AddEmptyAreasModel(){
-        chartModel.lineModel.emptyAreas = filterPointsByXDistance(chartModel.lineModel.points)
-        chartModel.lineModel.points.removeAll(where: {$0.dataType == .gap})
-        for point in chartModel.lineModel.emptyAreas {
-            let model = ChartPointModel.init()
-            model.x = (point.x+point.y)*0.5
-            model.y = 0
-            model.dataType = .gap
-            chartModel.lineModel.points.append(model)
+    func addBoundaryModel(){
+        switch chartModel.XRangeType {
+        case .unlimited:
+            break
+        case .limitedByData:
+            break
+        case .distaceByNow(let double):
+            chartModel.lineModel.points.removeAll(where: {$0.dataType == .boundary})
+            let max = ChartPointModel()
+            max.x = Date().timeIntervalSince1970
+            max.y = chartModel.lineModel.points.last?.y ?? 0
+            max.dataType = .boundary
+            chartModel.lineModel.points.append(max)
+            let min = ChartPointModel()
+            min.x = Date().timeIntervalSince1970-double
+            min.y = chartModel.lineModel.points.last?.y ?? 0
+            min.dataType = .boundary
+            chartModel.lineModel.points.append(min)
         }
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
+
     }
     
     //通过两点的距离获取空数据区域
@@ -218,9 +220,37 @@ import UIKit
     }
 
     func changeXRange(min:Double,max:Double){
-        self.chartModel.minX = min
-        self.chartModel.maxX = max
+        switch chartModel.XRangeType {
+        case .unlimited:
+            self.chartModel.minX = min
+            self.chartModel.maxX = max
+        case .limitedByData:
+            if  let firstX = chartModel.lineModel.points.first?.x, min < firstX{
+                self.chartModel.minX = firstX
+            }else{
+                self.chartModel.minX = min
+            }
+            if  let lastX = chartModel.lineModel.points.last?.x, max > lastX{
+                self.chartModel.maxX = lastX
+            }else{
+                self.chartModel.maxX = max
+            }
+        case .distaceByNow(let double):
+            let date = Date()
+            if   min < date.timeIntervalSince1970-double{
+                self.chartModel.minX = date.timeIntervalSince1970-double
+            }else{
+                self.chartModel.minX = min
+            }
+            if  max > date.timeIntervalSince1970{
+                self.chartModel.maxX = date.timeIntervalSince1970
+            }else{
+                self.chartModel.maxX = max
+            }
+        }
         self.setNeedsDisplay()
+        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+
         autoChangeDateMode()
     }
     //外部设置模式的时候自动展示当前位置合适的范围
@@ -239,8 +269,30 @@ import UIKit
             chartModel.minX = chartModel.maxX-3600*24*30*12
         }
         self.setNeedsDisplay()
-        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
     }
+    
+    
+    //根据显示范围自定确定日期显示模式
+    private func autoChangeDateMode(){
+        let range = chartModel.maxX - chartModel.minX
+        if range <= 3600{
+            chartModel.dateMode = .hour
+
+        }else if range <= 3600*24{
+            chartModel.dateMode = .day
+
+        }else if range <= 3600*24*7{
+            chartModel.dateMode = .week
+
+        }else if range <= 3600*24*30{
+            chartModel.dateMode = .month
+
+        }else if range <= 3600*24*30*12{
+            chartModel.dateMode = .year
+        }
+        self.delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
+    }
+    
     private func addTapGesture(){
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         addGestureRecognizer(tap)
@@ -291,7 +343,7 @@ import UIKit
         guard !items.isEmpty else { return nil }
 
         return items.min {
-            abs($0.x - x) < abs($1.x - x)&&$0.dataType != .latestDate
+            abs($0.x - x) < abs($1.x - x)&&$0.dataType != .boundary
         }
     }
     
@@ -349,32 +401,35 @@ import UIKit
                    let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
                    let newMaxX = self.chartModel.maxX - offset
                    let newMinX = self.chartModel.minX - offset
-                   if chartModel.canScrollToFuture{
-                       
-                   }else{
-                       
+                   switch chartModel.XRangeType {
+                   case .unlimited:
+                       changeXRange(min: newMinX, max: newMaxX)
+                   case .limitedByData:
+                       if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
+                           let distance = firstX - self.chartModel.minX
+                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                           return
+                       }
+                       if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
+                           let distance = lastX - self.chartModel.maxX
+                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                           return
+                       }
+                       changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
+                   case .distaceByNow(let double):
+                       let date = Date()
+                       if  newMinX < date.timeIntervalSince1970-double {
+                           let distance = date.timeIntervalSince1970-double - self.chartModel.minX
+                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                           return
+                       }
+                       if  newMaxX > date.timeIntervalSince1970{
+                           let distance = date.timeIntervalSince1970 - self.chartModel.maxX
+                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                           return
+                       }
+                       changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
                    }
-                   if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
-                       let distance = firstX - self.chartModel.minX
-                       self.chartModel.minX += distance
-                       self.chartModel.maxX += distance
-                       self.setNeedsDisplay()
-                       delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
-                       return
-                   }
-                   if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
-                       let distance = lastX - self.chartModel.maxX
-
-                       self.chartModel.minX += distance
-                       self.chartModel.maxX += distance
-                       self.setNeedsDisplay()
-                       delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
-                       return
-                   }
-                   self.chartModel.maxX -= offset
-                   self.chartModel.minX -= offset
-                   self.setNeedsDisplay()
-                   delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
                }
                break
 
@@ -420,11 +475,15 @@ import UIKit
                    gesture.state = .cancelled
                }
                
-               chartModel.minX = newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX
-               chartModel.maxX = newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX
-               autoChangeDateMode()
-               setNeedsDisplay()
-               delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+               switch chartModel.XRangeType {
+               case .unlimited:
+                   changeXRange(min: newMinX, max: newMaxX)
+               case .limitedByData:
+                   changeXRange(min: newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX, max: newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX)
+               case .distaceByNow(let double):
+                   let date = Date()
+                   changeXRange(min: newMinX < date.timeIntervalSince1970-double ? date.timeIntervalSince1970-double:newMinX, max: newMaxX > date.timeIntervalSince1970 ? date.timeIntervalSince1970:newMaxX)
+               }
            case .ended:
                print("Pinch 手势结束，最终缩放比例: \(view.transform.a)")
                // 可选：添加动画或边界检查
@@ -437,26 +496,7 @@ import UIKit
            }
        }
     
-    //根据显示范围自定确定日期显示模式
-    private func autoChangeDateMode(){
-        let range = chartModel.maxX - chartModel.minX
-        if range <= 3600{
-            chartModel.dateMode = .hour
 
-        }else if range <= 3600*24{
-            chartModel.dateMode = .day
-
-        }else if range <= 3600*24*7{
-            chartModel.dateMode = .week
-
-        }else if range <= 3600*24*30{
-            chartModel.dateMode = .month
-
-        }else if range <= 3600*24*30*12{
-            chartModel.dateMode = .year
-        }
-        self.delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
-    }
 }
 
 //图标模型
@@ -520,14 +560,14 @@ import UIKit
     var tapedItem:ChartPointModel?
     //是否自适应y轴范围
     var yRangeType:YRangeType = .fixed(min: 19, max: 100)
+    //是否自适应y轴范围
+    var XRangeType:XRangeType = .unlimited
     //水平坐标轴是否全屏显示
     var horizontalAxisFullFrame = true
     //垂直坐标轴是否全屏显示
     var verticalAxisFullFrame = false
     //是否显示刻度尺
     var showGraduation = false
-    
-    var canScrollToFuture = false
     
 
     
@@ -539,6 +579,12 @@ enum YRangeType{
     case selfAdaptVisible
     case selfAdaptVisibleWithMinMax(min:Double,max:Double)
     case fixed(min:Double,max:Double)
+}
+
+enum XRangeType{
+    case unlimited
+    case limitedByData
+    case distaceByNow(Double)
 }
 
 //图表线模型
@@ -560,7 +606,7 @@ class ChartLineModel{
 //图标点模型
 @objcMembers class ChartPointModel {
     enum DataType{
-        case latestDate
+        case boundary
         case gap
         case data
     }

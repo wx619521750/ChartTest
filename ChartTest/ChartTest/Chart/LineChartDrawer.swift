@@ -173,7 +173,7 @@ class LineChartDrawer {
             ctx.setStrokeColor(color.cgColor)
             for (index,item) in data.enumerated(){
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.dataType == .latestDate{
+                if index == 0||item.dataType == .boundary{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }
                 ctx.addLine(to: .init(x: pt.x, y: pt.y))
@@ -184,7 +184,7 @@ class LineChartDrawer {
             for (index,item) in data.enumerated(){
                 print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.dataType == .latestDate{
+                if index == 0||item.dataType == .boundary{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     let preItem = data[index-1]
