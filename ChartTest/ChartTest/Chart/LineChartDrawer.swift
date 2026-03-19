@@ -173,7 +173,7 @@ class LineChartDrawer {
             ctx.setStrokeColor(color.cgColor)
             for (index,item) in data.enumerated(){
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.dataType == .boundary{
+                if index == 0{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }
                 ctx.addLine(to: .init(x: pt.x, y: pt.y))
@@ -184,7 +184,7 @@ class LineChartDrawer {
             for (index,item) in data.enumerated(){
                 print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0||item.dataType == .boundary{
+                if index == 0{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     let preItem = data[index-1]
@@ -398,71 +398,87 @@ class LineChartDrawer {
             return
         }
         
-        if let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
-            ctx.setLineWidth(width)
-            ctx.setStrokeColor(UIColor.white.cgColor)
-            ctx.addEllipse(in: CGRect(
-                x: point.x - radius,
-                y: point.y - radius,
-                width: radius * 2,
-                height: radius * 2
-            ))
-            ctx.strokePath()
-            
-            ctx.setLineWidth(radius-width)
-            ctx.setFillColor(firstRange.color.cgColor)
-            ctx.addEllipse(in: CGRect(
-                x: point.x - (radius-width*0.5),
-                y: point.y - (radius-width*0.5),
-                width: (radius-width*0.5) * 2,
-                height: (radius-width*0.5) * 2
-            ))
-            ctx.fillPath()
-            ctx.setStrokeColor(firstRange.color.cgColor)
-            ctx.setLineWidth(1)
-            ctx.setLineDash(phase: 0, lengths: [6,3])
-            ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
-            ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-            ctx.strokePath()
-        }else{
-            ctx.setLineWidth(width)
-            ctx.setStrokeColor(color.cgColor)
-            ctx.addEllipse(in: CGRect(
-                x: point.x - radius,
-                y: point.y - radius,
-                width: radius * 2,
-                height: radius * 2
-            ))
-            ctx.strokePath()
-            
-            ctx.setLineWidth(radius-width)
-            ctx.setFillColor(UIColor.white.cgColor)
-            ctx.addEllipse(in: CGRect(
-                x: point.x - (radius-width*0.5),
-                y: point.y - (radius-width*0.5),
-                width: (radius-width*0.5) * 2,
-                height: (radius-width*0.5) * 2
-            ))
-            ctx.fillPath()
-            ctx.setStrokeColor(color.cgColor)
-            ctx.setLineWidth(1)
-            ctx.setLineDash(phase: 0, lengths: [6,3])
-            ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
-            ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-            ctx.strokePath()
+        if item.dataType == .data{
+            if let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
+                ctx.setLineWidth(width)
+                ctx.setStrokeColor(UIColor.white.cgColor)
+                ctx.addEllipse(in: CGRect(
+                    x: point.x - radius,
+                    y: point.y - radius,
+                    width: radius * 2,
+                    height: radius * 2
+                ))
+                ctx.strokePath()
+                
+                ctx.setLineWidth(radius-width)
+                ctx.setFillColor(firstRange.color.cgColor)
+                ctx.addEllipse(in: CGRect(
+                    x: point.x - (radius-width*0.5),
+                    y: point.y - (radius-width*0.5),
+                    width: (radius-width*0.5) * 2,
+                    height: (radius-width*0.5) * 2
+                ))
+                ctx.fillPath()
+                ctx.setStrokeColor(firstRange.color.cgColor)
+                ctx.setLineWidth(1)
+                ctx.setLineDash(phase: 0, lengths: [6,3])
+                ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.strokePath()
+            }else{
+                ctx.setLineWidth(width)
+                ctx.setStrokeColor(color.cgColor)
+                ctx.addEllipse(in: CGRect(
+                    x: point.x - radius,
+                    y: point.y - radius,
+                    width: radius * 2,
+                    height: radius * 2
+                ))
+                ctx.strokePath()
+                
+                ctx.setLineWidth(radius-width)
+                ctx.setFillColor(UIColor.white.cgColor)
+                ctx.addEllipse(in: CGRect(
+                    x: point.x - (radius-width*0.5),
+                    y: point.y - (radius-width*0.5),
+                    width: (radius-width*0.5) * 2,
+                    height: (radius-width*0.5) * 2
+                ))
+                ctx.fillPath()
+                ctx.setStrokeColor(color.cgColor)
+                ctx.setLineWidth(1)
+                ctx.setLineDash(phase: 0, lengths: [6,3])
+                ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
+                ctx.addLine(to: .init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                ctx.strokePath()
+            }
         }
-        
-        
         ctx.restoreGState()
-        let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
-        item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
-        let detailPoint = deteminItemDetailCenter(item: item)
-        drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
-        UIGraphicsPushContext(ctx)
+        if item.dataType == .data{
+            
+            let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
+            item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
+            let detailPoint = deteminItemDetailCenter(item: item)
+            drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
+            UIGraphicsPushContext(ctx)
+            
+            drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            UIGraphicsPopContext()
+        }else{
+            let leftStr = Date.init(timeIntervalSince1970: item.gapLeft).toString(format: "yyyy/MM/dd HH:mm")
+            let rightStr = Date.init(timeIntervalSince1970: item.gapRight).toString(format: "yyyy/MM/dd HH:mm")
 
-        drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
-        drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
-        UIGraphicsPopContext()
+            let strs = ["GAP","\(leftStr) ~ \(rightStr)"]
+            item.detailSize = deteminItemDetaiFrameSize(strs: strs)
+            let detailPoint = deteminItemDetailCenter(item: item)
+            drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
+            UIGraphicsPushContext(ctx)
+            
+            drawText(strs.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            drawText(strs.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            UIGraphicsPopContext()
+        }
         
     }
     

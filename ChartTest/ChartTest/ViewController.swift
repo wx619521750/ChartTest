@@ -393,7 +393,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
 
     
     func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> [String] {
-        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm:ss")
+        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
         return ["\(y)℃","\(date)"]
     }
 }

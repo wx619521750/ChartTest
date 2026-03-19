@@ -54,7 +54,6 @@ import UIKit
     }
     
     func dealData(){
-//        addBoundaryModel()
         let xs = chartModel.lineModel.points.map { $0.x }
         chartModel.minX = (xs.min() ?? 0)
         chartModel.maxX = (xs.max() ?? 0)
@@ -66,10 +65,10 @@ import UIKit
     }
     
     func dealModels(){
+
         var vasivledata = [ChartPointModel]()
         let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
         let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
-//        addBoundaryModel()
         if let leftData = leftData,let rightData = rightData{
             vasivledata = chartModel.lineModel.points.filter({
                 ($0.x>=leftData.x)&&($0.x<=rightData.x)
@@ -110,35 +109,12 @@ import UIKit
         chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
         delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
-    }
-    
-    
-    
-    func addBoundaryModel(){
-        switch chartModel.XRangeType {
-        case .unlimited:
-            break
-        case .limitedByData:
-            break
-        case .distaceByNow(let double):
-            chartModel.lineModel.points.removeAll(where: {$0.dataType == .boundary})
-            let max = ChartPointModel()
-            max.x = Date().timeIntervalSince1970
-            max.y = chartModel.lineModel.points.last?.y ?? 0
-            max.dataType = .boundary
-            chartModel.lineModel.points.append(max)
-            let min = ChartPointModel()
-            min.x = Date().timeIntervalSince1970-double
-            min.y = chartModel.lineModel.points.last?.y ?? 0
-            min.dataType = .boundary
-            chartModel.lineModel.points.append(min)
-        }
-        chartModel.lineModel.points.sort(by: {$0.x<$1.x})
-
+        addGapModel()
     }
     
     //通过两点的距离获取空数据区域
     func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [horizontalEmptyAreaModel] {
+
         guard points.count > 1 else { return [] }
         
         var result: [horizontalEmptyAreaModel] = []
@@ -149,7 +125,6 @@ import UIKit
             if nextPoint.dataType != .data{
                 continue
             }
-            
             // 检查后一个点比前一个点的x值是否大于threshold
             if nextPoint.x - currentPoint.x > threshold {
                 // 创建一个新点：x = 前一个点的x, y = 后一个点的x
@@ -158,12 +133,25 @@ import UIKit
                 result.append(newPoint)
             }
         }
-        
-       
-        
         return result
     }
     
+    
+    func addGapModel(){
+        for arer in chartModel.lineModel.emptyAreas{
+            let model = ChartPointModel()
+            model.dataType = .gap
+            model.x = (arer.left+arer.right)*0.5
+            model.y = chartModel.maxY
+            model.gapLeft = arer.left
+            model.gapRight = arer.right
+            if chartModel.tapedItem?.dataType == .gap&&model.x == chartModel.tapedItem?.x{
+                model.style = chartModel.tapedItem?.style ?? .normal
+            }
+            chartModel.lineModel.pointsShouldDraw.append(model)
+        }
+        chartModel.lineModel.pointsShouldDraw.sort(by: {$0.x<$1.x})
+    }
 
     
     //数据量多的时候重载样
@@ -204,6 +192,10 @@ import UIKit
                 }
                 //添加正在展示的点
                 if data[j].x == chartModel.tapedItem?.x&&chartModel.tapedItem?.style != .normal{
+                    result.append(data[j])
+                }
+                
+                if data[j].dataType == .gap{
                     result.append(data[j])
                 }
             }
@@ -340,7 +332,7 @@ import UIKit
         guard !items.isEmpty else { return nil }
 
         return items.min {
-            abs($0.x - x) < abs($1.x - x)&&$0.dataType != .boundary
+            abs($0.x - x) < abs($1.x - x)
         }
     }
     
@@ -386,11 +378,7 @@ import UIKit
                    chartModel.tapedItem?.style = .normal
                    chartModel.tapedItem = item
                    chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
-                   if let item = item,let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
-                       chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: firstRange.color, lengths: [6,3]))]
-                   }else{
-                       chartModel.verticalLines = [.init(x: chartModel.tapedItem?.x ?? 0, lineStyle: .dashLine(width: 1, color: .lightGray, lengths: [6,3]))]
-                   }
+
                    self.setNeedsDisplay()
                }else{
                    let translation = gesture.translation(in: self)
@@ -614,7 +602,6 @@ class horizontalEmptyAreaModel{
 //图标点模型
 @objcMembers class ChartPointModel {
     enum DataType{
-        case boundary
         case gap
         case data
     }
@@ -642,6 +629,9 @@ class horizontalEmptyAreaModel{
     var detailColor:UIColor = .white
     var canTouch:Bool = false
     var style:Style = .normal
+    
+    var gapLeft:Double = 0
+    var gapRight:Double = 0
 }
 //横向背景颜色
 class HorizontalColorRange{
