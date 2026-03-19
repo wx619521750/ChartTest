@@ -276,7 +276,7 @@ import UIKit
     private func autoChangeDateMode(){
         let range = chartModel.maxX - chartModel.minX
         if range <= 3600{
-            chartModel.dateMode = .hour
+            chartModel.dateMode = .day
 
         }else if range <= 3600*24{
             chartModel.dateMode = .day
@@ -695,11 +695,11 @@ class VerticalLine{
 
 //日期显示模型
 @objc enum DateMode:Int{
-    case hour = 1
-    case day = 2
-    case week = 3
-    case month = 4
-    case year = 5
+    case hour = 0
+    case day = 1
+    case week = 2
+    case month = 3
+    case year = 4
 }
 
 

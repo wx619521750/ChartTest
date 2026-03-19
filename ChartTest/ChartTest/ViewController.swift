@@ -92,7 +92,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     lazy var segmentView: SegmentView = {
         let view = SegmentView.init(frame: .init(x: 20, y: 340, width: UIScreen.main.bounds.width-40, height: 44))
-        view.titles = ["hour","day","week","month","year"]
+        view.titles = ["day","week","month","year"]
         view.tag = 101
 
         view.delegate = self
@@ -138,14 +138,12 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             
             switch selectedIndex{
             case 0:
-                lineChartView.changeDateMode(mode: .hour)
-            case 1:
                 lineChartView.changeDateMode(mode: .day)
-            case 2:
+            case 1:
                 lineChartView.changeDateMode(mode: .week)
-            case 3:
+            case 2:
                 lineChartView.changeDateMode(mode: .month)
-            case 4:
+            case 3:
                 lineChartView.changeDateMode(mode: .year)
             default:break
                 
@@ -352,16 +350,16 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         case .hour:
             segmentView.selectIndex(index: 0, withDelegate: false)
         case .day:
-            segmentView.selectIndex(index: 1, withDelegate: false)
+            segmentView.selectIndex(index: 0, withDelegate: false)
 
         case .week:
-            segmentView.selectIndex(index: 2, withDelegate: false)
+            segmentView.selectIndex(index: 1, withDelegate: false)
 
         case .month:
-            segmentView.selectIndex(index: 3, withDelegate: false)
+            segmentView.selectIndex(index: 2, withDelegate: false)
 
         case .year:
-            segmentView.selectIndex(index: 4, withDelegate: false)
+            segmentView.selectIndex(index: 3, withDelegate: false)
 
         }
     }
