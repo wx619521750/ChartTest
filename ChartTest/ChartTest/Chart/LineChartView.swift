@@ -773,11 +773,17 @@ extension ChartModel{
                 
                 bottomAxisMaxMinStyel = .bottom(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
                 
-                horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))]
+                horizontalLines = [
+                    .init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths:         [4,2]),lableStyle:.left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),
+                    .init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),
+                          lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))
+                ]
                 //竖向线段颜色配置
-                verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
-                                                                .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
-                                                                .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))]
+                verticalColorRnages = [
+                    .init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
+                    .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
+                    .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))
+                ]
                 
                 
                 horizontalAxisFullFrame = true
@@ -785,7 +791,7 @@ extension ChartModel{
                 verticalAxisFullFrame = false
                 //是否显示刻度尺
                 showGraduation = false
-                XRangeType = .unlimited
+                XRangeType = .distaceByNow(3600*24*365)
 
             case .temperature:
                 var modelPoints = [ChartPointModel]()
