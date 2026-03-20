@@ -9,12 +9,12 @@ import UIKit
 
 class LineChartDrawer {
     //文本框的大小
-//    var circleLabelSize = CGSize.init(width: 80, height: 40)
+    //    var circleLabelSize = CGSize.init(width: 80, height: 40)
     //图表模型
     var chartModel = ChartModel()
     var layer = CALayer()
     //需要绘制的数据
-
+    
     func draw(layer:CALayer,ctx:CGContext,chartModel:ChartModel){
         self.chartModel = chartModel
         self.layer = layer
@@ -22,11 +22,11 @@ class LineChartDrawer {
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
     }
     
-   
+    
     
     //绘制坐标轴
     func drawAxis(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
@@ -148,7 +148,7 @@ class LineChartDrawer {
             break
         }
         ctx.restoreGState()
-       
+        
     }
     //绘制数据曲线
     func drawLine(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
@@ -156,16 +156,16 @@ class LineChartDrawer {
             return
         }
         ctx.saveGState()
-
+        
         let clipRect = CGRect(
             x: chartModel.chartContentInsert.left,
             y: chartModel.chartContentInsert.top,
             width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
             height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
         )
-
+        
         ctx.clip(to: clipRect)
-
+        
         
         switch chartModel.lineModel.datalineStyle{
         case .straight(let width, let color):
@@ -196,11 +196,11 @@ class LineChartDrawer {
         }
         ctx.replacePathWithStrokedPath()
         ctx.clip()
-
+        
         for verticalColorRnage in chartModel.verticalColorRnages {
             let toppt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.top ))
             let bottompt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.bottom ))
-
+            
             let topY = toppt.y
             let bottomY = bottompt.y
             let colors = [
@@ -235,7 +235,7 @@ class LineChartDrawer {
             width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
             height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
         )
-
+        
         ctx.clip(to: clipRect)
         for point in chartModel.lineModel.emptyAreas{
             let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
@@ -259,23 +259,23 @@ class LineChartDrawer {
     }
     
     /// 绘制斜线
-       /// - Parameters:
-       ///   - ctx: 图形上下文
-       ///   - rect: 绘制区域
-       ///   - angle: 倾斜角度（度）
-       ///   - spacing: 线间距
-       private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
-           ctx.setLineWidth(1)
-           ctx.setStrokeColor(UIColor(red: 226/255.0, green: 226/255.0, blue: 226/255.0, alpha: 1.0).cgColor)
-           var y = rect.minY-rect.width
-           while y>=rect.minY-rect.width&&y<=rect.maxY {
-               ctx.move(to: .init(x: rect.origin.x, y: y))
-               ctx.addLine(to: .init(x: rect.origin.x+rect.width, y: y+rect.width))
-               ctx.strokePath()
-               y+=spacing
-           }
-           
-       }
+    /// - Parameters:
+    ///   - ctx: 图形上下文
+    ///   - rect: 绘制区域
+    ///   - angle: 倾斜角度（度）
+    ///   - spacing: 线间距
+    private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
+        ctx.setLineWidth(1)
+        ctx.setStrokeColor(UIColor(red: 226/255.0, green: 226/255.0, blue: 226/255.0, alpha: 1.0).cgColor)
+        var y = rect.minY-rect.width
+        while y>=rect.minY-rect.width&&y<=rect.maxY {
+            ctx.move(to: .init(x: rect.origin.x, y: y))
+            ctx.addLine(to: .init(x: rect.origin.x+rect.width, y: y+rect.width))
+            ctx.strokePath()
+            y+=spacing
+        }
+        
+    }
     
     
     //绘制水平垂直的线条
@@ -288,7 +288,7 @@ class LineChartDrawer {
                 width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
                 height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
             )
-
+            
             ctx.clip(to: clipRect)
             var point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
             switch horizontalLine.lineStyle {
@@ -311,7 +311,7 @@ class LineChartDrawer {
             ctx.restoreGState()
             let padding = UIEdgeInsets.init(top: 4, left: 6, bottom: 4, right: 6)
             switch horizontalLine.lableStyle {
-            
+                
             case .left(let color, let font, let offset):
                 point.x = chartModel.chartContentInsert.left+(offset ?? 0)
                 if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
@@ -337,7 +337,7 @@ class LineChartDrawer {
                     continue
                 }
                 let trump = horizontalLinesMaxMinDrawY(font: font, insert: padding, distance: 4)
-
+                
                 if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
                     UIGraphicsPushContext(ctx)
                     drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: index == 0 ?trump.0:trump.1), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: padding)
@@ -352,7 +352,7 @@ class LineChartDrawer {
                 }
             default:break
             }
-
+            
         }
         ctx.saveGState()
         let clipRect = CGRect(
@@ -361,7 +361,7 @@ class LineChartDrawer {
             width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
             height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
         )
-
+        
         ctx.clip(to: clipRect)
         for verticalLine in chartModel.verticalLines {
             let point = ptPointFromPoint(point: .init(x: verticalLine.x, y: 0))
@@ -468,7 +468,7 @@ class LineChartDrawer {
         }else{
             let leftStr = Date.init(timeIntervalSince1970: item.gapLeft).toString(format: "yyyy/MM/dd HH:mm")
             let rightStr = Date.init(timeIntervalSince1970: item.gapRight).toString(format: "yyyy/MM/dd HH:mm")
-
+            
             let strs = ["GAP","\(leftStr) ~ \(rightStr)"]
             item.detailSize = deteminItemDetaiFrameSize(strs: strs)
             let detailPoint = deteminItemDetailCenter(item: item)
@@ -645,7 +645,7 @@ class LineChartDrawer {
                 
             case .left(let color, let font, let offset):
                 let trump = rightAxisDataMaxMinDrawY(font: font, insert: padding, distance: 0)
-
+                
                 let ys = data.map { $0.y }
                 let dataMinY = ys.min() ?? 0
                 let dataMaxY = ys.max() ?? 0
@@ -692,7 +692,7 @@ class LineChartDrawer {
     
     func rightAxisDataMaxMinDrawY(font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
-
+        
         let ys = chartModel.lineModel.pointsShouldDraw.map { $0.y }
         let dataMinY = ys.min() ?? 0
         let dataMaxY = ys.max() ?? 0
@@ -731,7 +731,7 @@ class LineChartDrawer {
     func horizontalLinesMaxMinDrawY(font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         guard let firstLine = chartModel.horizontalLines.first,let lastLine = chartModel.horizontalLines.last else{return (0,0)}
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
-
+        
         
         let dataMinY = lastLine.y>firstLine.y ?  firstLine.y:lastLine.y
         let dataMaxY = lastLine.y>firstLine.y ?  lastLine.y:firstLine.y
@@ -775,7 +775,7 @@ class LineChartDrawer {
         backgroundColor: UIColor = UIColor.black.withAlphaComponent(0.6),
         cornerRadius: CGFloat = 6
     ) {
-
+        
         // 1️⃣ 根据 center + size 计算 rect
         let rect = CGRect(
             x: center.x - size.width / 2,
@@ -783,21 +783,21 @@ class LineChartDrawer {
             width: size.width,
             height: size.height
         )
-
+        
         // 2️⃣ 半透明背景
         let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
         ctx.setFillColor(backgroundColor.cgColor)
         ctx.addPath(path.cgPath)
         ctx.fillPath()
-
+        
     }
-
+    
     
     func getStringSize(str:String,font:UIFont)->CGSize{
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
         ]
-
+        
         let size = (str as NSString).size(withAttributes: attrs)
         return size
     }
@@ -813,9 +813,9 @@ class LineChartDrawer {
             .font: font,
             .foregroundColor: color
         ]
-
+        
         let size = (text as NSString).size(withAttributes: attrs)
-
+        
         let ascent = font.ascender
         let descent = abs(font.descender)
         let textHeight = ascent + descent
@@ -864,7 +864,7 @@ class LineChartDrawer {
                 y: point.y - size.height * 0.5
             )
         }
-
+        
         (text as NSString).draw(at: origin, withAttributes: attrs)
     }
     
@@ -960,7 +960,7 @@ class LineChartDrawer {
             x: backgroundOrigin.x + padding.left,
             y: backgroundOrigin.y + padding.top
         )
-       
+        
         // 7. 绘制文本
         text.draw(in: CGRect(origin: textOrigin, size: textSize))
     }
@@ -982,7 +982,7 @@ class LineChartDrawer {
         case centerxmaxy
         case center
     }
-
+    
 }
 
 extension LineChartDrawer{

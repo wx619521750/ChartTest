@@ -8,15 +8,24 @@
 import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
+    //日历模式变更回调
     @objc optional func lineChartViewDateModeChanged(mode:DateMode)
+    //显示窗口最大最小X值回调
     @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
+    //显示窗口最大最小Y值回调
     @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
     //实现这个方法会覆盖lineChartViewHLineFormatStr方法
     @objc optional func lineChartViewHLineFormatAttributeStr(y:Double)->NSAttributedString
+    //回调横向线段Y值，根据Y值返回格式化字符串
     @objc func lineChartViewHLineFormatStr(y:Double)->String
-
+    
+    /// 当前点击的点的格式化字符串
+    /// - Parameters:
+    ///   - x: 当前点击的数据的x
+    ///   - y: 当前点击的数据的x
+    /// - Returns: 格式化后的字符串数组
     @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
-
+    
 }
 
 
@@ -34,11 +43,11 @@ import UIKit
     private var tempMaxX:CGFloat = 0
     //用于保存手势的临时位置
     private var pinchLocation:CGPoint = .zero
-    
+    //标记是否正在拖动tapedItem
     private var isLabelPaning = false
-
+    //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
-                super.draw(layer, in: ctx)
+        super.draw(layer, in: ctx)
         dealModels()
         drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
     }
@@ -65,7 +74,7 @@ import UIKit
     }
     
     func dealModels(){
-
+        //根据窗口大小获取可展示的数据
         var vasivledata = [ChartPointModel]()
         let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
         let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
@@ -106,6 +115,7 @@ import UIKit
             chartModel.minY = min<dataMin ? min:dataMin
             chartModel.maxY = max>dataMax ? max:dataMax
         }
+        //获取数据内的空白区域
         chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
         delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
@@ -114,7 +124,7 @@ import UIKit
     
     //通过两点的距离获取空数据区域
     func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [horizontalEmptyAreaModel] {
-
+        
         guard points.count > 1 else { return [] }
         
         var result: [horizontalEmptyAreaModel] = []
@@ -137,6 +147,7 @@ import UIKit
     }
     
     
+    /// 添加gap模型，便于使用chartpointmodel一样的交互逻辑
     func addGapModel(){
         for arer in chartModel.lineModel.emptyAreas{
             let model = ChartPointModel()
@@ -152,33 +163,38 @@ import UIKit
         }
         chartModel.lineModel.pointsShouldDraw.sort(by: {$0.x<$1.x})
     }
-
     
-    //数据量多的时候重载样
+    
+    
+    /// 数据量多的时候重载样
+    /// - Parameters:
+    ///   - data: 总数据
+    ///   - threshold: 最后剩余数据个数
+    /// - Returns: 最后剩余数据数组
     func resampleLTTB(
         data: [ChartPointModel],
         threshold: Int
     ) -> [ChartPointModel] {
         guard threshold < data.count else { return data }
-
+        
         let bucketSize = Double(data.count - 2) / Double(threshold - 2)
         var result: [ChartPointModel] = []
         result.append(data.first!)
-
+        
         var a = 0
-
+        
         for i in 0..<(threshold - 2) {
             let rangeStart = Int(Double(i + 1) * bucketSize) + 1
             let rangeEnd = Int(Double(i + 2) * bucketSize) + 1
-
+            
             let nextStart = Int(Double(i + 2) * bucketSize) + 1
             let nextEnd = Int(Double(i + 3) * bucketSize) + 1
-
+            
             let avgX = data[rangeStart..<min(nextEnd, data.count)]
                 .map(\.x).reduce(0, +) / CGFloat(nextEnd - rangeStart)
             let avgY = data[rangeStart..<min(nextEnd, data.count)]
                 .map(\.y).reduce(0, +) / CGFloat(nextEnd - rangeStart)
-
+            
             var maxArea: CGFloat = -1
             var selected = data[rangeStart]
             for j in rangeStart..<min(rangeEnd, data.count) {
@@ -202,7 +218,7 @@ import UIKit
             result.append(selected)
             a = data.firstIndex { $0.x == selected.x && $0.y == selected.y }!
         }
-
+        
         result.append(data.last!)
         return result
     }
@@ -211,8 +227,14 @@ import UIKit
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
+    
+    /// 设置窗口最大最小X
+    /// - Parameters:
+    ///   - min: 最小X
+    ///   - max: 最大X
     func changeXRange(min:Double,max:Double){
+        //这里如果是通过日历手动配置窗口大小，需要根据不同的展示类型去修正传入的数据
         switch chartModel.XRangeType {
         case .unlimited:
             self.chartModel.minX = min
@@ -243,7 +265,7 @@ import UIKit
         }
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
-
+        
         autoChangeDateMode()
     }
     //外部设置模式的时候自动展示当前位置合适的范围
@@ -270,32 +292,25 @@ import UIKit
         let range = chartModel.maxX - chartModel.minX
         if range <= 3600{
             chartModel.dateMode = .day
-
         }else if range <= 3600*24{
             chartModel.dateMode = .day
-
         }else if range <= 3600*24*7{
             chartModel.dateMode = .week
-
         }else if range <= 3600*24*30{
             chartModel.dateMode = .month
-
         }else if range <= 3600*24*30*12{
             chartModel.dateMode = .year
         }
         self.delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
     }
-    
     private func addTapGesture(){
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         addGestureRecognizer(tap)
     }
-    
+    ///处理点击事件
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        
-        
+        //判断是否有正在展示详情的数据，如何有则隐藏
         if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
-            
             let location = gesture.location(in: self)
             let center = self.drawer.deteminItemDetailCenter(item: tapedItem)
             let rect = CGRect.init(x: center.x-tapedItem.detailSize.width*0.5, y: center.y-tapedItem.detailSize.height*0.5, width: tapedItem.detailSize.width, height: tapedItem.detailSize.height)
@@ -306,14 +321,13 @@ import UIKit
                 return
             }
         }
-        
+        // 展示新的点击的数据详情
         let point = gesture.location(in: self)
         let dataPoint = dataPointFromPointInView(point: point)
         let item = nearestItem(in: chartModel.lineModel.pointsShouldDraw, to: dataPoint.x)
         chartModel.tapedItem?.style = .normal
         chartModel.tapedItem = item
         chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
-
         self.setNeedsDisplay()
     }
     
@@ -328,9 +342,7 @@ import UIKit
         in items: [ChartPointModel],
         to x: Double
     ) -> ChartPointModel? {
-
         guard !items.isEmpty else { return nil }
-
         return items.min {
             abs($0.x - x) < abs($1.x - x)
         }
@@ -338,157 +350,148 @@ import UIKit
     
     
     private func setupPanGesture() {
-           let panGesture = UIPanGestureRecognizer(
-               target: self,
-               action: #selector(handlePan(_:))
-           )
-           self.addGestureRecognizer(panGesture)
+        let panGesture = UIPanGestureRecognizer(
+            target: self,
+            action: #selector(handlePan(_:))
+        )
+        self.addGestureRecognizer(panGesture)
         panGesture.delegate = self
-           self.isUserInteractionEnabled = true
-       }
+        self.isUserInteractionEnabled = true
+    }
     //滑动手势只有左右滑动的时候生效
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer,pan.view == self else {
-                return true
-            }
-
-            let velocity = pan.velocity(in: self)
-
-            // 横向滑动才触发
-            return abs(velocity.x) > abs(velocity.y)
+            return true
         }
-       @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-           switch gesture.state {
-           case .began:
-               if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
-                   
-                   let location = gesture.location(in: self)
-                   let center = self.drawer.deteminItemDetailCenter(item: tapedItem)
-                   let rect = CGRect.init(x: center.x-tapedItem.detailSize.width*0.5, y: center.y-tapedItem.detailSize.height*0.5, width: tapedItem.detailSize.width, height: tapedItem.detailSize.height)
-                   self.isLabelPaning = rect.contains(location)
-               }else{
-                   self.isLabelPaning = false
-               }
-
-           case .changed:
-               if isLabelPaning{
-                   let point = gesture.location(in: self)
-                   let dataPoint = dataPointFromPointInView(point: point)
-                   let item = nearestItem(in: chartModel.lineModel.pointsShouldDraw, to: dataPoint.x)
-                   chartModel.tapedItem?.style = .normal
-                   chartModel.tapedItem = item
-                   chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
-
-                   self.setNeedsDisplay()
-               }else{
-                   let translation = gesture.translation(in: self)
-                   gesture.setTranslation(.zero, in: self)
-                   let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
-                   let newMaxX = self.chartModel.maxX - offset
-                   let newMinX = self.chartModel.minX - offset
-                   switch chartModel.XRangeType {
-                   case .unlimited:
-                       changeXRange(min: newMinX, max: newMaxX)
-                   case .limitedByData:
-                       if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
-                           let distance = firstX - self.chartModel.minX
-                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                           return
-                       }
-                       if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
-                           let distance = lastX - self.chartModel.maxX
-                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                           return
-                       }
-                       changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
-                   case .distaceByNow(let double):
-                       let date = Date()
-                       if  newMinX < date.timeIntervalSince1970-double {
-                           let distance = date.timeIntervalSince1970-double - self.chartModel.minX
-                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                           return
-                       }
-                       if  newMaxX > date.timeIntervalSince1970{
-                           let distance = date.timeIntervalSince1970 - self.chartModel.maxX
-                           changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                           return
-                       }
-                       changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
-                   }
-               }
-               break
-
-               
-           default:
-               break
-           }
-       }
+        let velocity = pan.velocity(in: self)
+        // 横向滑动才触发
+        return abs(velocity.x) > abs(velocity.y)
+    }
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            //判断是否四滑动数据详情视图
+            if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
+                let location = gesture.location(in: self)
+                let center = self.drawer.deteminItemDetailCenter(item: tapedItem)
+                let rect = CGRect.init(x: center.x-tapedItem.detailSize.width*0.5, y: center.y-tapedItem.detailSize.height*0.5, width: tapedItem.detailSize.width, height: tapedItem.detailSize.height)
+                self.isLabelPaning = rect.contains(location)
+            }else{
+                self.isLabelPaning = false
+            }
+        case .changed:
+            //判断是否四滑动数据详情视图，如果是则变更正在展示的详情
+            if isLabelPaning{
+                let point = gesture.location(in: self)
+                let dataPoint = dataPointFromPointInView(point: point)
+                let item = nearestItem(in: chartModel.lineModel.pointsShouldDraw, to: dataPoint.x)
+                chartModel.tapedItem?.style = .normal
+                chartModel.tapedItem = item
+                chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
+                self.setNeedsDisplay()
+            }else{
+                //如果不是，则处理曲线平移
+                let translation = gesture.translation(in: self)
+                gesture.setTranslation(.zero, in: self)
+                let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
+                let newMaxX = self.chartModel.maxX - offset
+                let newMinX = self.chartModel.minX - offset
+                //根据不同的X轴范围处理平移事件
+                switch chartModel.XRangeType {
+                case .unlimited:
+                    changeXRange(min: newMinX, max: newMaxX)
+                case .limitedByData:
+                    if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
+                        let distance = firstX - self.chartModel.minX
+                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                        return
+                    }
+                    if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
+                        let distance = lastX - self.chartModel.maxX
+                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                        return
+                    }
+                    changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
+                case .distaceByNow(let double):
+                    let date = Date()
+                    if  newMinX < date.timeIntervalSince1970-double {
+                        let distance = date.timeIntervalSince1970-double - self.chartModel.minX
+                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                        return
+                    }
+                    if  newMaxX > date.timeIntervalSince1970{
+                        let distance = date.timeIntervalSince1970 - self.chartModel.maxX
+                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
+                        return
+                    }
+                    changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
+                }
+            }
+            break
+        default:
+            break
+        }
+    }
     
     private func setupPinchGesture() {
-           // 创建 Pinch 手势识别器
-           let pinchGesture = UIPinchGestureRecognizer(
-               target: self,
-               action: #selector(handlePinch(_:))
-           )
-           // 将手势添加到视图
-            self.addGestureRecognizer(pinchGesture)
-       }
-       
-       @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-           guard let view = gesture.view else { return }
-           
-           switch gesture.state {
-           case .began:
-               print("Pinch 手势开始")
-               pinchLocation = gesture.location(in: self)
-
-               // 手势开始时可以做的操作
-               tempMaxX = chartModel.maxX
-               tempMinX = chartModel.minX
-               
-               
-           case .changed:
-               print(gesture.scale)
-               let location = pinchLocation
-               let locationX = (location.x-chartModel.chartContentInsert.left)/(self.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*(tempMaxX-tempMinX)+tempMinX
-               var newMinX = locationX - (locationX-tempMinX)*(1/gesture.scale)
-               var newMaxX = locationX + (tempMaxX-locationX)*(1/gesture.scale)
-               //最小一个小时，不能再放大了
-               if newMaxX-newMinX<3600{
-                   newMinX = (chartModel.maxX+chartModel.minX)*0.5-1800
-                   newMaxX = (chartModel.maxX+chartModel.minX)*0.5+1800
-                   gesture.state = .cancelled
-               }
-               
-               switch chartModel.XRangeType {
-               case .unlimited:
-                   changeXRange(min: newMinX, max: newMaxX)
-               case .limitedByData:
-                   changeXRange(min: newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX, max: newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX)
-               case .distaceByNow(let double):
-                   let date = Date()
-                   changeXRange(min: newMinX < date.timeIntervalSince1970-double ? date.timeIntervalSince1970-double:newMinX, max: newMaxX > date.timeIntervalSince1970 ? date.timeIntervalSince1970:newMaxX)
-               }
-           case .ended:
-               print("Pinch 手势结束，最终缩放比例: \(view.transform.a)")
-               // 可选：添加动画或边界检查
-               
-           case .cancelled:
-               print("Pinch 手势被取消")
-               
-           default:
-               break
-           }
-       }
+        // 创建 Pinch 手势识别器
+        let pinchGesture = UIPinchGestureRecognizer(
+            target: self,
+            action: #selector(handlePinch(_:))
+        )
+        // 将手势添加到视图
+        self.addGestureRecognizer(pinchGesture)
+    }
     
-
+    @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+        guard let view = gesture.view else { return }
+        switch gesture.state {
+        case .began:
+            print("Pinch 手势开始")
+            pinchLocation = gesture.location(in: self)
+            // 手势开始时可以做的操作
+            tempMaxX = chartModel.maxX
+            tempMinX = chartModel.minX
+        case .changed:
+            print(gesture.scale)
+            let location = pinchLocation
+            let locationX = (location.x-chartModel.chartContentInsert.left)/(self.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*(tempMaxX-tempMinX)+tempMinX
+            var newMinX = locationX - (locationX-tempMinX)*(1/gesture.scale)
+            var newMaxX = locationX + (tempMaxX-locationX)*(1/gesture.scale)
+            //最小一个小时，不能再放大了
+            if newMaxX-newMinX<3600{
+                newMinX = (chartModel.maxX+chartModel.minX)*0.5-1800
+                newMaxX = (chartModel.maxX+chartModel.minX)*0.5+1800
+                gesture.state = .cancelled
+            }
+            //根据不同的X轴范围处理缩放事件事件
+            switch chartModel.XRangeType {
+            case .unlimited:
+                changeXRange(min: newMinX, max: newMaxX)
+            case .limitedByData:
+                changeXRange(min: newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX, max: newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX)
+            case .distaceByNow(let double):
+                let date = Date()
+                changeXRange(min: newMinX < date.timeIntervalSince1970-double ? date.timeIntervalSince1970-double:newMinX, max: newMaxX > date.timeIntervalSince1970 ? date.timeIntervalSince1970:newMaxX)
+            }
+        case .ended:
+            print("Pinch 手势结束，最终缩放比例: \(view.transform.a)")
+            // 可选：添加动画或边界检查
+        case .cancelled:
+            print("Pinch 手势被取消")
+        default:
+            break
+        }
+    }
+    
+    
 }
 
 //图标模型
 @objc class ChartModel: NSObject{
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
-    //图标内容的insert
+    //图表曲线显示内容的insert
     var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 0)
     
     
@@ -536,7 +539,7 @@ import UIKit
                                                     .init(showType: .line, top: 20, bottom: 0, color: .green)]
     //日期显示模式
     var dateMode:DateMode = .day
-    //图标数据显示范围，四个参数定义的区间的数据才会绘制到图表
+    //图标数据显示范围，四个参数定义的区间的数据才会绘制到图表（定义窗口大小）
     var minX:CGFloat = 0
     var maxX:CGFloat = 0
     var minY:CGFloat = 0
@@ -560,16 +563,16 @@ import UIKit
 
 
 enum YRangeType{
-    case selfAdaptAll
-    case selfAdaptVisible
-    case selfAdaptVisibleWithMinMax(min:Double,max:Double)
-    case fixed(min:Double,max:Double)
+    case selfAdaptAll //所有数据最大最小Y值
+    case selfAdaptVisible //可视数据最大最小Y值
+    case selfAdaptVisibleWithMinMax(min:Double,max:Double)//限定的可视数据最大最小Y值
+    case fixed(min:Double,max:Double)//手动配置最大最小Y值
 }
 
 enum XRangeType{
-    case unlimited
-    case limitedByData
-    case distaceByNow(Double)
+    case unlimited  //无限制，图表可以任意滑动，缩放
+    case limitedByData  //限定在数据区间内滑动，缩放
+    case distaceByNow(Double)// 限定在当前时间到之前的一定间隔间间滑动，缩放，范围：[当前时间戳-Double参数===>当前时间戳]
 }
 
 //图表线模型
@@ -579,7 +582,7 @@ class ChartLineModel{
     var datalineStyle:DataLineStyle = .bezier(width: 2, color: .black)
     //数据点数组
     var points:[ChartPointModel] = [ChartPointModel]()
-    
+    //需要绘制的区域的数据
     var pointsShouldDraw:[ChartPointModel] = [ChartPointModel]()
     //数据空白区域
     var emptyAreas = [horizontalEmptyAreaModel]()
@@ -588,6 +591,7 @@ class ChartLineModel{
     
 }
 
+//空白区域模型
 class horizontalEmptyAreaModel{
     var left:CGFloat = 0
     var right:CGFloat = 0
@@ -599,7 +603,7 @@ class horizontalEmptyAreaModel{
     }
 }
 
-//图标点模型
+//图表点模型
 @objcMembers class ChartPointModel {
     enum DataType{
         case gap
@@ -649,7 +653,6 @@ class HorizontalColorRange{
         self.right = right
         self.color = color
     }
-    
 }
 //竖向背景颜色
 class VerticalColorRange{
@@ -700,31 +703,32 @@ class VerticalLine{
     case year = 4
 }
 
-
+//数据线类型
 enum DataLineStyle {
-case straight(width:CGFloat,color:UIColor)
-case bezier(width:CGFloat,color:UIColor)
+case straight(width:CGFloat,color:UIColor)//直线
+case bezier(width:CGFloat,color:UIColor)//贝塞尔
 }
 
+//线段类型
 enum LineStyle {
-    case line(width:CGFloat,color:UIColor)
-    case dashLine(width:CGFloat,color:UIColor,lengths:[CGFloat])
-    case none
+    case line(width:CGFloat,color:UIColor)//实线
+    case dashLine(width:CGFloat,color:UIColor,lengths:[CGFloat])//虚线
+    case none //不绘制
 }
-//offset 表示向外偏移量
+//轴线文本配置
 enum AxisLabelStyle{
-    case top(color:UIColor,font:UIFont,offset:CGFloat?)
+    case top(color:UIColor,font:UIFont,offset:CGFloat?)//显示在轴线的左边
     case bottom(color:UIColor,font:UIFont,offset:CGFloat?)
     case left(color:UIColor,font:UIFont,offset:CGFloat?)
     case right(color:UIColor,font:UIFont,offset:CGFloat?)
     case none
 }
-
+//用于oc使用
 @objcMembers class ChartPoint:NSObject{
     var x:CGFloat = 0
     var y:CGFloat = 0
 }
-
+//用于oc使用
 @objc enum XSChartType: Int {
     case radon = 1
     case temperature
@@ -750,12 +754,39 @@ extension ChartModel{
                     modelPoints.append(item)
                 }
                 lineModel.points = modelPoints
-                lineModel.datalineStyle = .bezier(width: 1, color: .red)
-                yRangeType = .fixed(min: 0, max: radonYMax)
-                horizontalLines = [.init(y: CGFloat(radonHLine1Y), lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2])),.init(y: CGFloat(radonHLine2Y), lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]))]
-                verticalColorRnages = [.init(showType: .line, top: CGFloat(radonYMax), bottom: CGFloat(radonHLine1Y), color: .red),
-                                                                .init(showType: .line, top: CGFloat(radonHLine1Y), bottom: CGFloat(radonHLine2Y), color: .yellow),
-                                                                .init(showType: .line, top: CGFloat(radonHLine2Y), bottom: 0, color: .green)]
+                chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                yRangeType = .selfAdaptVisible
+
+                lineModel.datalineStyle = .bezier(width: 2, color: .black)
+                
+                topAxisLineStyle = .none
+                rightAxisLineStyle = .none
+                leftAxisLineStyle = .none
+                bottomAxisLineStyle = .dashLine(width: 1, color: UIColor(red: 238/255.0, green: 238/255.0, blue: 238/255.0, alpha: 1.0), lengths: [6,3])
+                
+                bottomAxisLabelStyel =  .bottom(color: UIColor(red: 102/255.0, green: 102/255.0, blue: 102/255.0, alpha: 1.0), font: .systemFont(ofSize: 11),offset: 4)
+                rightAxisLabelStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
+                
+                rightAxisMaxMinStyel = .none
+                
+                rightAxisDataMaxMinStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
+                
+                bottomAxisMaxMinStyel = .bottom(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
+                
+                horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))]
+                //竖向线段颜色配置
+                verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
+                                                                .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
+                                                                .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))]
+                
+                
+                horizontalAxisFullFrame = true
+                //垂直坐标轴是否全屏显示
+                verticalAxisFullFrame = false
+                //是否显示刻度尺
+                showGraduation = false
+                XRangeType = .unlimited
+
             case .temperature:
                 var modelPoints = [ChartPointModel]()
                 for point in points {
