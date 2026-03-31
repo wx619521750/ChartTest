@@ -18,11 +18,11 @@ class LineChartDrawer {
     func draw(layer:CALayer,ctx:CGContext,chartModel:ChartModel){
         self.chartModel = chartModel
         self.layer = layer
+        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
     }
     
@@ -156,12 +156,13 @@ class LineChartDrawer {
             return
         }
         ctx.saveGState()
-        
+        let lineWidth:CGFloat = getLineWidth()
+       
         let clipRect = CGRect(
             x: chartModel.chartContentInsert.left,
-            y: chartModel.chartContentInsert.top,
+            y: chartModel.chartContentInsert.top-lineWidth*0.5,
             width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
+            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom+lineWidth
         )
         
         ctx.clip(to: clipRect)
@@ -175,8 +176,9 @@ class LineChartDrawer {
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
                 if index == 0{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
+                }else{
+                    ctx.addLine(to: .init(x: pt.x, y: pt.y))
                 }
-                ctx.addLine(to: .init(x: pt.x, y: pt.y))
             }
         case .bezier(let width, let color):
             ctx.setLineWidth(width)
@@ -197,7 +199,7 @@ class LineChartDrawer {
         ctx.replacePathWithStrokedPath()
         ctx.clip()
         
-        for verticalColorRnage in chartModel.verticalColorRnages {
+        for (index,verticalColorRnage) in chartModel.verticalColorRnages.enumerated() {
             let toppt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.top ))
             let bottompt = ptPointFromPoint(point: .init(x: 0, y: verticalColorRnage.bottom ))
             
@@ -216,8 +218,8 @@ class LineChartDrawer {
             
             ctx.drawLinearGradient(
                 gradient,
-                start: CGPoint(x: 0, y: topY),
-                end: CGPoint(x: 0, y: bottomY),
+                start: CGPoint(x: 0, y: index == 0 ?topY-lineWidth*0.5:topY),
+                end: CGPoint(x: 0, y: index == chartModel.verticalColorRnages.count-1 ?bottomY+lineWidth:bottomY),
                 options: []
             )
         }
@@ -226,21 +228,34 @@ class LineChartDrawer {
         
     }
     
+    func getLineWidth()->CGFloat{
+        var lineWidth:CGFloat = 1
+        switch chartModel.lineModel.datalineStyle{
+        case .straight(let width, _):
+          lineWidth = width
+        case .bezier(let width, _):
+            lineWidth = width
+        }
+        return lineWidth
+    }
+    
     //绘制空数据区域
     func drawEmptyArea(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         ctx.saveGState()
+        let lineWidth:CGFloat = getLineWidth()
+
         let clipRect = CGRect(
             x: chartModel.chartContentInsert.left,
-            y: chartModel.chartContentInsert.top,
+            y: chartModel.chartContentInsert.top-lineWidth*0.5,
             width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
+            height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom+lineWidth
         )
         
         ctx.clip(to: clipRect)
         for point in chartModel.lineModel.emptyAreas{
             let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
             let point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
-            let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom)
+            let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top-lineWidth*0.5, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom+lineWidth)
             ctx.addRect(gapRect)
             if let color = (layer.delegate as? UIView)?.backgroundColor?.cgColor{
                 ctx.setFillColor(color)
