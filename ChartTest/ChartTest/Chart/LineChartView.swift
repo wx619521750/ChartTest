@@ -738,99 +738,145 @@ enum AxisLabelStyle{
 //提供给oc 定义样式
 extension ChartModel{
     @objc convenience init(points:[ChartPoint],type:XSChartType) {
-        self.init(points: points, type: type, radonYMax: 500, radonHLine1Y: 150, radonHLine2Y: 75)
+        self.init(points: points, type: type, minThreshold: 75, maxThreshold: 150)
     }
 
-    @objc convenience init(points:[ChartPoint], type:XSChartType, radonYMax: Double, radonHLine1Y: Double, radonHLine2Y: Double) {
-            self.init()
-            switch type{
-            case .radon:
-                var modelPoints = [ChartPointModel]()
-                for point in points {
-                    let item = ChartPointModel()
-                    item.style = .normal
-                    item.x = point.x
-                    item.y = point.y
-                    modelPoints.append(item)
-                }
-                lineModel.points = modelPoints
-                chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
-                yRangeType = .selfAdaptVisible
+    @objc convenience init(points:[ChartPoint], type:XSChartType, minThreshold: Double, maxThreshold: Double) {
+        self.init()
 
-                lineModel.datalineStyle = .bezier(width: 2, color: .black)
-                
-                topAxisLineStyle = .none
-                rightAxisLineStyle = .none
-                leftAxisLineStyle = .none
-                bottomAxisLineStyle = .dashLine(width: 1, color: UIColor(red: 238/255.0, green: 238/255.0, blue: 238/255.0, alpha: 1.0), lengths: [6,3])
-                
-                bottomAxisLabelStyel =  .bottom(color: UIColor(red: 102/255.0, green: 102/255.0, blue: 102/255.0, alpha: 1.0), font: .systemFont(ofSize: 11),offset: 4)
-                rightAxisLabelStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-                
-                rightAxisMaxMinStyel = .none
-                
-                rightAxisDataMaxMinStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-                
-                bottomAxisMaxMinStyel = .bottom(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-                
-                horizontalLines = [
-                    .init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths:         [4,2]),lableStyle:.left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),
-                    .init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),
-                          lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))
-                ]
-                //竖向线段颜色配置
-                verticalColorRnages = [
-                    .init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
-                    .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
-                    .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))
-                ]
-                
-                
-                horizontalAxisFullFrame = true
-                //垂直坐标轴是否全屏显示
-                verticalAxisFullFrame = false
-                //是否显示刻度尺
-                showGraduation = false
-                XRangeType = .distaceByNow(3600*24*365)
-
-            case .temperature:
-                var modelPoints = [ChartPointModel]()
-                for point in points {
-                    let item = ChartPointModel()
-                    item.style = .normal
-                    item.x = point.x
-                    item.y = point.y
-                    modelPoints.append(item)
-                }
-                lineModel.points = modelPoints
-                yRangeType = .selfAdaptVisible
-                lineModel.datalineStyle = .bezier(width: 1, color: .red)
-                topAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
-                bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
-                horizontalLines = []
-                verticalColorRnages = [.init(showType: .line, top: 100, bottom: -50, color: .systemBlue)]
-                
-                
-            case .humidity:
-                var modelPoints = [ChartPointModel]()
-                for point in points {
-                    let item = ChartPointModel()
-                    item.style = .normal
-                    item.x = point.x
-                    item.y = point.y
-                    modelPoints.append(item)
-                }
-                lineModel.points = modelPoints
-                yRangeType = .selfAdaptVisible
-                lineModel.datalineStyle = .bezier(width: 1, color: .red)
-                topAxisLineStyle = .none
-                bottomAxisLineStyle = .dashLine(width: 1, color: .lightGray, lengths: [4,2])
-                horizontalLines = []
-                verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .systemBlue)]
-                
-            default:
-                break
-            }
+        var modelPoints = [ChartPointModel]()
+        for point in points {
+            let item = ChartPointModel()
+            item.style = .normal
+            item.x = point.x
+            item.y = point.y
+            modelPoints.append(item)
         }
+        lineModel.points = modelPoints
+
+        switch type {
+        case .radon:
+            setupRadonStyle(minThreshold: minThreshold, maxThreshold: maxThreshold)
+        case .temperature:
+            setupTemperatureStyle()
+        case .humidity:
+            setupHumidityStyle()
+        default:
+            break
+        }
+    }
+
+    private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
+
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
+        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+
+        topAxisLineStyle    = .none
+        rightAxisLineStyle  = .none
+        leftAxisLineStyle   = .none
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+
+        bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
+        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisMaxMinStyel      = .none
+        rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
+
+        horizontalLines = [
+            .init(y: maxThreshold, lineStyle: .dashLine(width: 1, color: .lineColorRed, lengths: [4, 2]),
+                  lableStyle: .left(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
+            .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [4, 2]),
+                  lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
+        ]
+        verticalColorRnages = [
+            .init(showType: .line, top: CGFloat.infinity, bottom: maxThreshold, color: .lineColorRed),
+            .init(showType: .line, top:  maxThreshold, bottom: minThreshold, color: .lineColorYellow),
+            .init(showType: .line, top:  minThreshold, bottom:  0, color: .lineColorGreen)
+        ]
+
+        horizontalAxisFullFrame = true
+        verticalAxisFullFrame   = false
+        showGraduation          = false
+        XRangeType              = .distaceByNow(3600*24*365)
+    }
+
+    private func setupTemperatureStyle() {
+
+        chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
+        yRangeType = .selfAdaptVisible
+        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+
+        topAxisLineStyle    = .none
+        rightAxisLineStyle  = .none
+        leftAxisLineStyle   = .none
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+
+        bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
+        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisMaxMinStyel      = .none
+        rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
+
+        horizontalLines = []
+        verticalColorRnages = [.init(showType: .line, top: 100, bottom: -50, color: .lineColorBlue)]
+
+        horizontalAxisFullFrame = true
+        verticalAxisFullFrame   = false
+        showGraduation          = false
+        XRangeType              = .distaceByNow(3600*24*365)
+    }
+
+    private func setupHumidityStyle() {
+
+        chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
+        yRangeType = .selfAdaptVisible
+        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+
+        topAxisLineStyle    = .none
+        rightAxisLineStyle  = .none
+        leftAxisLineStyle   = .none
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+
+        bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
+        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisMaxMinStyel      = .none
+        rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
+
+        horizontalLines = []
+        verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .lineColorBlue)]
+
+        horizontalAxisFullFrame = true
+        verticalAxisFullFrame   = false
+        showGraduation          = false
+        XRangeType              = .distaceByNow(3600*24*365)
+    }
+}
+
+extension UIColor {
+    static func hex(_ hexValue: Int , alpha: CGFloat = 1.0) -> UIColor {
+        return UIColor(red: (CGFloat)((hexValue & 0xFF0000) >> 16) / 255.0, green: (CGFloat)((hexValue & 0xFF00) >> 8) / 255.0, blue: (CGFloat)(hexValue & 0xFF) / 255.0, alpha: alpha)
+    }
     
+    convenience init(hex: Int, alpha: CGFloat = 1.0) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255.0,
+            green: CGFloat((hex >> 8) & 0xFF) / 255.0,
+            blue: CGFloat(hex & 0xFF) / 255.0,
+            alpha: alpha
+        )
+    }
+}
+
+@objc
+extension UIColor {
+    @objc static let lineColorGreen = UIColor.hex(0x81D796)
+    @objc static let lineColorYellow = UIColor.hex(0xFFCF31)
+    @objc static let lineColorRed = UIColor.hex(0xE48388)
+    @objc static let lineColorBlue = UIColor.hex(0x3B85D6)
+    
+    @objc static let axisLineColor = UIColor.hex(0xeeeeee)
+    @objc static let bottomLabelColor = UIColor.hex(0x666666)
+    @objc static let rightLabelColor = UIColor.hex(0x999999)
 }

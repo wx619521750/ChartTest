@@ -185,6 +185,10 @@ class LineChartDrawer {
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
                 if index == 0{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
+                }else if item.dataType == .gap{
+                    ctx.move(to: .init(x: pt.x, y: pt.y))
+                }else if data[index-1].dataType == .gap{
+                    ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     ctx.addLine(to: .init(x: pt.x, y: pt.y))
                 }
@@ -196,6 +200,10 @@ class LineChartDrawer {
                 print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
                 if index == 0{
+                    ctx.move(to: .init(x: pt.x, y: pt.y))
+                }else if item.dataType == .gap{
+                    ctx.move(to: .init(x: pt.x, y: pt.y))
+                }else if data[index-1].dataType == .gap{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
                 }else{
                     let preItem = data[index-1]
@@ -603,7 +611,7 @@ class LineChartDrawer {
             let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
             let miny = layer.bounds.height-(offset ?? 0)
             let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
-            let minstr = mindate.toString(format: "yyyy/MM/dd HH:mm:ss")
+            let minstr = mindate.toString(format: "yyyy-MM-dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
             drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
             UIGraphicsPopContext()
@@ -611,7 +619,7 @@ class LineChartDrawer {
             let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
             let maxy = layer.bounds.height-(offset ?? 0)
             let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
-            let maxstr = maxdate.toString(format: "yyyy/MM/dd HH:mm:ss")
+            let maxstr = maxdate.toString(format: "yyyy-MM-dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, font: font, color: color)
             UIGraphicsPopContext()
