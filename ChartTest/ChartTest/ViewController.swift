@@ -239,7 +239,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             
             switch selectedIndex{
             case 0:
-                lineChartView.chartModel.chartContentInsert = .init(top: 3, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
 //                lineChartView.chartModel.yRangeType = .fixed(min: 19, max: 60)
 
@@ -275,7 +275,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
 
                 lineChartView.setNeedsDisplay()
             case 1:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
                 
                 lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
@@ -308,7 +308,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
 
                 lineChartView.setNeedsDisplay()
             case 2:
-                lineChartView.chartModel.chartContentInsert = .init(top: 0, left: 40, bottom: 40, right: 0)
+                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
                 lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
                 
                 lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)

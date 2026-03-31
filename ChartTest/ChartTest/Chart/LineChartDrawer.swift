@@ -672,14 +672,14 @@ class LineChartDrawer {
                 let dataMaxY = ys.max() ?? 0
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
-                let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+                let minstr = NSAttributedString(string: String(format: "%.1f", dataMinY), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-                let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+                let maxstr = NSAttributedString(string: String(format: "%.1f", dataMaxY), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
