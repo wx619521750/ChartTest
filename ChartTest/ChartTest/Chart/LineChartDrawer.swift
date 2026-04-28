@@ -681,21 +681,41 @@ class LineChartDrawer {
                 let minText = formatMaxMin?.min ?? String(format: "%.1f", dataMinY)
                 let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                let minStrSize = drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let maxText = formatMaxMin?.max ?? String(format: "%.1f", dataMaxY)
                 let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                let maxStrSize = drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
+                
+                ctx.saveGState()
+                let pointMin = ptPointFromPoint(point: .init(x: 0, y: dataMinY))
+                ctx.setLineWidth(1)
+                ctx.setStrokeColor(UIColor(red: 196/255.0, green: 196/255.0, blue: 196/255.0, alpha: 1.0).cgColor)
+                ctx.setLineDash(phase: 0, lengths: [6,3])
+                var startPoint = CGPoint.init(x: chartModel.chartContentInsert.left, y: pointMin.y)
+                var endPoint = CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right-minStrSize.width+(offset ?? 0), y: pointMin.y)
+                ctx.move(to: startPoint)
+                ctx.addLine(to: endPoint)
+                ctx.strokePath()
+                
+                let pointMax = ptPointFromPoint(point: .init(x: 0, y: dataMaxY))
+                startPoint = CGPoint.init(x: chartModel.chartContentInsert.left, y: pointMax.y)
+                endPoint = CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right-maxStrSize.width+(offset ?? 0), y: pointMax.y)
+                ctx.move(to: startPoint)
+                ctx.addLine(to: endPoint)
+                ctx.strokePath()
+                
+                ctx.restoreGState()
                 break
             case .right(let color, let font, let offset):
                 let trump = rightAxisDataMaxMinDrawY(visibleData: vasivledata,font: font, insert: padding, distance: 0)
 
-                let ys = data.map { $0.y }
+                let ys = vasivledata.map { $0.y }
                 let dataMinY = ys.min() ?? 0
                 let dataMaxY = ys.max() ?? 0
                 let formatMaxMin = (layer.delegate as? LineChartView)?.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(min: dataMinY, max: dataMaxY)
@@ -703,16 +723,36 @@ class LineChartDrawer {
                 let minText = formatMaxMin?.min ?? "\(dataMinY)"
                 let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                let _ = drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .minxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let maxText = formatMaxMin?.max ?? "\(dataMaxY)"
                 let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                let _ = drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .minxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
+                
+                ctx.saveGState()
+                let pointMin = ptPointFromPoint(point: .init(x: 0, y: dataMinY))
+                ctx.setLineWidth(1)
+                ctx.setStrokeColor(UIColor(red: 196/255.0, green: 196/255.0, blue: 196/255.0, alpha: 1.0).cgColor)
+                ctx.setLineDash(phase: 0, lengths: [6,3])
+                var startPoint = CGPoint.init(x: chartModel.chartContentInsert.left, y: pointMin.y)
+                var endPoint = CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: pointMin.y)
+                ctx.move(to: startPoint)
+                ctx.addLine(to: endPoint)
+                ctx.strokePath()
+                
+                let pointMax = ptPointFromPoint(point: .init(x: 0, y: dataMaxY))
+                startPoint = CGPoint.init(x: chartModel.chartContentInsert.left, y: pointMax.y)
+                endPoint = CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: pointMax.y)
+                ctx.move(to: startPoint)
+                ctx.addLine(to: endPoint)
+                ctx.strokePath()
+                
+                ctx.restoreGState()
                 break
             default:break
             }
@@ -907,7 +947,7 @@ class LineChartDrawer {
         backgroundColor: UIColor? = nil,
         cornerRadius:CGFloat? = nil,
         padding: UIEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-    ) {
+    )->CGSize {
         // 1. 计算文本大小
         let textSize = text.size()
         
@@ -994,6 +1034,7 @@ class LineChartDrawer {
         
         // 7. 绘制文本
         text.draw(in: CGRect(origin: textOrigin, size: textSize))
+        return backgroundSize
     }
     
     func ptPointFromPoint(point:CGPoint)->CGPoint{

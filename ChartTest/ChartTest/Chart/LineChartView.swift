@@ -797,9 +797,9 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
-        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+        lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -834,7 +834,7 @@ extension ChartModel{
 
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinDistance(distance: 10)
-        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+        lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -860,7 +860,7 @@ extension ChartModel{
 
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisible
-        lineModel.datalineStyle = .bezier(width: 2, color: .black)
+        lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none

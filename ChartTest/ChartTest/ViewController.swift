@@ -400,7 +400,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     
     func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinModel {
-        return MaxMinModel.init(max: "Max:\(max)", min: "Min:\(min)")
+        return MaxMinModel.init(max: "Max:\(floor(max))", min: "Min:\(floor(min))")
     }
 }
 
