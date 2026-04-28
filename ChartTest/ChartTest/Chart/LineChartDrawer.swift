@@ -271,8 +271,14 @@ class LineChartDrawer {
         
         ctx.clip(to: clipRect)
         for point in chartModel.lineModel.emptyAreas{
-            let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
-            let point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
+            var point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
+            if point1.x<chartModel.chartContentInsert.left{
+                point1.x = chartModel.chartContentInsert.left
+            }
+            var point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
+            if point2.x>layer.bounds.width-chartModel.chartContentInsert.right{
+                point2.x = layer.bounds.width-chartModel.chartContentInsert.right
+            }
             let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom)
             
             drawDiagonalLines(in: ctx, rect: gapRect, spacing: 10)
