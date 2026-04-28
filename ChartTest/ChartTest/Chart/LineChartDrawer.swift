@@ -317,14 +317,14 @@ class LineChartDrawer {
     func drawHVLine(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         for (index,horizontalLine) in chartModel.horizontalLines.enumerated() {
             ctx.saveGState()
-            let clipRect = CGRect(
-                x: chartModel.chartContentInsert.left,
-                y: chartModel.chartContentInsert.top,
-                width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
-                height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
-            )
-            
-            ctx.clip(to: clipRect)
+//            let clipRect = CGRect(
+//                x: chartModel.chartContentInsert.left,
+//                y: chartModel.chartContentInsert.top,
+//                width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
+//                height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
+//            )
+//            
+//            ctx.clip(to: clipRect)
             var point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
             switch horizontalLine.lineStyle {
             case .line(let width, let color):

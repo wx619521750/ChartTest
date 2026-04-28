@@ -549,7 +549,7 @@ import UIKit
     
     
     //横向线段配置
-    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [4,2]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [4,2]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
+    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [5,5]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [5,5]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
     //竖向线段配置
     var verticalLines:[VerticalLine] = []
     //竖向线段颜色配置
@@ -580,7 +580,7 @@ import UIKit
     
 }
 
-@objc class MaxMinModel:NSObject{
+@objcMembers class MaxMinModel:NSObject{
     var max:String
     var min:String
     init(max: String, min: String) {
@@ -804,7 +804,7 @@ extension ChartModel{
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
         leftAxisLineStyle   = .none
-        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
         rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
@@ -813,9 +813,9 @@ extension ChartModel{
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
 
         horizontalLines = [
-            .init(y: maxThreshold, lineStyle: .dashLine(width: 1, color: .lineColorRed, lengths: [4, 2]),
+            .init(y: maxThreshold, lineStyle: .dashLine(width: 1, color: .lineColorRed, lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
-            .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [4, 2]),
+            .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]
         verticalColorRnages = [
@@ -839,7 +839,7 @@ extension ChartModel{
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
         leftAxisLineStyle   = .none
-        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
         rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
@@ -865,7 +865,7 @@ extension ChartModel{
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
         leftAxisLineStyle   = .none
-        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [6, 3])
+        bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
         rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
