@@ -18,6 +18,11 @@ import UIKit
     @objc optional func lineChartViewHLineFormatAttributeStr(y:Double)->NSAttributedString
     //回调横向线段Y值，根据Y值返回格式化字符串
     @objc func lineChartViewHLineFormatStr(y:Double)->String
+
+    //回调右侧最值标签Y值，根据Y值返回格式化字符串
+    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(min:Double,max:Double)->MaxMinModel
+    //回调底部首尾时间标签X值，根据X值返回格式化字符串
+    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(x:Double)->String
     
     /// 当前点击的点的格式化字符串
     /// - Parameters:
@@ -64,8 +69,9 @@ import UIKit
     
     func dealData(){
         let xs = chartModel.lineModel.points.map { $0.x }
-        chartModel.minX = (xs.min() ?? 0)
-        chartModel.maxX = (xs.max() ?? 0)
+        let now = Date().timeIntervalSince1970
+        chartModel.minX = xs.min() ?? now
+        chartModel.maxX = xs.max() ?? now
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
         dealModels()
         changeDateMode(mode: chartModel.dateMode)
@@ -284,6 +290,7 @@ import UIKit
             chartModel.minX = chartModel.maxX-3600*24*30*12
         }
         self.setNeedsDisplay()
+        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
     }
     
     
@@ -561,6 +568,15 @@ import UIKit
     
 }
 
+@objc class MaxMinModel:NSObject{
+    var max:String
+    var min:String
+    init(max: String, min: String) {
+        self.max = max
+        self.min = min
+    }
+}
+
 
 enum YRangeType{
     case selfAdaptAll //所有数据最大最小Y值
@@ -790,7 +806,7 @@ extension ChartModel{
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]
         verticalColorRnages = [
-            .init(showType: .line, top: CGFloat.infinity, bottom: maxThreshold, color: .lineColorRed),
+            .init(showType: .line, top: 1000, bottom: maxThreshold, color: .lineColorRed),
             .init(showType: .line, top:  maxThreshold, bottom: minThreshold, color: .lineColorYellow),
             .init(showType: .line, top:  minThreshold, bottom:  0, color: .lineColorGreen)
         ]
@@ -874,7 +890,7 @@ extension UIColor {
     @objc static let lineColorGreen = UIColor.hex(0x81D796)
     @objc static let lineColorYellow = UIColor.hex(0xFFCF31)
     @objc static let lineColorRed = UIColor.hex(0xE48388)
-    @objc static let lineColorBlue = UIColor.hex(0x3B85D6)
+    @objc static let lineColorBlue = UIColor.hex(0x68A7ED)
     
     @objc static let axisLineColor = UIColor.hex(0xeeeeee)
     @objc static let bottomLabelColor = UIColor.hex(0x666666)

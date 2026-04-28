@@ -397,5 +397,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
         return ["\(y)℃","\(date)"]
     }
+    
+    
+    func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinModel {
+        return MaxMinModel.init(max: "Max:\(max)", min: "Min:\(min)")
+    }
 }
 

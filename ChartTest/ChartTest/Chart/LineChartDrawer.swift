@@ -197,7 +197,7 @@ class LineChartDrawer {
             ctx.setLineWidth(width)
             ctx.setStrokeColor(color.cgColor)
             for (index,item) in data.enumerated(){
-                print(item.x,item.y)
+                //print(item.x,item.y)
                 let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
                 if index == 0{
                     ctx.move(to: .init(x: pt.x, y: pt.y))
@@ -610,16 +610,14 @@ class LineChartDrawer {
         case .bottom(let color, let font, let offset):
             let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
             let miny = layer.bounds.height-(offset ?? 0)
-            let mindate = Date.init(timeIntervalSince1970: chartModel.minX)
-            let minstr = mindate.toString(format: "yyyy-MM-dd HH:mm:ss")
+            let minstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.minX) ?? Date.init(timeIntervalSince1970: chartModel.minX).toString(format: "yyyy-MM-dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
             drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
             UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
             let maxy = layer.bounds.height-(offset ?? 0)
-            let maxdate = Date.init(timeIntervalSince1970: chartModel.maxX)
-            let maxstr = maxdate.toString(format: "yyyy-MM-dd HH:mm:ss")
+            let maxstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.maxX) ?? Date.init(timeIntervalSince1970: chartModel.maxX).toString(format: "yyyy-MM-dd HH:mm:ss")
             UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, font: font, color: color)
             UIGraphicsPopContext()
@@ -673,42 +671,46 @@ class LineChartDrawer {
             switch chartModel.rightAxisDataMaxMinStyel {
                 
             case .left(let color, let font, let offset):
-                let trump = rightAxisDataMaxMinDrawY(font: font, insert: padding, distance: 0)
-                
-                let ys = data.map { $0.y }
+                let trump = rightAxisDataMaxMinDrawY(visibleData: vasivledata,font: font, insert: padding, distance: 0)
+
+                let ys = vasivledata.map { $0.y }
                 let dataMinY = ys.min() ?? 0
                 let dataMaxY = ys.max() ?? 0
+                let formatMaxMin = (layer.delegate as? LineChartView)?.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(min: dataMinY, max: dataMaxY)
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
-                let minstr = NSAttributedString(string: String(format: "%.1f", dataMinY), attributes: [.foregroundColor:color,.font:font])
+                let minText = formatMaxMin?.min ?? String(format: "%.1f", dataMinY)
+                let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-                let maxstr = NSAttributedString(string: String(format: "%.1f", dataMaxY), attributes: [.foregroundColor:color,.font:font])
+                let maxText = formatMaxMin?.max ?? String(format: "%.1f", dataMaxY)
+                let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 break
             case .right(let color, let font, let offset):
+                let trump = rightAxisDataMaxMinDrawY(visibleData: vasivledata,font: font, insert: padding, distance: 0)
+
                 let ys = data.map { $0.y }
                 let dataMinY = ys.min() ?? 0
                 let dataMaxY = ys.max() ?? 0
+                let formatMaxMin = (layer.delegate as? LineChartView)?.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(min: dataMinY, max: dataMaxY)
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
-                let minstr = NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
+                let minText = formatMaxMin?.min ?? "\(dataMinY)"
+                let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-                let maxstr = NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
+                let maxText = formatMaxMin?.max ?? "\(dataMaxY)"
+                let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
+                drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 break
@@ -719,10 +721,10 @@ class LineChartDrawer {
         
     }
     
-    func rightAxisDataMaxMinDrawY(font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
+    func rightAxisDataMaxMinDrawY(visibleData:[ChartPointModel], font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
         
-        let ys = chartModel.lineModel.pointsShouldDraw.map { $0.y }
+        let ys = visibleData.map { $0.y }
         let dataMinY = ys.min() ?? 0
         let dataMaxY = ys.max() ?? 0
         var miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
@@ -1015,6 +1017,24 @@ class LineChartDrawer {
 }
 
 extension LineChartDrawer{
+    
+    func getTicks(min: Double, max: Double, step: Double) -> [Double] {
+        guard step > 0 else { return [] }
+        guard min <= max else { return [] }
+        
+        var ticks: [Double] = []
+        // 找到第一个 >= min 且是 step 的整数倍的刻度
+        let start = ceil(min / step) * step
+        
+        var value = start
+        while value <= max {
+            ticks.append(value)
+            value += step
+        }
+        
+        return ticks
+    }
+    
     //获取时间轴刻度
     func alignedTimestamps(
         start: TimeInterval,
