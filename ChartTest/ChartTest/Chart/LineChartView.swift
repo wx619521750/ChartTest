@@ -111,6 +111,18 @@ import UIKit
             let ys = vasivledata.map { $0.y }
             chartModel.minY = ys.min() ?? 0
             chartModel.maxY = ys.max() ?? 0
+        case .selfAdaptVisibleWithMinDistance(let distance):
+            let ys = vasivledata.map { $0.y }
+            
+            let minY = ys.min() ?? 0
+            let maxY = ys.max() ?? 0
+            if maxY-minY>=distance{
+                chartModel.minY = minY
+                chartModel.maxY = maxY
+            }else{
+                chartModel.minY = (minY+maxY-distance)*0.5
+                chartModel.maxY = (minY+maxY+distance)*0.5
+            }
         case .fixed(let min, let max):
             chartModel.minY = min
             chartModel.maxY = max
@@ -581,6 +593,7 @@ import UIKit
 enum YRangeType{
     case selfAdaptAll //所有数据最大最小Y值
     case selfAdaptVisible //可视数据最大最小Y值
+    case selfAdaptVisibleWithMinDistance(distance:Double)
     case selfAdaptVisibleWithMinMax(min:Double,max:Double)//限定的可视数据最大最小Y值
     case fixed(min:Double,max:Double)//手动配置最大最小Y值
 }
@@ -820,7 +833,7 @@ extension ChartModel{
     private func setupTemperatureStyle() {
 
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
-        yRangeType = .selfAdaptVisible
+        yRangeType = .selfAdaptVisibleWithMinDistance(distance: 10)
         lineModel.datalineStyle = .bezier(width: 2, color: .black)
 
         topAxisLineStyle    = .none

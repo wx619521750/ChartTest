@@ -155,7 +155,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     lazy var lineChartView: LineChartView = {
         let view = LineChartView()
         view.frame = .init(x: 20, y: 100, width: UIScreen.main.bounds.width-40, height: 240)
-        view.backgroundColor = .clear
+        view.backgroundColor = .white
         view.delegate = self
         return view
     }()

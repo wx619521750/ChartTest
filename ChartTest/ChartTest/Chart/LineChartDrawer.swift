@@ -295,7 +295,7 @@ class LineChartDrawer {
     ///   - spacing: 线间距
     private func drawDiagonalLines(in ctx: CGContext, rect: CGRect, spacing: CGFloat) {
         ctx.setLineWidth(1)
-        ctx.setStrokeColor(UIColor(red: 226/255.0, green: 226/255.0, blue: 226/255.0, alpha: 1.0).cgColor)
+        ctx.setStrokeColor(UIColor(red: 234/255.0, green: 234/255.0, blue: 234/255.0, alpha: 1.0).cgColor)
         var y = rect.minY-rect.width
         while y>=rect.minY-rect.width&&y<=rect.maxY {
             ctx.move(to: .init(x: rect.origin.x, y: y))
