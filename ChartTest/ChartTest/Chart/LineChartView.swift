@@ -562,6 +562,7 @@ import UIKit
     
     private func startDeceleration(with velocityX: CGFloat) {
         stopDeceleration()
+        guard chartModel.enableDeceleration else { return }
         // 过滤手指离开瞬间的轻微抖动，避免出现非预期的小惯性位移
         guard abs(velocityX) > decelerationStartVelocityThreshold else { return }
         decelerationVelocityX = velocityX
@@ -668,6 +669,8 @@ import UIKit
     var verticalAxisFullFrame = false
     //是否显示刻度尺
     var showGraduation = false
+    //是否开启左右滑动惯性
+    var enableDeceleration = true
     
 
     
@@ -893,7 +896,7 @@ extension ChartModel{
         chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
-
+        enableDeceleration = true
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
         leftAxisLineStyle   = .none
@@ -928,6 +931,7 @@ extension ChartModel{
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .temperature)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
+        enableDeceleration = false
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -954,6 +958,7 @@ extension ChartModel{
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .humidity)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
+        enableDeceleration = false
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
