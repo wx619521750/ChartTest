@@ -54,6 +54,8 @@ import UIKit
     private var decelerationDisplayLink: CADisplayLink?
     private var decelerationVelocityX: CGFloat = 0
     private var lastDecelerationTimestamp: CFTimeInterval = 0
+    private let decelerationStartVelocityThreshold: CGFloat = 120
+    private let decelerationStopVelocityThreshold: CGFloat = 5
     //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
         super.draw(layer, in: ctx)
@@ -62,6 +64,11 @@ import UIKit
     }
     override func draw(_ rect: CGRect) {
         super.draw(rect)
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        stopDeceleration()
+        super.touchesBegan(touches, with: event)
     }
     
     override init(frame: CGRect) {
@@ -555,7 +562,8 @@ import UIKit
     
     private func startDeceleration(with velocityX: CGFloat) {
         stopDeceleration()
-        guard abs(velocityX) > 10 else { return }
+        // 过滤手指离开瞬间的轻微抖动，避免出现非预期的小惯性位移
+        guard abs(velocityX) > decelerationStartVelocityThreshold else { return }
         decelerationVelocityX = velocityX
         lastDecelerationTimestamp = 0
         let displayLink = CADisplayLink(target: self, selector: #selector(handleDecelerationTick(_:)))
@@ -583,7 +591,7 @@ import UIKit
         let rate = CGFloat(pow(Double(UIScrollView.DecelerationRate.normal.rawValue), deltaTime * 1000))
         decelerationVelocityX *= rate
         
-        if !didMove || abs(decelerationVelocityX) < 5 {
+        if !didMove || abs(decelerationVelocityX) < decelerationStopVelocityThreshold {
             stopDeceleration()
         }
     }
@@ -912,7 +920,7 @@ extension ChartModel{
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
         showGraduation          = false
-        XRangeType              = .distaceByNow(3600*24*365)
+        XRangeType              = .distaceByNow(3600*24*3)
     }
 
     private func setupTemperatureStyle() {
