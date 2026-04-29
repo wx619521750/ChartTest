@@ -50,6 +50,10 @@ import UIKit
     private var pinchLocation:CGPoint = .zero
     //标记是否正在拖动tapedItem
     private var isLabelPaning = false
+    // 模拟 UIScrollView 横向减速效果
+    private var decelerationDisplayLink: CADisplayLink?
+    private var decelerationVelocityX: CGFloat = 0
+    private var lastDecelerationTimestamp: CFTimeInterval = 0
     //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
         super.draw(layer, in: ctx)
@@ -255,6 +259,10 @@ import UIKit
         fatalError("init(coder:) has not been implemented")
     }
     
+    deinit {
+        stopDeceleration()
+    }
+    
     
     /// 设置窗口最大最小X
     /// - Parameters:
@@ -337,6 +345,7 @@ import UIKit
     }
     ///处理点击事件
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+        stopDeceleration()
         //判断是否有正在展示详情的数据，如何有则隐藏
         if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
             let location = gesture.location(in: self)
@@ -398,6 +407,7 @@ import UIKit
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
         switch gesture.state {
         case .began:
+            stopDeceleration()
             //判断是否四滑动数据详情视图
             if let tapedItem = chartModel.tapedItem,tapedItem.style != .normal{
                 let location = gesture.location(in: self)
@@ -421,41 +431,19 @@ import UIKit
                 //如果不是，则处理曲线平移
                 let translation = gesture.translation(in: self)
                 gesture.setTranslation(.zero, in: self)
-                let offset = (translation.x/self.layer.bounds.width)*(chartModel.maxX-chartModel.minX)
-                let newMaxX = self.chartModel.maxX - offset
-                let newMinX = self.chartModel.minX - offset
-                //根据不同的X轴范围处理平移事件
-                switch chartModel.XRangeType {
-                case .unlimited:
-                    changeXRange(min: newMinX, max: newMaxX)
-                case .limitedByData:
-                    if  let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
-                        let distance = firstX - self.chartModel.minX
-                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                        return
-                    }
-                    if  let lastX = chartModel.lineModel.points.last?.x,newMaxX > lastX{
-                        let distance = lastX - self.chartModel.maxX
-                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                        return
-                    }
-                    changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
-                case .distaceByNow(let double):
-                    let date = Date()
-                    if  newMinX < date.timeIntervalSince1970-double {
-                        let distance = date.timeIntervalSince1970-double - self.chartModel.minX
-                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                        return
-                    }
-                    if  newMaxX > date.timeIntervalSince1970{
-                        let distance = date.timeIntervalSince1970 - self.chartModel.maxX
-                        changeXRange(min: self.chartModel.minX + distance, max: self.chartModel.maxX + distance)
-                        return
-                    }
-                    changeXRange(min: self.chartModel.minX - offset, max: self.chartModel.maxX - offset)
-                }
+                let dataOffset = dataOffsetFromViewTranslation(translation.x)
+                _ = shiftVisibleRange(by: dataOffset)
             }
-            break
+        case .ended:
+            guard !isLabelPaning else {
+                isLabelPaning = false
+                return
+            }
+            isLabelPaning = false
+            startDeceleration(with: gesture.velocity(in: self).x)
+        case .cancelled, .failed:
+            isLabelPaning = false
+            stopDeceleration()
         default:
             break
         }
@@ -475,6 +463,7 @@ import UIKit
         guard let view = gesture.view else { return }
         switch gesture.state {
         case .began:
+            stopDeceleration()
             print("Pinch 手势开始")
             pinchLocation = gesture.location(in: self)
             // 手势开始时可以做的操作
@@ -509,6 +498,93 @@ import UIKit
             print("Pinch 手势被取消")
         default:
             break
+        }
+    }
+    
+    private func dataOffsetFromViewTranslation(_ translationX: CGFloat) -> Double {
+        guard self.layer.bounds.width > 0 else { return 0 }
+        return Double((translationX / self.layer.bounds.width) * CGFloat(chartModel.maxX - chartModel.minX))
+    }
+    
+    @discardableResult
+    private func shiftVisibleRange(by dataOffset: Double) -> Bool {
+        let newMinX = chartModel.minX - dataOffset
+        let newMaxX = chartModel.maxX - dataOffset
+        
+        switch chartModel.XRangeType {
+        case .unlimited:
+            changeXRange(min: newMinX, max: newMaxX)
+            return true
+        case .limitedByData:
+            if let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
+                let distance = firstX - chartModel.minX
+                if distance != 0 {
+                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                }
+                return false
+            }
+            if let lastX = chartModel.lineModel.points.last?.x, newMaxX > lastX {
+                let distance = lastX - chartModel.maxX
+                if distance != 0 {
+                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                }
+                return false
+            }
+            changeXRange(min: newMinX, max: newMaxX)
+            return true
+        case .distaceByNow(let double):
+            let now = Date().timeIntervalSince1970
+            if newMinX < now - double {
+                let distance = now - double - chartModel.minX
+                if distance != 0 {
+                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                }
+                return false
+            }
+            if newMaxX > now {
+                let distance = now - chartModel.maxX
+                if distance != 0 {
+                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                }
+                return false
+            }
+            changeXRange(min: newMinX, max: newMaxX)
+            return true
+        }
+    }
+    
+    private func startDeceleration(with velocityX: CGFloat) {
+        stopDeceleration()
+        guard abs(velocityX) > 10 else { return }
+        decelerationVelocityX = velocityX
+        lastDecelerationTimestamp = 0
+        let displayLink = CADisplayLink(target: self, selector: #selector(handleDecelerationTick(_:)))
+        displayLink.add(to: .main, forMode: .common)
+        decelerationDisplayLink = displayLink
+    }
+    
+    private func stopDeceleration() {
+        decelerationDisplayLink?.invalidate()
+        decelerationDisplayLink = nil
+        decelerationVelocityX = 0
+        lastDecelerationTimestamp = 0
+    }
+    
+    @objc private func handleDecelerationTick(_ displayLink: CADisplayLink) {
+        if lastDecelerationTimestamp == 0 {
+            lastDecelerationTimestamp = displayLink.timestamp
+            return
+        }
+        
+        let deltaTime = displayLink.timestamp - lastDecelerationTimestamp
+        lastDecelerationTimestamp = displayLink.timestamp
+        
+        let didMove = shiftVisibleRange(by: dataOffsetFromViewTranslation(decelerationVelocityX * CGFloat(deltaTime)))
+        let rate = CGFloat(pow(Double(UIScrollView.DecelerationRate.normal.rawValue), deltaTime * 1000))
+        decelerationVelocityX *= rate
+        
+        if !didMove || abs(decelerationVelocityX) < 5 {
+            stopDeceleration()
         }
     }
     
