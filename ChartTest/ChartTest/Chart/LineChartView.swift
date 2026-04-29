@@ -81,6 +81,7 @@ import UIKit
     func dealData(){
         let xs = chartModel.lineModel.points.map { $0.x }
         let now = Date().timeIntervalSince1970
+        //xRangeType = .distaceByNow的时候，数据超出当前时间，初始拖动会闪动，考虑到数据一般不会超出当前时间，暂不修改
         chartModel.minX = xs.min() ?? now
         chartModel.maxX = xs.max() ?? now
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
