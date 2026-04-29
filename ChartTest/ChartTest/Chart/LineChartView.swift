@@ -371,7 +371,7 @@ import UIKit
         to x: Double
     ) -> ChartPointModel? {
         guard !items.isEmpty else { return nil }
-        return items.min {
+        return items.filter({$0.dataType == .data}).min {
             abs($0.x - x) < abs($1.x - x)
         }
     }
