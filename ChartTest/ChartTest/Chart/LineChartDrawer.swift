@@ -323,7 +323,7 @@ class LineChartDrawer {
 //                width: layer.bounds.width - chartModel.chartContentInsert.left - chartModel.chartContentInsert.right,
 //                height: layer.bounds.height - chartModel.chartContentInsert.top - chartModel.chartContentInsert.bottom
 //            )
-//            
+//
 //            ctx.clip(to: clipRect)
             var point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
             switch horizontalLine.lineStyle {

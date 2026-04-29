@@ -111,17 +111,26 @@ import UIKit
             let ys = vasivledata.map { $0.y }
             chartModel.minY = ys.min() ?? 0
             chartModel.maxY = ys.max() ?? 0
-        case .selfAdaptVisibleWithMinDistance(let distance):
+        case .selfAdaptVisibleWithType(let type):
             let ys = vasivledata.map { $0.y }
             
             let minY = ys.min() ?? 0
             let maxY = ys.max() ?? 0
-            if maxY-minY>=distance{
-                chartModel.minY = minY
-                chartModel.maxY = maxY
-            }else{
-                chartModel.minY = (minY+maxY-distance)*0.5
-                chartModel.maxY = (minY+maxY+distance)*0.5
+            let distance = maxY - minY
+
+            var padding = distance * 0.3
+            if padding<0.2{
+                padding = 0.2
+            }
+            if padding > 2{
+                padding = 2
+            }
+            
+            chartModel.minY = minY-padding
+            chartModel.maxY = maxY+padding
+            if type == .humidity{
+                chartModel.minY = chartModel.minY<0 ? 0:chartModel.minY
+                chartModel.maxY = chartModel.maxY>100 ? 100:chartModel.maxY
             }
         case .fixed(let min, let max):
             chartModel.minY = min
@@ -593,7 +602,7 @@ import UIKit
 enum YRangeType{
     case selfAdaptAll //所有数据最大最小Y值
     case selfAdaptVisible //可视数据最大最小Y值
-    case selfAdaptVisibleWithMinDistance(distance:Double)
+    case selfAdaptVisibleWithType(type:XSChartType)
     case selfAdaptVisibleWithMinMax(min:Double,max:Double)//限定的可视数据最大最小Y值
     case fixed(min:Double,max:Double)//手动配置最大最小Y值
 }
@@ -797,7 +806,7 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
@@ -833,7 +842,7 @@ extension ChartModel{
     private func setupTemperatureStyle() {
 
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
-        yRangeType = .selfAdaptVisibleWithMinDistance(distance: 10)
+        yRangeType = .selfAdaptVisibleWithType(type: .temperature)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
         topAxisLineStyle    = .none
@@ -859,7 +868,7 @@ extension ChartModel{
     private func setupHumidityStyle() {
 
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
-        yRangeType = .selfAdaptVisible
+        yRangeType = .selfAdaptVisibleWithType(type: .humidity)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
 
         topAxisLineStyle    = .none
@@ -900,9 +909,9 @@ extension UIColor {
 
 @objc
 extension UIColor {
-    @objc static let lineColorGreen = UIColor.hex(0x81D796)
+    @objc static let lineColorGreen = UIColor.hex(0x56C06F)
     @objc static let lineColorYellow = UIColor.hex(0xFFCF31)
-    @objc static let lineColorRed = UIColor.hex(0xE48388)
+    @objc static let lineColorRed = UIColor.hex(0xE67077)
     @objc static let lineColorBlue = UIColor.hex(0x68A7ED)
     
     @objc static let axisLineColor = UIColor.hex(0xeeeeee)
