@@ -628,6 +628,11 @@ import UIKit
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
     
+    var topAxisStepType:AxisStepType = .none
+    var bottomAxisStepType:AxisStepType = .dateAdapt
+    var leftAxisStepType:AxisStepType = .distance(distace: 5, align: 5)
+    var rightAxisStepType:AxisStepType = .seprateCount(count: 4, align: 6)
+
 
     //顶部轴线最大最小值配置
     var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
@@ -849,6 +854,14 @@ enum AxisLabelStyle{
     case right(color:UIColor,font:UIFont,offset:CGFloat?)
     case none
 }
+
+enum AxisStepType{
+    case dateAdapt
+    case distance(distace:CGFloat,align:CGFloat?)
+    case seprateCount(count:UInt8,align:CGFloat?)
+    case none
+}
+
 //用于oc使用
 @objcMembers class ChartPoint:NSObject{
     var x:CGFloat = 0
@@ -924,7 +937,7 @@ extension ChartModel{
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
         showGraduation          = false
-        XRangeType              = .distaceByNow(3600*24*3)
+        XRangeType              = .distaceByNow(3600*24*365)
     }
 
     private func setupTemperatureStyle() {

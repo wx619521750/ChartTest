@@ -22,6 +22,8 @@ class LineChartDrawer {
         drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawAxisMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawAxisDataMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
     }
@@ -632,6 +634,14 @@ class LineChartDrawer {
             break
         }
         
+        
+        
+       
+        
+        
+    }
+    
+    func drawAxisMaxMinLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         switch chartModel.rightAxisMaxMinStyel {
             
         case .left(let color, let font, let offset):
@@ -668,7 +678,9 @@ class LineChartDrawer {
             break
         default:break
         }
-        
+    }
+    
+    func drawAxisDataMaxMinLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         let vasivledata = data.filter({
             ($0.x>=chartModel.minX)&&($0.x<=chartModel.maxX)&&$0.dataType == .data
         })
@@ -763,9 +775,9 @@ class LineChartDrawer {
             default:break
             }
         }
-        
-        
     }
+    
+
     
     func rightAxisDataMaxMinDrawY(visibleData:[ChartPointModel], font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
