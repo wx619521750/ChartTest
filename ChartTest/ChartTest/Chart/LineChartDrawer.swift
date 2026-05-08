@@ -551,7 +551,155 @@ class LineChartDrawer {
     
     //绘制轴线的刻度文本
     func drawAxisLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
+        switch chartModel.bottomAxisStepType {
+        case .dateAdapt:
+            let trup = getDateAdaptStamps()
+            switch chartModel.bottomAxisLabelStyel {
+            case .bottom(let color, let font,let offset):
+                for item in trup.0{
+                    let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
+                    let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
+                    let date = Date.init(timeIntervalSince1970: item)
+                    let str = date.toString(format: trup.1)
+                    UIGraphicsPushContext(ctx)
+                    drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, font: font, color: color)
+                    UIGraphicsPopContext()
+                    switch chartModel.graduationType {
+                    case .line(let lenght, let width, let color):
+                        ctx.setStrokeColor(color.cgColor)
+                        ctx.setLineWidth(width)
+                        ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                        ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-lenght))
+                    case .none:
+                        break
+                    }
+                    
+                }
+                ctx.strokePath()
+                
+            default:
+                let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.bottomAxisStepType)
+                switch chartModel.bottomAxisLabelStyel {
+                case .bottom(let color, let font,let offset):
+                    for item in steps{
+                        let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
+                        let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
+                        let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .bottom,value: item) ?? NSAttributedString.init(string: String.init(format: "%.1f", item))
+                        UIGraphicsPushContext(ctx)
+                        let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
+                        UIGraphicsPopContext()
+                        switch chartModel.graduationType {
+                        case .line(let lenght, let width, let color):
+                            ctx.setStrokeColor(color.cgColor)
+                            ctx.setLineWidth(width)
+                            ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
+                            ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-lenght))
+                        case .none:
+                            break
+                        }
+                    }
+                    ctx.strokePath()
+                    
+                default:
+                    break
+                }
+            }
         
+        default:
+            break
+        }
+       
+        
+        
+        let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.rightAxisStepType)
+        switch chartModel.rightAxisLabelStyel {
+        case .right(let color, let font,let offset):
+            for item in steps{
+                let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
+                let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
+                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .right,value: item) ?? NSAttributedString.init(string: String.init(format: "%.1f", item))
+                UIGraphicsPushContext(ctx)
+                let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
+                UIGraphicsPopContext()
+                switch chartModel.graduationType {
+                case .line(let lenght, let width, let color):
+                    ctx.setStrokeColor(color.cgColor)
+                    ctx.setLineWidth(width)
+                    ctx.move(to: .init(x: layer.bounds.width-chartModel.chartContentInsert.right, y:y))
+                    ctx.addLine(to: .init(x: layer.bounds.width-chartModel.chartContentInsert.right-lenght, y: y))
+                case .none:
+                    break
+                }
+            }
+            ctx.strokePath()
+            
+        default:
+            break
+        }
+  
+    }
+    
+    func generateAxisSteps(min: CGFloat, max: CGFloat, type: AxisStepType) -> [CGFloat] {
+        guard min < max else {
+            return []
+        }
+        
+        switch type {
+        case .distance(let distance, let align):
+            guard distance > 0 else { return [] }
+            
+            if let alignValue = align {
+                // 有 align：返回可以被 align 整除的数值
+                // 首先找到 >= min 的第一个能被 align 整除的数
+                let firstValue = ceil(min / alignValue) * alignValue
+                // 然后生成所有符合 distance 间隔且能被 align 整除的数
+                var result: [CGFloat] = []
+                var current = firstValue
+                while current <= max {
+                    // 确保当前值在范围内且能被 align 整除
+                    if current >= min && current <= max {
+                        // 由于浮点数精度问题，使用容差判断整除
+                        let remainder = current.truncatingRemainder(dividingBy: alignValue)
+                        if abs(remainder) < 0.0001 || abs(remainder - alignValue) < 0.0001 {
+                            result.append(current)
+                        }
+                    }
+                    current += distance
+                    // 防止浮点数无限循环
+                    if current > max + distance {
+                        break
+                    }
+                }
+                return result
+            } else {
+                // 没有 align：包含最小值，步长为 distance
+                var result: [CGFloat] = []
+                var current = min
+                while current <= max + 0.0001 { // 加容差避免浮点数精度问题
+                    result.append(current)
+                    current += distance
+                    if result.count > 10000 { // 防止无限循环
+                        break
+                    }
+                }
+                return result
+            }
+            
+        case .seprateCount(let count):
+            guard count >= 2 else { return [min, max] }
+            
+            let step = (max - min) / CGFloat(count - 1)
+            var result: [CGFloat] = []
+            for i in 0..<count {
+                let value = min + step * CGFloat(i)
+                result.append(value)
+            }
+            return result
+        default:return []
+        }
+    }
+    
+    func getDateAdaptStamps()->([TimeInterval],format:String){
         var stamps = [TimeInterval]()
         let range = chartModel.maxX - chartModel.minX
         var dateFormat = "HH:mm"
@@ -590,28 +738,10 @@ class LineChartDrawer {
             stamps = alignedTimestamps(start: chartModel.minX, end: chartModel.maxX, step: .months(Int(count)))
             dateFormat = "MMM"
         }
-        
-        switch chartModel.bottomAxisLabelStyel {
-            
-        case .bottom(let color, let font,let offset):
-            for item in stamps{
-                let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
-                let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
-                let date = Date.init(timeIntervalSince1970: item)
-                let str = date.toString(format: dateFormat)
-                UIGraphicsPushContext(ctx)
-                drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, font: font, color: color)
-                UIGraphicsPopContext()
-                if chartModel.showGraduation{
-                    ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-                    ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-10))
-                }
-            }
-            ctx.strokePath()
-            
-        default:
-            break
-        }
+        return (stamps,dateFormat)
+    }
+    
+    func drawAxisMaxMinLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         
         switch chartModel.bottomAxisMaxMinStyel {
             
@@ -634,14 +764,6 @@ class LineChartDrawer {
             break
         }
         
-        
-        
-       
-        
-        
-    }
-    
-    func drawAxisMaxMinLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
         switch chartModel.rightAxisMaxMinStyel {
             
         case .left(let color, let font, let offset):

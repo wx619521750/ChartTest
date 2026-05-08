@@ -21,6 +21,8 @@ import UIKit
 
     //回调右侧最值标签Y值，根据Y值返回格式化字符串
     @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(min:Double,max:Double)->MaxMinModel
+    //回调右侧刻度y值返回格式化字符串
+    @objc optional func lineChartViewAxisGraduationFormatStr(direction:AxisDirection,value:Double)->NSAttributedString?
     //回调底部首尾时间标签X值，根据X值返回格式化字符串
     @objc optional func lineChartViewBottomAxisMaxMinFormatStr(x:Double)->String
     
@@ -631,7 +633,7 @@ import UIKit
     var topAxisStepType:AxisStepType = .none
     var bottomAxisStepType:AxisStepType = .dateAdapt
     var leftAxisStepType:AxisStepType = .distance(distace: 5, align: 5)
-    var rightAxisStepType:AxisStepType = .seprateCount(count: 4, align: 6)
+    var rightAxisStepType:AxisStepType = .seprateCount(count: 4)
 
 
     //顶部轴线最大最小值配置
@@ -674,7 +676,7 @@ import UIKit
     //垂直坐标轴是否全屏显示
     var verticalAxisFullFrame = false
     //是否显示刻度尺
-    var showGraduation = false
+    var graduationType:GraduationType = .none
     //是否开启左右滑动惯性
     var enableDeceleration = true
     
@@ -858,7 +860,19 @@ enum AxisLabelStyle{
 enum AxisStepType{
     case dateAdapt
     case distance(distace:CGFloat,align:CGFloat?)
-    case seprateCount(count:UInt8,align:CGFloat?)
+    case seprateCount(count:UInt8)
+    case none
+}
+
+@objc enum AxisDirection:Int{
+    case top = 0
+    case bottom
+    case left
+    case right
+}
+
+enum GraduationType{
+    case line(lenght:CGFloat,width:CGFloat,color:UIColor)
     case none
 }
 
@@ -912,12 +926,13 @@ extension ChartModel{
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
         topAxisLineStyle    = .none
-        rightAxisLineStyle  = .none
+        rightAxisLineStyle  = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
         leftAxisLineStyle   = .none
         bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
-        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisLabelStyel       = .right(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisStepType = .distance(distace: 30, align: 30)
         rightAxisMaxMinStyel      = .none
         rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
@@ -936,7 +951,7 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        showGraduation          = false
+        graduationType          = .none
         XRangeType              = .distaceByNow(3600*24*365)
     }
 
@@ -963,7 +978,7 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        showGraduation          = false
+        graduationType          = .none
         XRangeType              = .distaceByNow(3600*24*365)
     }
 
@@ -990,7 +1005,7 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        showGraduation          = false
+        graduationType          = .none
         XRangeType              = .distaceByNow(3600*24*365)
     }
 }

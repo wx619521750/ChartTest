@@ -402,5 +402,19 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinModel {
         return MaxMinModel.init(max: "Max:\(floor(max))", min: "Min:\(floor(min))")
     }
+    
+    func lineChartViewAxisGraduationFormatStr(direction: AxisDirection, value: Double) -> NSAttributedString? {
+        switch direction {
+        case .top:
+            break
+        case .bottom:
+            break
+        case .left:
+            break
+        case .right:
+            return NSAttributedString.init(string: String.init(format: "%.1f", value), attributes: [.foregroundColor:UIColor.red])
+        }
+        return nil
+    }
 }
 
