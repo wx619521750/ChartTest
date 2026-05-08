@@ -35,7 +35,7 @@ import UIKit
 
 
 @objcMembers class LineChartView: UIView,UIGestureRecognizerDelegate {
-    var delegate:LineChartViewDelegate?
+    weak var delegate:LineChartViewDelegate?
     private var drawer = LineChartDrawer()
     var chartModel = ChartModel(){
         didSet{
