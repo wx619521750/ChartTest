@@ -54,6 +54,54 @@ void main() {
     expect(minAfterDeceleration, lessThan(minAfterGesture));
   });
 
+  testWidgets('repeated horizontal flings can restart deceleration', (
+    tester,
+  ) async {
+    final key = GlobalKey<FlutterLineChartViewState>();
+    final points = List<ChartPointModel>.generate(
+      720,
+      (index) => ChartPointModel(x: index * 3600, y: (index % 30).toDouble()),
+    );
+    final model = ChartModel.fromPoints(points: points, type: XSChartType.radon)
+      ..xRangeType = const XRangeType.limitedByData();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: FlutterLineChartView(key: key, model: model),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    for (var attempt = 0; attempt < 2; attempt += 1) {
+      await tester.fling(
+        find.byType(FlutterLineChartView),
+        const Offset(120, 0),
+        1600,
+      );
+      await tester.pump();
+      final minAfterGesture = key.currentState!.chartModel.minX;
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(key.currentState!.chartModel.minX, lessThan(minAfterGesture));
+    }
+  });
+
+  test('all demo chart styles enable deceleration', () {
+    for (final type in XSChartType.values) {
+      final model = ChartModel.fromPoints(
+        points: <ChartPointModel>[ChartPointModel(x: 0, y: 0)],
+        type: type,
+      );
+      expect(model.enableDeceleration, isTrue, reason: type.name);
+    }
+  });
+
   testWidgets('pinch zoom out reaches the complete data range', (tester) async {
     final key = GlobalKey<FlutterLineChartViewState>();
     final points = List<ChartPointModel>.generate(

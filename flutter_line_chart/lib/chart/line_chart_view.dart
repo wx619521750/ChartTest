@@ -51,7 +51,7 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
   final Set<int> _activePointers = <int>{};
   double _trackedVelocityX = 0;
-  Ticker? _decelerationTicker;
+  late final Ticker _decelerationTicker;
   double _decelerationVelocityX = 0;
   Duration? _lastDecelerationElapsed;
 
@@ -63,6 +63,7 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   @override
   void initState() {
     super.initState();
+    _decelerationTicker = createTicker(_handleDecelerationTick);
     _chartModel = widget.model.copy();
     _dealData();
   }
@@ -80,6 +81,7 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   @override
   void dispose() {
     _stopDeceleration();
+    _decelerationTicker.dispose();
     super.dispose();
   }
 
@@ -433,12 +435,13 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     }
     _decelerationVelocityX = velocityX;
     _lastDecelerationElapsed = null;
-    _decelerationTicker = createTicker(_handleDecelerationTick)..start();
+    _decelerationTicker.start();
   }
 
   void _stopDeceleration() {
-    _decelerationTicker?.dispose();
-    _decelerationTicker = null;
+    if (_decelerationTicker.isActive) {
+      _decelerationTicker.stop();
+    }
     _decelerationVelocityX = 0;
     _lastDecelerationElapsed = null;
   }

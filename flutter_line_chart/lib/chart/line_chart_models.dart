@@ -761,7 +761,7 @@ class ChartModel {
       width: 3,
       color: Colors.black,
     );
-    enableDeceleration = false;
+    enableDeceleration = true;
     topAxisLineStyle = const ChartLineStyle.none();
     rightAxisLineStyle = const ChartLineStyle.none();
     leftAxisLineStyle = const ChartLineStyle.none();
@@ -811,7 +811,7 @@ class ChartModel {
       width: 3,
       color: Colors.black,
     );
-    enableDeceleration = false;
+    enableDeceleration = true;
     topAxisLineStyle = const ChartLineStyle.none();
     rightAxisLineStyle = const ChartLineStyle.none();
     leftAxisLineStyle = const ChartLineStyle.none();
