@@ -33,6 +33,31 @@ class DateTicks {
 }
 
 class LineChartMath {
+  static (double, double) boundXRange({
+    required double min,
+    required double max,
+    required XRangeType rangeType,
+    required List<ChartPointModel> points,
+    double? nowSeconds,
+  }) {
+    switch (rangeType.mode) {
+      case XRangeMode.unlimited:
+        return (min, max);
+      case XRangeMode.limitedByData:
+        if (points.isEmpty) {
+          return (min, max);
+        }
+        return (
+          min < points.first.x ? points.first.x : min,
+          max > points.last.x ? points.last.x : max,
+        );
+      case XRangeMode.distanceByNow:
+        final now = nowSeconds ?? DateTime.now().millisecondsSinceEpoch / 1000;
+        final lowerBound = now - rangeType.distanceByNow;
+        return (min < lowerBound ? lowerBound : min, max > now ? now : max);
+    }
+  }
+
   static Rect chartRect(ChartModel model, Size size) {
     final inset = model.chartContentInset;
     return Rect.fromLTRB(
@@ -182,13 +207,19 @@ class LineChartMath {
     var anchorIndex = 0;
 
     for (var bucket = 0; bucket < threshold - 2; bucket += 1) {
-      final rangeStart = (bucket + 1) * bucketSize ~/ 1 + 1;
-      final rangeEnd = (bucket + 2) * bucketSize ~/ 1 + 1;
-      final nextStart = (bucket + 2) * bucketSize ~/ 1 + 1;
-      final nextEnd = (bucket + 3) * bucketSize ~/ 1 + 1;
-      final avgStart = nextStart.clamp(0, data.length).toInt();
-      final avgEnd = nextEnd.clamp(avgStart + 1, data.length).toInt();
-      final avgSlice = data.sublist(avgStart, avgEnd);
+      final rangeStart = math.min(
+        ((bucket + 1) * bucketSize).floor() + 1,
+        data.length - 1,
+      );
+      final rangeEnd = math.min(
+        ((bucket + 2) * bucketSize).floor() + 1,
+        data.length,
+      );
+      final nextEnd = math.min(
+        ((bucket + 3) * bucketSize).floor() + 1,
+        data.length,
+      );
+      final avgSlice = data.sublist(rangeStart, nextEnd);
       final avgX =
           avgSlice.map((point) => point.x).reduce((a, b) => a + b) /
           avgSlice.length;
@@ -197,10 +228,10 @@ class LineChartMath {
           avgSlice.length;
 
       var maxArea = -1.0;
-      var selectedPoint = data[rangeStart.clamp(0, data.length - 1).toInt()];
-      final end = rangeEnd.clamp(rangeStart + 1, data.length).toInt();
+      var selectedIndex = rangeStart;
+      var selectedPoint = data[selectedIndex];
 
-      for (var index = rangeStart; index < end; index += 1) {
+      for (var index = rangeStart; index < rangeEnd; index += 1) {
         final candidate = data[index];
         final anchor = data[anchorIndex];
         final area =
@@ -209,6 +240,7 @@ class LineChartMath {
                 .abs();
         if (area > maxArea) {
           maxArea = area;
+          selectedIndex = index;
           selectedPoint = candidate;
         }
         if (selected != null &&
@@ -222,12 +254,7 @@ class LineChartMath {
       }
 
       result.add(selectedPoint);
-      anchorIndex = data.indexWhere(
-        (point) => point.x == selectedPoint.x && point.y == selectedPoint.y,
-      );
-      if (anchorIndex < 0) {
-        anchorIndex = 0;
-      }
+      anchorIndex = selectedIndex;
     }
 
     result.add(data.last);

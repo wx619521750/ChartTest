@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -47,6 +48,9 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   bool _isLabelPanning = false;
   bool? _isHorizontalGesture;
   bool _didPinch = false;
+  final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
+  final Set<int> _activePointers = <int>{};
+  double _trackedVelocityX = 0;
   Ticker? _decelerationTicker;
   double _decelerationVelocityX = 0;
   Duration? _lastDecelerationElapsed;
@@ -167,25 +171,12 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   }
 
   (double, double) _boundedXRange(double min, double max) {
-    switch (_chartModel.xRangeType.mode) {
-      case XRangeMode.unlimited:
-        return (min, max);
-      case XRangeMode.limitedByData:
-        final firstX = _chartModel.lineModel.points.isEmpty
-            ? null
-            : _chartModel.lineModel.points.first.x;
-        final lastX = _chartModel.lineModel.points.isEmpty
-            ? null
-            : _chartModel.lineModel.points.last.x;
-        return (
-          firstX == null || min >= firstX ? min : firstX,
-          lastX == null || max <= lastX ? max : lastX,
-        );
-      case XRangeMode.distanceByNow:
-        final now = DateTime.now().millisecondsSinceEpoch / 1000;
-        final lower = now - _chartModel.xRangeType.distanceByNow;
-        return (min < lower ? lower : min, max > now ? now : max);
-    }
+    return LineChartMath.boundXRange(
+      min: min,
+      max: max,
+      rangeType: _chartModel.xRangeType,
+      points: _chartModel.lineModel.points,
+    );
   }
 
   void _autoChangeDateMode() {
@@ -205,8 +196,7 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     }
   }
 
-  void _handleTapDown(TapDownDetails details) {
-    _stopDeceleration();
+  void _handleTapUp(TapUpDetails details) {
     final existingItem = _chartModel.tappedItem;
     if (existingItem != null) {
       final tooltipRect = _tooltipRectFor(existingItem);
@@ -216,6 +206,50 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
       }
     }
     _selectNearestAt(details.localPosition);
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _stopDeceleration();
+    if (_activePointers.isEmpty) {
+      _trackedVelocityX = 0;
+    }
+    _activePointers.add(event.pointer);
+    _velocityTrackers[event.pointer] = VelocityTracker.withKind(event.kind)
+      ..addPosition(event.timeStamp, event.position);
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    final tracker = _velocityTrackers[event.pointer];
+    if (tracker == null || event.synthesized) {
+      return;
+    }
+    tracker.addPosition(event.timeStamp, event.position);
+    if (_activePointers.length == 1) {
+      final velocityX = tracker.getVelocity().pixelsPerSecond.dx;
+      if (velocityX.isFinite) {
+        _trackedVelocityX = velocityX;
+      }
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    final tracker = _velocityTrackers[event.pointer];
+    if (tracker != null) {
+      tracker.addPosition(event.timeStamp, event.position);
+      if (_activePointers.length == 1) {
+        final velocityX = tracker.getVelocity().pixelsPerSecond.dx;
+        if (velocityX.isFinite) {
+          _trackedVelocityX = velocityX;
+        }
+      }
+    }
+    _activePointers.remove(event.pointer);
+    _velocityTrackers.remove(event.pointer);
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    _activePointers.remove(event.pointer);
+    _velocityTrackers.remove(event.pointer);
   }
 
   void _handleScaleStart(ScaleStartDetails details) {
@@ -249,7 +283,6 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     if (_isHorizontalGesture != true) {
       return;
     }
-
     if (_isLabelPanning) {
       _selectNearestAt(details.localFocalPoint);
       return;
@@ -286,7 +319,11 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
       return;
     }
     _isLabelPanning = false;
-    _startDeceleration(details.velocity.pixelsPerSecond.dx);
+    final gestureVelocityX = details.velocity.pixelsPerSecond.dx;
+    final velocityX = gestureVelocityX.abs() > _trackedVelocityX.abs()
+        ? gestureVelocityX
+        : _trackedVelocityX;
+    _startDeceleration(velocityX);
   }
 
   void _selectNearestAt(Offset localPosition) {
@@ -337,14 +374,9 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
         _changeXRange(min: newMinX, max: newMaxX);
         return true;
       case XRangeMode.limitedByData:
-        final firstX = _chartModel.lineModel.points.isEmpty
-            ? null
-            : _chartModel.lineModel.points.first.x;
-        final lastX = _chartModel.lineModel.points.isEmpty
-            ? null
-            : _chartModel.lineModel.points.last.x;
-        if (firstX != null && newMinX < firstX) {
-          final distance = firstX - _chartModel.minX;
+        final points = _chartModel.lineModel.points;
+        if (points.isNotEmpty && newMinX < points.first.x) {
+          final distance = points.first.x - _chartModel.minX;
           if (distance != 0) {
             _changeXRange(
               min: _chartModel.minX + distance,
@@ -353,8 +385,8 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
           }
           return false;
         }
-        if (lastX != null && newMaxX > lastX) {
-          final distance = lastX - _chartModel.maxX;
+        if (points.isNotEmpty && newMaxX > points.last.x) {
+          final distance = points.last.x - _chartModel.maxX;
           if (distance != 0) {
             _changeXRange(
               min: _chartModel.minX + distance,
@@ -367,9 +399,9 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
         return true;
       case XRangeMode.distanceByNow:
         final now = DateTime.now().millisecondsSinceEpoch / 1000;
-        final lower = now - _chartModel.xRangeType.distanceByNow;
-        if (newMinX < lower) {
-          final distance = lower - _chartModel.minX;
+        final lowerBound = now - _chartModel.xRangeType.distanceByNow;
+        if (newMinX < lowerBound) {
+          final distance = lowerBound - _chartModel.minX;
           if (distance != 0) {
             _changeXRange(
               min: _chartModel.minX + distance,
@@ -484,22 +516,28 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
       child: LayoutBuilder(
         builder: (context, constraints) {
           _chartSize = Size(constraints.maxWidth, widget.height);
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: _handleTapDown,
-            onScaleStart: _handleScaleStart,
-            onScaleUpdate: _handleScaleUpdate,
-            onScaleEnd: _handleScaleEnd,
-            child: RepaintBoundary(
-              child: CustomPaint(
-                size: _chartSize,
-                painter: LineChartPainter(
-                  chartModel: _chartModel,
-                  horizontalLineFormatter: _horizontalLineFormatter,
-                  tappedItemFormatter: _tappedItemFormatter,
-                  rightAxisDataMaxMinFormatter: _rightAxisDataMaxMinFormatter,
-                  axisGraduationFormatter: widget.axisGraduationFormatter,
-                  bottomAxisMaxMinFormatter: widget.bottomAxisMaxMinFormatter,
+          return Listener(
+            onPointerDown: _handlePointerDown,
+            onPointerMove: _handlePointerMove,
+            onPointerUp: _handlePointerUp,
+            onPointerCancel: _handlePointerCancel,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: _handleTapUp,
+              onScaleStart: _handleScaleStart,
+              onScaleUpdate: _handleScaleUpdate,
+              onScaleEnd: _handleScaleEnd,
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  size: _chartSize,
+                  painter: LineChartPainter(
+                    chartModel: _chartModel,
+                    horizontalLineFormatter: _horizontalLineFormatter,
+                    tappedItemFormatter: _tappedItemFormatter,
+                    rightAxisDataMaxMinFormatter: _rightAxisDataMaxMinFormatter,
+                    axisGraduationFormatter: widget.axisGraduationFormatter,
+                    bottomAxisMaxMinFormatter: widget.bottomAxisMaxMinFormatter,
+                  ),
                 ),
               ),
             ),
