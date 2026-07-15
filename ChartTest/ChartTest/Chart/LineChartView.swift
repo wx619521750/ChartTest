@@ -12,6 +12,8 @@ import UIKit
     @objc optional func lineChartViewDateModeChanged(chartView:LineChartView,mode:DateMode)
     //显示窗口最大最小X值回调
     @objc optional func lineChartViewXRangeChanged(chartView:LineChartView,min:Double,max:Double)
+    //用户拖动、缩放或惯性滑动后的显示窗口回调
+    @objc optional func lineChartViewXRangeChangedByUserInteraction(chartView:LineChartView,min:Double,max:Double)
     //显示窗口最大最小Y值回调
     @objc optional func lineChartViewYRangeChanged(chartView:LineChartView,min:Double,max:Double)
     //回调横向线段 Y 值，富文本属性用于控制文字格式和大小
@@ -276,6 +278,14 @@ import UIKit
     ///   - min: 最小X
     ///   - max: 最大X
     func changeXRange(min:Double,max:Double){
+        updateXRange(min: min, max: max, isUserInteraction: false)
+    }
+
+    private func changeXRangeByUserInteraction(min: Double, max: Double) {
+        updateXRange(min: min, max: max, isUserInteraction: true)
+    }
+
+    private func updateXRange(min: Double, max: Double, isUserInteraction: Bool) {
         //这里如果是通过日历手动配置窗口大小，需要根据不同的展示类型去修正传入的数据
         switch chartModel.XRangeType {
         case .unlimited:
@@ -307,7 +317,13 @@ import UIKit
         }
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
-        
+        if isUserInteraction {
+            delegate?.lineChartViewXRangeChangedByUserInteraction?(
+                chartView: self,
+                min: chartModel.minX,
+                max: chartModel.maxX
+            )
+        }
         autoChangeDateMode()
     }
     //外部设置模式的时候自动展示当前位置合适的范围
@@ -491,12 +507,12 @@ import UIKit
             //根据不同的X轴范围处理缩放事件事件
             switch chartModel.XRangeType {
             case .unlimited:
-                changeXRange(min: newMinX, max: newMaxX)
+                changeXRangeByUserInteraction(min: newMinX, max: newMaxX)
             case .limitedByData:
-                changeXRange(min: newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX, max: newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX)
+                changeXRangeByUserInteraction(min: newMinX < (chartModel.lineModel.points.first?.x ?? 0) ? (chartModel.lineModel.points.first?.x ?? 0):newMinX, max: newMaxX > (chartModel.lineModel.points.last?.x ?? 0) ? (chartModel.lineModel.points.last?.x ?? 0):newMaxX)
             case .distaceByNow(let double):
                 let date = Date()
-                changeXRange(min: newMinX < date.timeIntervalSince1970-double ? date.timeIntervalSince1970-double:newMinX, max: newMaxX > date.timeIntervalSince1970 ? date.timeIntervalSince1970:newMaxX)
+                changeXRangeByUserInteraction(min: newMinX < date.timeIntervalSince1970-double ? date.timeIntervalSince1970-double:newMinX, max: newMaxX > date.timeIntervalSince1970 ? date.timeIntervalSince1970:newMaxX)
             }
         case .ended:
             print("Pinch 手势结束，最终缩放比例: \(view.transform.a)")
@@ -520,42 +536,42 @@ import UIKit
         
         switch chartModel.XRangeType {
         case .unlimited:
-            changeXRange(min: newMinX, max: newMaxX)
+            changeXRangeByUserInteraction(min: newMinX, max: newMaxX)
             return true
         case .limitedByData:
             if let firstX = chartModel.lineModel.points.first?.x, newMinX < firstX {
                 let distance = firstX - chartModel.minX
                 if distance != 0 {
-                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                    changeXRangeByUserInteraction(min: chartModel.minX + distance, max: chartModel.maxX + distance)
                 }
                 return false
             }
             if let lastX = chartModel.lineModel.points.last?.x, newMaxX > lastX {
                 let distance = lastX - chartModel.maxX
                 if distance != 0 {
-                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                    changeXRangeByUserInteraction(min: chartModel.minX + distance, max: chartModel.maxX + distance)
                 }
                 return false
             }
-            changeXRange(min: newMinX, max: newMaxX)
+            changeXRangeByUserInteraction(min: newMinX, max: newMaxX)
             return true
         case .distaceByNow(let double):
             let now = Date().timeIntervalSince1970
             if newMinX < now - double {
                 let distance = now - double - chartModel.minX
                 if distance != 0 {
-                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                    changeXRangeByUserInteraction(min: chartModel.minX + distance, max: chartModel.maxX + distance)
                 }
                 return false
             }
             if newMaxX > now {
                 let distance = now - chartModel.maxX
                 if distance != 0 {
-                    changeXRange(min: chartModel.minX + distance, max: chartModel.maxX + distance)
+                    changeXRangeByUserInteraction(min: chartModel.minX + distance, max: chartModel.maxX + distance)
                 }
                 return false
             }
-            changeXRange(min: newMinX, max: newMaxX)
+            changeXRangeByUserInteraction(min: newMinX, max: newMaxX)
             return true
         }
     }

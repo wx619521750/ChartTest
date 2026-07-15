@@ -9,61 +9,42 @@ import UIKit
 
 class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate {
 
-    
-
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         view.backgroundColor = .lightGray
         view.addSubview(scrollView)
-        scrollView.addSubview(lineChartView)
+        scrollView.addSubview(radonChartView)
+        scrollView.addSubview(temperatureChartView)
+        scrollView.addSubview(humidityChartView)
         scrollView.addSubview(segmentView)
-        scrollView.addSubview(segmentView1)
         scrollView.addSubview(minDatePicker)
         scrollView.addSubview(maxDatePicker)
-        initDataOCRadar()
+        initChartData()
     }
-    
-    func initData(){
-        
-        let chartModel = ChartModel()
-        var points = [ChartPointModel]()
-        if let data = loadData() {
-            var x:Double = 0
-            var y:Double = 0
-            for (key,value) in data{
-                for str in value{
-                    var strs = str.components(separatedBy: ",")
-                    let dateStr = key+strs[0]
-                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
-                    y = Double(strs[1]) ?? 0
-                    let item = ChartPointModel()
-                    item.style = .normal
-                    item.x = x
-                    item.y = y
-                    points.append(item)
-                }
-            }
-        }
-        chartModel.lineModel.points = points
 
-        lineChartView.chartModel = chartModel
-        segmentView1.selectIndex(index: 0, withDelegate: false)
+    func initChartData() {
+        let points = loadChartPoints()
+        radonChartView.chartModel = ChartModel(points: points, type: .radon)
+        temperatureChartView.chartModel = ChartModel(points: points, type: .temperature)
+        humidityChartView.chartModel = ChartModel(points: points, type: .humidity)
+        syncVisibleRange(
+            min: radonChartView.chartModel.minX,
+            max: radonChartView.chartModel.maxX,
+            source: radonChartView
+        )
     }
-    
-    func initDataOCRadar(){
-        
-        
+
+    func loadChartPoints() -> [ChartPoint] {
         var points = [ChartPoint]()
         if let data = loadData() {
-            var x:Double = 0
-            var y:Double = 0
             for (key,value) in data{
                 for str in value{
                     let strs = str.components(separatedBy: ",")
+                    guard strs.count >= 2 else { continue }
                     let dateStr = key+strs[0]
-                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
-                    y = Double(strs[1]) ?? 0
+                    let x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
+                    let y = Double(strs[1]) ?? 0
                     let item = ChartPoint()
                     item.x = x
                     item.y = y
@@ -71,62 +52,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 }
             }
         }
-        let model = ChartModel.init(points: points, type: .radon)
-
-        lineChartView.chartModel = model
-        segmentView1.selectIndex(index: 0, withDelegate: false)
-    }
-    
-    func initDataOCTemp(){
-        
-        
-        var points = [ChartPoint]()
-        if let data = loadData() {
-            var x:Double = 0
-            var y:Double = 0
-            for (key,value) in data{
-                for str in value{
-                    let strs = str.components(separatedBy: ",")
-                    let dateStr = key+strs[0]
-                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
-                    y = Double(strs[1]) ?? 0
-                    let item = ChartPoint()
-                    item.x = x
-                    item.y = y
-                    points.append(item)
-                }
-            }
-        }
-        let model = ChartModel.init(points: points, type: .temperature)
-
-        lineChartView.chartModel = model
-        segmentView1.selectIndex(index: 1, withDelegate: false)
-    }
-    
-    func initDataOCHum(){
-        
-        
-        var points = [ChartPoint]()
-        if let data = loadData() {
-            var x:Double = 0
-            var y:Double = 0
-            for (key,value) in data{
-                for str in value{
-                    let strs = str.components(separatedBy: ",")
-                    let dateStr = key+strs[0]
-                    x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
-                    y = Double(strs[1]) ?? 0
-                    let item = ChartPoint()
-                    item.x = x
-                    item.y = y
-                    points.append(item)
-                }
-            }
-        }
-        let model = ChartModel.init(points: points, type: .humidity)
-
-        lineChartView.chartModel = model
-        segmentView1.selectIndex(index: 2, withDelegate: false)
+        return points
     }
     
     func loadData() -> [String: [String]]? {
@@ -152,24 +78,32 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
 
     
-    lazy var lineChartView: LineChartView = {
+    private func makeChartView(y: CGFloat) -> LineChartView {
         let view = LineChartView()
-        view.frame = .init(x: 20, y: 100, width: UIScreen.main.bounds.width-40, height: 240)
+        view.frame = .init(x: 20, y: y, width: UIScreen.main.bounds.width-40, height: 240)
         view.backgroundColor = .white
         view.delegate = self
         return view
-    }()
+    }
+
+    lazy var radonChartView = makeChartView(y: 20)
+    lazy var temperatureChartView = makeChartView(y: 280)
+    lazy var humidityChartView = makeChartView(y: 540)
+
+    private var chartViews: [LineChartView] {
+        [radonChartView, temperatureChartView, humidityChartView]
+    }
     
     
     lazy var scrollView: UIScrollView = {
         let view = UIScrollView()
-        view.contentSize = .init(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height*2)
+        view.contentSize = .init(width: UIScreen.main.bounds.width, height: 952)
         view.frame = .init(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         return view
     }()
     
     lazy var segmentView: SegmentView = {
-        let view = SegmentView.init(frame: .init(x: 20, y: 340, width: UIScreen.main.bounds.width-40, height: 44))
+        let view = SegmentView.init(frame: .init(x: 20, y: 800, width: UIScreen.main.bounds.width-40, height: 44))
         view.titles = ["day","week","month","year"]
         view.tag = 101
 
@@ -177,17 +111,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         return view
     }()
     
-    lazy var segmentView1: SegmentView = {
-        let view = SegmentView.init(frame: .init(x: 20, y: 340+44, width: UIScreen.main.bounds.width-40, height: 44))
-        view.titles = ["氡气","温度","湿度"]
-        view.tag = 102
-        view.delegate = self
-        return view
-    }()
-    
     lazy var minDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 384+44, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 844, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -196,7 +122,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }()
     lazy var maxDatePicker: UIDatePicker = {
         let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 428+44, width: UIScreen.main.bounds.width-40, height: 44)
+        view.frame = .init(x: 20, y: 888, width: UIScreen.main.bounds.width-40, height: 44)
         view.datePickerMode = .dateAndTime
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
@@ -208,36 +134,28 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         let selectedDate = sender.date
         print("选择的日期: \(selectedDate)")
 
-        lineChartView.changeXRange(min: minDatePicker.date.timeIntervalSince1970, max:  maxDatePicker.date.timeIntervalSince1970)
+        syncVisibleRange(
+            min: minDatePicker.date.timeIntervalSince1970,
+            max: maxDatePicker.date.timeIntervalSince1970,
+            source: nil
+        )
     }
     
     func segmentView(_ segmentView: SegmentView, selectedIndex: Int) {
-        if segmentView.tag == 101{
-            
-            switch selectedIndex{
-            case 0:
-                lineChartView.changeDateMode(mode: .day)
-            case 1:
-                lineChartView.changeDateMode(mode: .week)
-            case 2:
-                lineChartView.changeDateMode(mode: .month)
-            case 3:
-                lineChartView.changeDateMode(mode: .year)
-            default:break
-                
-            }
-        }else{
-            
-            switch selectedIndex{
-            case 0:
-                initDataOCRadar()
-            case 1:
-                initDataOCTemp()
-            case 2:
-                initDataOCHum()
-            default:break
-            }
+        let mode: DateMode
+        switch selectedIndex {
+        case 0: mode = .day
+        case 1: mode = .week
+        case 2: mode = .month
+        case 3: mode = .year
+        default: return
         }
+        radonChartView.changeDateMode(mode: mode)
+        syncVisibleRange(
+            min: radonChartView.chartModel.minX,
+            max: radonChartView.chartModel.maxX,
+            source: radonChartView
+        )
     }
     
     func lineChartViewDateModeChanged(chartView: LineChartView, mode: DateMode) {
@@ -261,10 +179,22 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     
     func lineChartViewXRangeChanged(chartView: LineChartView, min: Double, max: Double) {
-        let mindate = Date.init(timeIntervalSince1970: min)
-        let maxdate = Date.init(timeIntervalSince1970: max)
-        minDatePicker.date  = mindate
-        maxDatePicker.date = maxdate
+        minDatePicker.date = Date(timeIntervalSince1970: min)
+        maxDatePicker.date = Date(timeIntervalSince1970: max)
+    }
+
+    func lineChartViewXRangeChangedByUserInteraction(chartView: LineChartView, min: Double, max: Double) {
+        syncVisibleRange(min: min, max: max, source: chartView)
+    }
+
+    private func syncVisibleRange(min: Double, max: Double, source: LineChartView?) {
+        guard min < max else { return }
+
+        minDatePicker.date = Date(timeIntervalSince1970: min)
+        maxDatePicker.date = Date(timeIntervalSince1970: max)
+        for chartView in chartViews where chartView !== source {
+            chartView.changeXRange(min: min, max: max)
+        }
     }
     
     func lineChartViewHLineFormatAttributeStr(chartView: LineChartView, y: Double) -> NSAttributedString {
