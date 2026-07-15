@@ -237,112 +237,6 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
                 initDataOCHum()
             default:break
             }
-            
-//            switch selectedIndex{
-//            case 0:
-//                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
-//                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
-////                lineChartView.chartModel.yRangeType = .fixed(min: 19, max: 60)
-//
-//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
-//                
-//                lineChartView.chartModel.topAxisLineStyle = .none
-//                lineChartView.chartModel.rightAxisLineStyle = .none
-//                lineChartView.chartModel.leftAxisLineStyle = .none
-//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: UIColor(red: 238/255.0, green: 238/255.0, blue: 238/255.0, alpha: 1.0), lengths: [6,3])
-//                
-//                lineChartView.chartModel.bottomAxisLabelStyel =  .bottom(color: UIColor(red: 102/255.0, green: 102/255.0, blue: 102/255.0, alpha: 1.0), font: .systemFont(ofSize: 11),offset: 4)
-//                lineChartView.chartModel.rightAxisLabelStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
-//                
-//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.bottomAxisMaxMinStyel = .bottom(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))]
-//                //竖向线段颜色配置
-//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))]
-//                
-//                
-//                lineChartView.chartModel.horizontalAxisFullFrame = true
-//                //垂直坐标轴是否全屏显示
-//                lineChartView.chartModel.verticalAxisFullFrame = false
-//                //是否显示刻度尺
-//                lineChartView.chartModel.showGraduation = false
-//                lineChartView.chartModel.XRangeType = .unlimited
-//
-//                lineChartView.setNeedsDisplay()
-//            case 1:
-//                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
-//                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
-//                
-//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
-//                
-//                lineChartView.chartModel.topAxisLineStyle = .none
-//                lineChartView.chartModel.rightAxisLineStyle = .none
-//                lineChartView.chartModel.leftAxisLineStyle = .none
-//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: UIColor(red: 238/255.0, green: 238/255.0, blue: 238/255.0, alpha: 1.0), lengths: [6,3])
-//                
-//                lineChartView.chartModel.bottomAxisLabelStyel =  .bottom(color: UIColor(red: 102/255.0, green: 102/255.0, blue: 102/255.0, alpha: 1.0), font: .systemFont(ofSize: 11),offset: 4)
-//                lineChartView.chartModel.rightAxisLabelStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
-//                
-//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))]
-//                //竖向线段颜色配置
-//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))]
-//                
-//                
-//                lineChartView.chartModel.horizontalAxisFullFrame = true
-//                //垂直坐标轴是否全屏显示
-//                lineChartView.chartModel.verticalAxisFullFrame = false
-//                //是否显示刻度尺
-//                lineChartView.chartModel.showGraduation = false
-//                lineChartView.chartModel.XRangeType = .limitedByData
-//
-//                lineChartView.setNeedsDisplay()
-//            case 2:
-//                lineChartView.chartModel.chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
-//                lineChartView.chartModel.yRangeType = .selfAdaptVisibleWithMinMax(min: 0, max: 60)
-//                
-//                lineChartView.chartModel.lineModel.datalineStyle = .bezier(width: 2, color: .black)
-//                
-//                lineChartView.chartModel.topAxisLineStyle = .none
-//                lineChartView.chartModel.rightAxisLineStyle = .none
-//                lineChartView.chartModel.leftAxisLineStyle = .none
-//                lineChartView.chartModel.bottomAxisLineStyle = .dashLine(width: 1, color: UIColor(red: 238/255.0, green: 238/255.0, blue: 238/255.0, alpha: 1.0), lengths: [6,3])
-//                
-//                lineChartView.chartModel.bottomAxisLabelStyel =  .bottom(color: UIColor(red: 102/255.0, green: 102/255.0, blue: 102/255.0, alpha: 1.0), font: .systemFont(ofSize: 11),offset: 4)
-//                lineChartView.chartModel.rightAxisLabelStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.rightAxisMaxMinStyel = .none
-//                
-//                lineChartView.chartModel.rightAxisDataMaxMinStyel = .left(color: UIColor(red: 153/255.0, green: 153/255.0, blue: 153/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)
-//                
-//                lineChartView.chartModel.horizontalLines = [.init(y: 60, lineStyle: .dashLine(width: 1, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), lengths: [4,2]),lableStyle: .left(color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0), font: .systemFont(ofSize: 11), offset: 0))]
-//                //竖向线段颜色配置
-//                lineChartView.chartModel.verticalColorRnages = [.init(showType: .line, top: 100, bottom: 60, color: UIColor(red: 192/255.0, green: 2/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 60, bottom: 20, color: UIColor(red: 250/255.0, green: 194/255.0, blue: 12/255.0, alpha: 1.0)),
-//                                                                .init(showType: .line, top: 20, bottom: 0, color: UIColor(red: 65/255.0, green: 166/255.0, blue: 89/255.0, alpha: 1.0))]
-//                
-//                
-//                lineChartView.chartModel.horizontalAxisFullFrame = true
-//                //垂直坐标轴是否全屏显示
-//                lineChartView.chartModel.verticalAxisFullFrame = false
-//                //是否显示刻度尺
-//                lineChartView.chartModel.showGraduation = false
-//                lineChartView.chartModel.XRangeType = .distaceByNow(3600*24*365)
-//
-//                lineChartView.setNeedsDisplay()
-//            default:break
-//            }
         }
     }
     
@@ -375,46 +269,51 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
 //    func lineChartViewHLineFormatAttributeStr(y: Double) -> NSAttributedString {
 //        return NSAttributedString(string: "\(y)", attributes: [
-//            .foregroundColor: UIColor.label,
+//            .foregroundColor: UIColor.red,
 //            .font: UIFont.systemFont(ofSize: 18)
 //        ])
 //    }
-
-    
-    func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> XYAttrModel {
-        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
-        return XYAttrModel(
-            xAttr: NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.secondaryLabel]),
-            yAttr: NSAttributedString(string: "\(y)℃", attributes: [.font:UIFont.boldSystemFont(ofSize: 18), .foregroundColor:UIColor.label])
-        )
-    }
-    
-    
-    func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinAttrModel {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 18),
-            .foregroundColor: UIColor.rightLabelColor
-        ]
-        return MaxMinAttrModel(
-            max: NSAttributedString(string: "Max:\(floor(max))", attributes: attributes),
-            min: NSAttributedString(string: "Min:\(floor(min))", attributes: attributes)
-        )
-    }
-    
-    func lineChartViewAxisGraduationFormatStr(direction: AxisDirection, value: Double) -> NSAttributedString? {
-        switch direction {
-        case .top:
-            break
-        case .bottom:
-
-            let date = Date.init(timeIntervalSince1970: value)
-            let str = date.toString(format: "yyyy")
-            return NSAttributedString(string: str, attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 6)])
-        case .left:
-            break
-        case .right:
-            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 6)])
-        }
-        return nil
-    }
+//
+//    
+//    func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> XYAttrModel {
+//        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
+//        return XYAttrModel(
+//            xAttr: NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red]),
+//            yAttr: NSAttributedString(string: "\(y)℃", attributes: [.font:UIFont.boldSystemFont(ofSize: 18), .foregroundColor:UIColor.red])
+//        )
+//    }
+//    
+//    
+//    func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinAttrModel {
+//        let attributes: [NSAttributedString.Key: Any] = [
+//            .font: UIFont.systemFont(ofSize: 18),
+//            .foregroundColor: UIColor.red
+//        ]
+//        return MaxMinAttrModel(
+//            max: NSAttributedString(string: "Max:\(floor(max))", attributes: attributes),
+//            min: NSAttributedString(string: "Min:\(floor(min))", attributes: attributes)
+//        )
+//    }
+//    
+//    func lineChartViewAxisGraduationFormatStr(direction: AxisDirection, value: Double) -> NSAttributedString? {
+//        switch direction {
+//        case .top:
+//            break
+//        case .bottom:
+//
+//            let date = Date.init(timeIntervalSince1970: value)
+//            let str = date.toString(format: "yyyy")
+//            return NSAttributedString(string: str, attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 18)])
+//        case .left:
+//            break
+//        case .right:
+//            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 6)])
+//        }
+//        return nil
+//    }
+//    
+//    func lineChartViewBottomAxisMaxMinFormatStr(x: Double) -> NSAttributedString {
+//        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
+//        return NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red])
+//    }
 }

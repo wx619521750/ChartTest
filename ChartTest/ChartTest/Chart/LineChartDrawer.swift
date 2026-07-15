@@ -477,19 +477,36 @@ class LineChartDrawer {
         ctx.restoreGState()
         if item.dataType == .data{
             
-            let text = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
-            let attributedStrings = [text?.yAttr, text?.xAttr].compactMap { $0 }
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: item.detailFont,
+                .foregroundColor: item.detailColor
+            ]
+            let defaultText = XYAttrModel(
+                xAttr: NSAttributedString(
+                    string: Date(timeIntervalSince1970: item.x).toString(format: "yyyy/MM/dd HH:mm"),
+                    attributes: attributes
+                ),
+                yAttr: NSAttributedString(string: String(format: "%.1f", item.y), attributes: attributes)
+            )
+            let text = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs?(x: item.x, y: item.y) ?? defaultText
+            let attributedStrings = [text.yAttr, text.xAttr]
             item.detailSize = deteminItemDetaiFrameSize(strs: attributedStrings)
             let detailPoint = deteminItemDetailCenter(item: item)
             drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
             UIGraphicsPushContext(ctx)
-            
-            if let yText = text?.yAttr {
-                drawText(yText, point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center)
-            }
-            if let xText = text?.xAttr {
-                drawText(xText, point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center)
-            }
+
+            let contentHeight = text.yAttr.size().height + text.xAttr.size().height
+            let contentTop = detailPoint.y - contentHeight * 0.5
+            drawText(
+                text.yAttr,
+                point: CGPoint(x: detailPoint.x, y: contentTop + text.yAttr.size().height * 0.5),
+                anchor: .center
+            )
+            drawText(
+                text.xAttr,
+                point: CGPoint(x: detailPoint.x, y: contentTop + text.yAttr.size().height + text.xAttr.size().height * 0.5),
+                anchor: .center
+            )
             UIGraphicsPopContext()
         }else{
             let leftStr = Date.init(timeIntervalSince1970: item.gapLeft).toString(format: "yyyy/MM/dd HH:mm")

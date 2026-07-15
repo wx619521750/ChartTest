@@ -28,7 +28,7 @@ import UIKit
     ///   - x: 当前点击的数据的x
     ///   - y: 当前点击的数据的x
     /// - Returns: 格式化后的 X、Y 富文本
-    @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->XYAttrModel
+    @objc optional func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->XYAttrModel
     
 }
 
