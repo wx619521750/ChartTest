@@ -317,7 +317,7 @@ class LineChartDrawer {
     
     //绘制水平垂直的线条
     func drawHVLine(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
-        for (index,horizontalLine) in chartModel.horizontalLines.enumerated() {
+        for horizontalLine in chartModel.horizontalLines {
             ctx.saveGState()
 //            let clipRect = CGRect(
 //                x: chartModel.chartContentInsert.left,
@@ -344,7 +344,6 @@ class LineChartDrawer {
             ctx.move(to: startPoint)
             ctx.addLine(to: endPoint)
             ctx.strokePath()
-            UIGraphicsPushContext(ctx)
             ctx.restoreGState()
             let padding = UIEdgeInsets.init(top: 4, left: 6, bottom: 4, right: 6)
             switch horizontalLine.lableStyle {
@@ -354,39 +353,24 @@ class LineChartDrawer {
                 if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
                     continue
                 }
-                let trump = horizontalLinesMaxMinDrawY(font: font, insert: padding, distance: 4)
-                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
-                    UIGraphicsPushContext(ctx)
-                    drawText(str, point:  CGPoint.init(x: chartModel.chartContentInsert.left+(offset ?? 0), y: index == 0 ?trump.1:trump.0), anchor: .maxxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: padding)
-                    UIGraphicsPopContext()
-                }else{
-                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
-                        continue}
-                    let attrStr = NSAttributedString.init(string: str, attributes: [.foregroundColor:color,.font:font])
-                    UIGraphicsPushContext(ctx)
-                    drawText(attrStr, point:  CGPoint.init(x: chartModel.chartContentInsert.left+(offset ?? 0), y: index == 0 ?trump.1:trump.0), anchor: .maxxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: padding)
-                    UIGraphicsPopContext()
-                }
+                let str = horizontalLineAttributedText(horizontalLine, color: color, font: font)
+                let positions = horizontalLinesMaxMinDrawY(insert: padding, distance: 4)
+                let y = horizontalLine.y == chartModel.horizontalLines.map(\.y).min() ? positions.0 : positions.1
+                UIGraphicsPushContext(ctx)
+                drawText(str, point: CGPoint(x: point.x, y: y), anchor: .maxxcentery, backgroundColor: color.withAlphaComponent(0.1), padding: padding)
+                UIGraphicsPopContext()
             case .right(let color, let font, let offset):
                 point.x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
                 let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
                 if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
                     continue
                 }
-                let trump = horizontalLinesMaxMinDrawY(font: font, insert: padding, distance: 4)
-                
-                if let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: horizontalLine.y){
-                    UIGraphicsPushContext(ctx)
-                    drawText(str, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: index == 0 ?trump.0:trump.1), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: padding)
-                    UIGraphicsPopContext()
-                }else{
-                    guard  let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatStr(y: horizontalLine.y) else{
-                        continue}
-                    let attrStr = NSAttributedString.init(string: str, attributes: [.foregroundColor:color,.font:font])
-                    UIGraphicsPushContext(ctx)
-                    drawText(attrStr, point:  CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0), y: index == 0 ?trump.0:trump.1), anchor: .minxcentery,backgroundColor: color.withAlphaComponent(0.1),padding: padding)
-                    UIGraphicsPopContext()
-                }
+                let str = horizontalLineAttributedText(horizontalLine, color: color, font: font)
+                let positions = horizontalLinesMaxMinDrawY(insert: padding, distance: 4)
+                let y = horizontalLine.y == chartModel.horizontalLines.map(\.y).min() ? positions.0 : positions.1
+                UIGraphicsPushContext(ctx)
+                drawText(str, point: CGPoint(x: point.x, y: y), anchor: .minxcentery, backgroundColor: color.withAlphaComponent(0.1), padding: padding)
+                UIGraphicsPopContext()
             default:break
             }
             
@@ -493,27 +477,36 @@ class LineChartDrawer {
         ctx.restoreGState()
         if item.dataType == .data{
             
-            let strs = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
-            item.detailSize = deteminItemDetaiFrameSize(strs: strs ?? [])
+            let text = (layer.delegate as? LineChartView)?.delegate?.lineChartViewTapedItemFormatStrs(x: item.x, y: item.y)
+            let attributedStrings = [text?.yAttr, text?.xAttr].compactMap { $0 }
+            item.detailSize = deteminItemDetaiFrameSize(strs: attributedStrings)
             let detailPoint = deteminItemDetailCenter(item: item)
             drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
             UIGraphicsPushContext(ctx)
             
-            drawText(strs?.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
-            drawText(strs?.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            if let yText = text?.yAttr {
+                drawText(yText, point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center)
+            }
+            if let xText = text?.xAttr {
+                drawText(xText, point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center)
+            }
             UIGraphicsPopContext()
         }else{
             let leftStr = Date.init(timeIntervalSince1970: item.gapLeft).toString(format: "yyyy/MM/dd HH:mm")
             let rightStr = Date.init(timeIntervalSince1970: item.gapRight).toString(format: "yyyy/MM/dd HH:mm")
             
-            let strs = ["GAP","\(leftStr) ~ \(rightStr)"]
+            let attributes: [NSAttributedString.Key: Any] = [.font:item.detailFont, .foregroundColor:item.detailColor]
+            let strs = [
+                NSAttributedString(string: "GAP", attributes: attributes),
+                NSAttributedString(string: "\(leftStr) ~ \(rightStr)", attributes: attributes)
+            ]
             item.detailSize = deteminItemDetaiFrameSize(strs: strs)
             let detailPoint = deteminItemDetailCenter(item: item)
             drawTooltip(ctx: ctx, center: detailPoint, size: item.detailSize)
             UIGraphicsPushContext(ctx)
             
-            drawText(strs.first ?? "", point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center, font: item.detailFont, color: item.detailColor)
-            drawText(strs.last ?? "", point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center, font: item.detailFont, color: item.detailColor)
+            drawText(strs[0], point: .init(x: detailPoint.x, y: detailPoint.y-8), anchor: .center)
+            drawText(strs[1], point: .init(x: detailPoint.x, y: detailPoint.y+8), anchor: .center)
             UIGraphicsPopContext()
         }
         
@@ -538,11 +531,11 @@ class LineChartDrawer {
         return .init(x: x, y: y)
     }
     
-    func deteminItemDetaiFrameSize(strs:[String])->CGSize{
+    func deteminItemDetaiFrameSize(strs:[NSAttributedString])->CGSize{
         var height:CGFloat = 0
         var width:CGFloat = 0
         for str in strs {
-            let size = self.getStringSize(str: str, font: chartModel.tapedItem?.detailFont ?? .systemFont(ofSize: 12))
+            let size = str.size()
             height += size.height
             width = max(size.width, width)
         }
@@ -560,9 +553,12 @@ class LineChartDrawer {
                     let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
                     let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
                     let date = Date.init(timeIntervalSince1970: item)
-                    let str = date.toString(format: trup.1)
+                    let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .bottom, value: item) ?? NSAttributedString(
+                        string: date.toString(format: trup.1),
+                        attributes: [.foregroundColor: color, .font: font]
+                    )
                     UIGraphicsPushContext(ctx)
-                    drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, font: font, color: color)
+                    drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, clampToChartContent: false)
                     UIGraphicsPopContext()
                     switch chartModel.graduationType {
                     case .line(let lenght, let width, let color):
@@ -584,7 +580,7 @@ class LineChartDrawer {
                     for item in steps{
                         let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
                         let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
-                        let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .bottom,value: item) ?? NSAttributedString.init(string: String.init(format: "%.1f", item))
+                        let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .bottom,value: item) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                         UIGraphicsPushContext(ctx)
                         let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
                         UIGraphicsPopContext()
@@ -617,7 +613,7 @@ class LineChartDrawer {
             for item in steps{
                 let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
                 let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
-                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .right,value: item) ?? NSAttributedString.init(string: String.init(format: "%.1f", item))
+                let str = (layer.delegate as? LineChartView)?.delegate?.lineChartViewAxisGraduationFormatStr?(direction: .right,value: item) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
                 UIGraphicsPopContext()
@@ -748,16 +744,16 @@ class LineChartDrawer {
         case .bottom(let color, let font, let offset):
             let minx = chartModel.horizontalAxisFullFrame ? 0:chartModel.chartContentInsert.left
             let miny = layer.bounds.height-(offset ?? 0)
-            let minstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.minX) ?? Date.init(timeIntervalSince1970: chartModel.minX).toString(format: "yyyy-MM-dd HH:mm:ss")
+            let minstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.minX) ?? NSAttributedString(string: Date(timeIntervalSince1970: chartModel.minX).toString(format: "yyyy-MM-dd HH:mm:ss"), attributes: [.foregroundColor:color,.font:font])
             UIGraphicsPushContext(ctx)
-            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, font: font, color: color)
+            drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, clampToChartContent: false)
             UIGraphicsPopContext()
             ctx.strokePath()
             let maxx = chartModel.horizontalAxisFullFrame ? layer.bounds.width:layer.bounds.width-chartModel.chartContentInsert.right
             let maxy = layer.bounds.height-(offset ?? 0)
-            let maxstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.maxX) ?? Date.init(timeIntervalSince1970: chartModel.maxX).toString(format: "yyyy-MM-dd HH:mm:ss")
+            let maxstr = (layer.delegate as? LineChartView)?.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(x: chartModel.maxX) ?? NSAttributedString(string: Date(timeIntervalSince1970: chartModel.maxX).toString(format: "yyyy-MM-dd HH:mm:ss"), attributes: [.foregroundColor:color,.font:font])
             UIGraphicsPushContext(ctx)
-            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, font: font, color: color)
+            drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, clampToChartContent: false)
             UIGraphicsPopContext()
             ctx.strokePath()
         default:
@@ -818,15 +814,13 @@ class LineChartDrawer {
                 let dataMaxY = ys.max() ?? 0
                 let formatMaxMin = (layer.delegate as? LineChartView)?.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(min: dataMinY, max: dataMaxY)
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let minText = formatMaxMin?.min ?? String(format: "%.1f", dataMinY)
-                let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
+                let minstr = formatMaxMin?.min ?? NSAttributedString(string: String(format: "%.1f", dataMinY), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let minStrSize = drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxText = formatMaxMin?.max ?? String(format: "%.1f", dataMaxY)
-                let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
+                let maxstr = formatMaxMin?.max ?? NSAttributedString(string: String(format: "%.1f", dataMaxY), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let maxStrSize = drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .maxxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
@@ -860,15 +854,13 @@ class LineChartDrawer {
                 let dataMaxY = ys.max() ?? 0
                 let formatMaxMin = (layer.delegate as? LineChartView)?.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(min: dataMinY, max: dataMaxY)
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let minText = formatMaxMin?.min ?? "\(dataMinY)"
-                let minstr = NSAttributedString(string: minText, attributes: [.foregroundColor:color,.font:font])
+                let minstr = formatMaxMin?.min ?? NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let _ = drawText(minstr, point: CGPoint.init(x: minx, y: trump.0), anchor: .minxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
                 ctx.strokePath()
                 let maxx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
-                let maxText = formatMaxMin?.max ?? "\(dataMaxY)"
-                let maxstr = NSAttributedString(string: maxText, attributes: [.foregroundColor:color,.font:font])
+                let maxstr = formatMaxMin?.max ?? NSAttributedString(string: "\(dataMaxY)", attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let _ = drawText(maxstr, point: CGPoint.init(x: maxx, y: trump.1), anchor: .minxcentery,backgroundColor: .white.withAlphaComponent(0.8),cornerRadius: 0,padding: padding)
                 UIGraphicsPopContext()
@@ -939,40 +931,60 @@ class LineChartDrawer {
         return (miny,maxy)
     }
     
-    func horizontalLinesMaxMinDrawY(font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
+    func horizontalLineAttributedText(_ line: HorizontalLine, color: UIColor, font: UIFont) -> NSAttributedString {
+        if let text = (layer.delegate as? LineChartView)?.delegate?.lineChartViewHLineFormatAttributeStr?(y: line.y) {
+            return text
+        }
+        return NSAttributedString(
+            string: String(format: "%.1f", line.y),
+            attributes: [.foregroundColor: color, .font: font]
+        )
+    }
+
+    func horizontalLineAttributedText(_ line: HorizontalLine) -> NSAttributedString {
+        switch line.lableStyle {
+        case .top(let color, let font, _),
+             .bottom(let color, let font, _),
+             .left(let color, let font, _),
+             .right(let color, let font, _):
+            return horizontalLineAttributedText(line, color: color, font: font)
+        case .none:
+            return NSAttributedString(string: String(format: "%.1f", line.y))
+        }
+    }
+
+    func horizontalLinesMaxMinDrawY(insert:UIEdgeInsets,distance:Double)->(Double,Double){
         guard let firstLine = chartModel.horizontalLines.first,let lastLine = chartModel.horizontalLines.last else{return (0,0)}
-        let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
-        
-        
-        let dataMinY = lastLine.y>firstLine.y ?  firstLine.y:lastLine.y
-        let dataMaxY = lastLine.y>firstLine.y ?  lastLine.y:firstLine.y
+        let minLine = firstLine.y < lastLine.y ? firstLine : lastLine
+        let maxLine = firstLine.y < lastLine.y ? lastLine : firstLine
+        let minText = horizontalLineAttributedText(minLine)
+        let maxText = horizontalLineAttributedText(maxLine)
+        let minHeight = minText.size().height + insert.top + insert.bottom
+        let maxHeight = maxText.size().height + insert.top + insert.bottom
+
+        let dataMinY = minLine.y
+        let dataMaxY = maxLine.y
         var miny = ptPointFromPoint(point: .init(x: 0, y: dataMinY)).y
         var maxy = ptPointFromPoint(point: .init(x: 0, y: dataMaxY)).y
-        if miny>=layer.bounds.height-chartModel.chartContentInsert.bottom-(strSize.height*0.5+insert.bottom){
-            miny = layer.bounds.height-chartModel.chartContentInsert.bottom-(strSize.height*0.5+insert.bottom)
-            if maxy>=miny-(strSize.height+insert.bottom*2)-distance{
-                maxy = miny-(strSize.height+insert.bottom*2)-distance
+        let minAllowedY = chartModel.chartContentInsert.top + maxHeight * 0.5
+        let maxAllowedY = layer.bounds.height - chartModel.chartContentInsert.bottom - minHeight * 0.5
+        let requiredDistance = maxHeight * 0.5 + minHeight * 0.5 + distance
+
+        maxy = max(maxy, minAllowedY)
+        miny = min(miny, maxAllowedY)
+        if miny - maxy < requiredDistance {
+            let center = (miny + maxy) * 0.5
+            maxy = center - requiredDistance * 0.5
+            miny = center + requiredDistance * 0.5
+            if maxy < minAllowedY {
+                let shift = minAllowedY - maxy
+                maxy += shift
+                miny += shift
             }
-        }else if maxy<=chartModel.chartContentInsert.top+(strSize.height*0.5+insert.bottom){
-            maxy = chartModel.chartContentInsert.top+(strSize.height*0.5+insert.bottom)
-            if miny<=maxy+(strSize.height+insert.bottom*2)+distance{
-                miny = maxy+(strSize.height+insert.bottom*2)+distance
-            }
-        }else if miny - maxy < distance+strSize.height+insert.bottom*2+distance{
-            let minyTemp = chartModel.chartContentInsert.top + (miny+maxy-2*chartModel.chartContentInsert.top)*0.5+distance*0.5+insert.bottom+strSize.height*0.5
-            let maxyTemp = chartModel.chartContentInsert.top + (miny+maxy-2*chartModel.chartContentInsert.top)*0.5-distance*0.5-insert.bottom-strSize.height*0.5
-            miny = minyTemp
-            maxy = maxyTemp
-            if miny>=layer.bounds.height-chartModel.chartContentInsert.bottom-(strSize.height*0.5+insert.bottom){
-                miny = layer.bounds.height-chartModel.chartContentInsert.bottom-(strSize.height*0.5+insert.bottom)
-                if maxy>=miny-(strSize.height+insert.bottom*2)-distance{
-                    maxy = miny-(strSize.height+insert.bottom*2)-distance
-                }
-            }else if maxy<=chartModel.chartContentInsert.top+(strSize.height*0.5+insert.bottom){
-                maxy = chartModel.chartContentInsert.top+(strSize.height*0.5+insert.bottom)
-                if miny<=maxy+(strSize.height+insert.bottom*2)+distance{
-                    miny = maxy+(strSize.height+insert.bottom*2)+distance
-                }
+            if miny > maxAllowedY {
+                let shift = miny - maxAllowedY
+                maxy -= shift
+                miny -= shift
             }
         }
         return (miny,maxy)
@@ -1086,7 +1098,8 @@ class LineChartDrawer {
         anchor: TextDrawAnchor,
         backgroundColor: UIColor? = nil,
         cornerRadius:CGFloat? = nil,
-        padding: UIEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        padding: UIEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
+        clampToChartContent: Bool = true
     )->CGSize {
         // 1. 计算文本大小
         let textSize = text.size()
@@ -1143,11 +1156,13 @@ class LineChartDrawer {
                 y: point.y - backgroundSize.height * 0.5
             )
         }
-        if backgroundOrigin.y<chartModel.chartContentInsert.top{
-            backgroundOrigin.y = chartModel.chartContentInsert.top
-        }
-        if backgroundOrigin.y+backgroundSize.height>layer.bounds.height-chartModel.chartContentInsert.bottom{
-            backgroundOrigin.y = layer.bounds.height-chartModel.chartContentInsert.bottom-backgroundSize.height
+        if clampToChartContent {
+            if backgroundOrigin.y<chartModel.chartContentInsert.top{
+                backgroundOrigin.y = chartModel.chartContentInsert.top
+            }
+            if backgroundOrigin.y+backgroundSize.height>layer.bounds.height-chartModel.chartContentInsert.bottom{
+                backgroundOrigin.y = layer.bounds.height-chartModel.chartContentInsert.bottom-backgroundSize.height
+            }
         }
         
         // 4. 创建背景绘制区域

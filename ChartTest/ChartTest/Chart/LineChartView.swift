@@ -14,24 +14,21 @@ import UIKit
     @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
     //显示窗口最大最小Y值回调
     @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
-    //实现这个方法会覆盖lineChartViewHLineFormatStr方法
+    //回调横向线段 Y 值，富文本属性用于控制文字格式和大小
     @objc optional func lineChartViewHLineFormatAttributeStr(y:Double)->NSAttributedString
-    //回调横向线段Y值，根据Y值返回格式化字符串
-    @objc func lineChartViewHLineFormatStr(y:Double)->String
-
-    //回调右侧最值标签Y值，根据Y值返回格式化字符串
-    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(min:Double,max:Double)->MaxMinModel
-    //回调右侧刻度y值返回格式化字符串
+    //回调右侧最值标签 Y 值，返回最大值和最小值富文本
+    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(min:Double,max:Double)->MaxMinAttrModel
+    //回调坐标轴刻度值，返回刻度富文本
     @objc optional func lineChartViewAxisGraduationFormatStr(direction:AxisDirection,value:Double)->NSAttributedString?
-    //回调底部首尾时间标签X值，根据X值返回格式化字符串
-    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(x:Double)->String
+    //回调底部首尾时间标签 X 值，返回时间富文本
+    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(x:Double)->NSAttributedString
     
     /// 当前点击的点的格式化字符串
     /// - Parameters:
     ///   - x: 当前点击的数据的x
     ///   - y: 当前点击的数据的x
-    /// - Returns: 格式化后的字符串数组
-    @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->[String]
+    /// - Returns: 格式化后的 X、Y 富文本
+    @objc func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->XYAttrModel
     
 }
 
@@ -684,12 +681,21 @@ import UIKit
     
 }
 
-@objcMembers class MaxMinModel:NSObject{
-    var max:String
-    var min:String
-    init(max: String, min: String) {
+@objcMembers class MaxMinAttrModel:NSObject{
+    var max:NSAttributedString
+    var min:NSAttributedString
+    init(max: NSAttributedString, min: NSAttributedString) {
         self.max = max
         self.min = min
+    }
+}
+
+@objcMembers class XYAttrModel:NSObject{
+    var xAttr:NSAttributedString
+    var yAttr:NSAttributedString
+    init(xAttr: NSAttributedString, yAttr: NSAttributedString) {
+        self.yAttr = yAttr
+        self.xAttr = xAttr
     }
 }
 
@@ -921,7 +927,7 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
