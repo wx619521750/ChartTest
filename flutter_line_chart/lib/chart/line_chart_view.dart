@@ -41,6 +41,7 @@ class FlutterLineChartView extends StatefulWidget {
 class FlutterLineChartViewState extends State<FlutterLineChartView>
     with SingleTickerProviderStateMixin {
   late ChartModel _chartModel;
+  late EdgeInsets _sourceChartContentInset;
   Size _chartSize = Size.zero;
   Offset _pinchLocation = Offset.zero;
   double _tempMinX = 0;
@@ -65,6 +66,7 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     super.initState();
     _decelerationTicker = createTicker(_handleDecelerationTick);
     _chartModel = widget.model.copy();
+    _sourceChartContentInset = widget.model.chartContentInset;
     _dealData();
   }
 
@@ -74,7 +76,11 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     if (!identical(oldWidget.model, widget.model)) {
       _stopDeceleration();
       _chartModel = widget.model.copy();
+      _sourceChartContentInset = widget.model.chartContentInset;
       _dealData();
+    } else if (_sourceChartContentInset != widget.model.chartContentInset) {
+      _sourceChartContentInset = widget.model.chartContentInset;
+      _chartModel.chartContentInset = widget.model.chartContentInset;
     }
   }
 

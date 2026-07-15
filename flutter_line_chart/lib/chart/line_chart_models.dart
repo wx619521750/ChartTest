@@ -454,7 +454,7 @@ class ChartPalette {
 class ChartModel {
   ChartModel({
     ChartLineModel? lineModel,
-    this.chartContentInset = const EdgeInsets.fromLTRB(40, 0, 0, 40),
+    this.chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 0),
     this.topAxisLineStyle = const ChartLineStyle.line(
       width: 1,
       color: Colors.black,
@@ -565,8 +565,9 @@ class ChartModel {
   factory ChartModel.fromPoints({
     required List<ChartPointModel> points,
     required XSChartType type,
-    double minThreshold = 75,
-    double maxThreshold = 150,
+    double minThreshold = 30,
+    double maxThreshold = 80,
+    EdgeInsets? chartContentInset,
   }) {
     final model = ChartModel(chartType: type);
     model.lineModel.points = points.map((point) => point.copy()).toList();
@@ -580,6 +581,9 @@ class ChartModel {
         model.setupTemperatureStyle();
       case XSChartType.humidity:
         model.setupHumidityStyle();
+    }
+    if (chartContentInset != null) {
+      model.chartContentInset = chartContentInset;
     }
     return model;
   }
@@ -662,7 +666,7 @@ class ChartModel {
     required double minThreshold,
     required double maxThreshold,
   }) {
-    chartContentInset = const EdgeInsets.fromLTRB(40, 8, 0, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 0);
     yRangeType = YRangeType.selfAdaptVisibleWithMinMax(
       min: minThreshold,
       max: maxThreshold,
@@ -753,7 +757,7 @@ class ChartModel {
   }
 
   void setupTemperatureStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(0, 8, 0, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 0);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.temperature,
     );
@@ -803,7 +807,7 @@ class ChartModel {
   }
 
   void setupHumidityStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(0, 8, 0, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 0);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.humidity,
     );

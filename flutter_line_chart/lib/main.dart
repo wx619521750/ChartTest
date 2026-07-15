@@ -192,7 +192,7 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
   Widget _buildChartPanel(ChartModel model) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.lightBlue,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xffe0e6e3)),
       ),

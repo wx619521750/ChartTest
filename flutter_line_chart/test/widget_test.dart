@@ -102,6 +102,65 @@ void main() {
     }
   });
 
+  test('fromPoints keeps an explicit chart content inset', () {
+    const inset = EdgeInsets.fromLTRB(12, 18, 24, 30);
+    final model = ChartModel.fromPoints(
+      points: <ChartPointModel>[ChartPointModel(x: 0, y: 0)],
+      type: XSChartType.radon,
+      chartContentInset: inset,
+    );
+
+    expect(model.chartContentInset, inset);
+  });
+
+  test('each chart style keeps its own chart content inset', () {
+    final expectedInsets = <XSChartType, EdgeInsets>{
+      XSChartType.radon: const EdgeInsets.fromLTRB(40, 0, 40, 0),
+      XSChartType.temperature: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+      XSChartType.humidity: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+    };
+
+    for (final entry in expectedInsets.entries) {
+      final model = ChartModel.fromPoints(
+        points: <ChartPointModel>[ChartPointModel(x: 0, y: 0)],
+        type: entry.key,
+      );
+      expect(model.chartContentInset, entry.value, reason: entry.key.name);
+    }
+  });
+
+  testWidgets('chart content inset updates on the same model instance', (
+    tester,
+  ) async {
+    final key = GlobalKey<FlutterLineChartViewState>();
+    final model = ChartModel.fromPoints(
+      points: <ChartPointModel>[
+        ChartPointModel(x: 0, y: 0),
+        ChartPointModel(x: 3600, y: 1),
+      ],
+      type: XSChartType.radon,
+    );
+    late StateSetter rebuild;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return FlutterLineChartView(key: key, model: model);
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    const updatedInset = EdgeInsets.fromLTRB(12, 18, 24, 30);
+    rebuild(() => model.chartContentInset = updatedInset);
+    await tester.pump();
+
+    expect(key.currentState!.chartModel.chartContentInset, updatedInset);
+  });
+
   testWidgets('pinch zoom out reaches the complete data range', (tester) async {
     final key = GlobalKey<FlutterLineChartViewState>();
     final points = List<ChartPointModel>.generate(

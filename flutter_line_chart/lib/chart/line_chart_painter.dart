@@ -136,7 +136,9 @@ class LineChartPainter extends CustomPainter {
     }
     canvas.restore();
 
-    for (final range in chartModel.verticalColorRanges) {
+    final colorRanges = chartModel.verticalColorRanges;
+    for (var index = 0; index < colorRanges.length; index += 1) {
+      final range = colorRanges[index];
       final top = LineChartMath.pointToOffset(
         chartModel,
         size,
@@ -149,12 +151,15 @@ class LineChartPainter extends CustomPainter {
         0,
         range.bottom,
       ).dy;
-      final band = Rect.fromLTRB(
-        rect.left,
-        math.min(top, bottom) - lineWidth,
-        rect.right,
-        math.max(top, bottom) + lineWidth,
-      );
+      var bandTop = math.min(top, bottom);
+      var bandBottom = math.max(top, bottom);
+      if (index == 0) {
+        bandTop -= lineWidth * 0.5;
+      }
+      if (index == colorRanges.length - 1) {
+        bandBottom += lineWidth;
+      }
+      final band = Rect.fromLTRB(rect.left, bandTop, rect.right, bandBottom);
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = lineWidth
@@ -163,7 +168,7 @@ class LineChartPainter extends CustomPainter {
         ..color = range.color;
       canvas.save();
       canvas.clipRect(clipRect);
-      canvas.clipRect(band);
+      canvas.clipRect(band, doAntiAlias: false);
       for (final path in paths) {
         canvas.drawPath(path, paint);
       }
