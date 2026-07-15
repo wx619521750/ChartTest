@@ -240,7 +240,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         }
     }
     
-    func lineChartViewDateModeChanged(mode: DateMode) {
+    func lineChartViewDateModeChanged(chartView: LineChartView, mode: DateMode) {
         switch mode {
         case .hour:
             segmentView.selectIndex(index: 0, withDelegate: false)
@@ -260,60 +260,60 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
     
     
-    func lineChartViewXRangeChanged(min: Double, max: Double) {
+    func lineChartViewXRangeChanged(chartView: LineChartView, min: Double, max: Double) {
         let mindate = Date.init(timeIntervalSince1970: min)
         let maxdate = Date.init(timeIntervalSince1970: max)
         minDatePicker.date  = mindate
         maxDatePicker.date = maxdate
     }
     
-//    func lineChartViewHLineFormatAttributeStr(y: Double) -> NSAttributedString {
-//        return NSAttributedString(string: "\(y)", attributes: [
-//            .foregroundColor: UIColor.red,
-//            .font: UIFont.systemFont(ofSize: 18)
-//        ])
-//    }
-//
-//    
-//    func lineChartViewTapedItemFormatStrs(x: Double, y: Double) -> XYAttrModel {
-//        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
-//        return XYAttrModel(
-//            xAttr: NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red]),
-//            yAttr: NSAttributedString(string: "\(y)℃", attributes: [.font:UIFont.boldSystemFont(ofSize: 18), .foregroundColor:UIColor.red])
-//        )
-//    }
-//    
-//    
-//    func lineChartViewRightAxisDataMaxMinFormatStr(min: Double, max: Double) -> MaxMinAttrModel {
-//        let attributes: [NSAttributedString.Key: Any] = [
-//            .font: UIFont.systemFont(ofSize: 18),
-//            .foregroundColor: UIColor.red
-//        ]
-//        return MaxMinAttrModel(
-//            max: NSAttributedString(string: "Max:\(floor(max))", attributes: attributes),
-//            min: NSAttributedString(string: "Min:\(floor(min))", attributes: attributes)
-//        )
-//    }
-//    
-//    func lineChartViewAxisGraduationFormatStr(direction: AxisDirection, value: Double) -> NSAttributedString? {
-//        switch direction {
-//        case .top:
-//            break
-//        case .bottom:
-//
-//            let date = Date.init(timeIntervalSince1970: value)
-//            let str = date.toString(format: "yyyy")
-//            return NSAttributedString(string: str, attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 18)])
-//        case .left:
-//            break
-//        case .right:
-//            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 6)])
-//        }
-//        return nil
-//    }
-//    
-//    func lineChartViewBottomAxisMaxMinFormatStr(x: Double) -> NSAttributedString {
-//        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
-//        return NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red])
-//    }
+    func lineChartViewHLineFormatAttributeStr(chartView: LineChartView, y: Double) -> NSAttributedString {
+        return NSAttributedString(string: "\(y)", attributes: [
+            .foregroundColor: UIColor.red,
+            .font: UIFont.systemFont(ofSize: 18)
+        ])
+    }
+
+
+    func lineChartViewTapedItemFormatStrs(chartView: LineChartView, x: Double, y: Double) -> XYAttrModel {
+        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
+        return XYAttrModel(
+            xAttr: NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red]),
+            yAttr: NSAttributedString(string: "\(y)℃", attributes: [.font:UIFont.boldSystemFont(ofSize: 18), .foregroundColor:UIColor.red])
+        )
+    }
+
+
+    func lineChartViewRightAxisDataMaxMinFormatStr(chartView: LineChartView, min: Double, max: Double) -> MaxMinAttrModel {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18),
+            .foregroundColor: UIColor.red
+        ]
+        return MaxMinAttrModel(
+            max: NSAttributedString(string: "Max:\(floor(max))", attributes: attributes),
+            min: NSAttributedString(string: "Min:\(floor(min))", attributes: attributes)
+        )
+    }
+
+    func lineChartViewAxisGraduationFormatStr(chartView: LineChartView, direction: AxisDirection, value: Double) -> NSAttributedString? {
+        switch direction {
+        case .top:
+            break
+        case .bottom:
+
+            let date = Date.init(timeIntervalSince1970: value)
+            let str = date.toString(format: "yyyy")
+            return NSAttributedString(string: str, attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 18)])
+        case .left:
+            break
+        case .right:
+            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:UIColor.red, .font:UIFont.systemFont(ofSize: 18)])
+        }
+        return nil
+    }
+
+    func lineChartViewBottomAxisMaxMinFormatStr(chartView: LineChartView, x: Double) -> NSAttributedString {
+        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
+        return NSAttributedString(string: date, attributes: [.font:UIFont.systemFont(ofSize: 18), .foregroundColor:UIColor.red])
+    }
 }

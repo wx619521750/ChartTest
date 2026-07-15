@@ -9,33 +9,33 @@ import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
     //日历模式变更回调
-    @objc optional func lineChartViewDateModeChanged(mode:DateMode)
+    @objc optional func lineChartViewDateModeChanged(chartView:LineChartView,mode:DateMode)
     //显示窗口最大最小X值回调
-    @objc optional func lineChartViewXRangeChanged(min:Double,max:Double)
+    @objc optional func lineChartViewXRangeChanged(chartView:LineChartView,min:Double,max:Double)
     //显示窗口最大最小Y值回调
-    @objc optional func lineChartViewYRangeChanged(min:Double,max:Double)
+    @objc optional func lineChartViewYRangeChanged(chartView:LineChartView,min:Double,max:Double)
     //回调横向线段 Y 值，富文本属性用于控制文字格式和大小
-    @objc optional func lineChartViewHLineFormatAttributeStr(y:Double)->NSAttributedString
+    @objc optional func lineChartViewHLineFormatAttributeStr(chartView:LineChartView,y:Double)->NSAttributedString
     //回调右侧最值标签 Y 值，返回最大值和最小值富文本
-    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(min:Double,max:Double)->MaxMinAttrModel
+    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(chartView:LineChartView,min:Double,max:Double)->MaxMinAttrModel
     //回调坐标轴刻度值，返回刻度富文本
-    @objc optional func lineChartViewAxisGraduationFormatStr(direction:AxisDirection,value:Double)->NSAttributedString?
+    @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double)->NSAttributedString?
     //回调底部首尾时间标签 X 值，返回时间富文本
-    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(x:Double)->NSAttributedString
+    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(chartView:LineChartView,x:Double)->NSAttributedString
     
     /// 当前点击的点的格式化字符串
     /// - Parameters:
     ///   - x: 当前点击的数据的x
     ///   - y: 当前点击的数据的x
     /// - Returns: 格式化后的 X、Y 富文本
-    @objc optional func lineChartViewTapedItemFormatStrs(x:Double,y:Double)->XYAttrModel
+    @objc optional func lineChartViewTapedItemFormatStrs(chartView:LineChartView,x:Double,y:Double)->XYAttrModel
     
 }
 
 
 @objcMembers class LineChartView: UIView,UIGestureRecognizerDelegate {
     weak var delegate:LineChartViewDelegate?
-    private var drawer = LineChartDrawer()
+    private lazy var drawer = LineChartDrawer(chartView: self)
     var chartModel = ChartModel(){
         didSet{
             dealData()
@@ -86,8 +86,8 @@ import UIKit
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
         dealModels()
         changeDateMode(mode: chartModel.dateMode)
-        delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
-        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+        delegate?.lineChartViewDateModeChanged?(chartView: self, mode: chartModel.dateMode)
+        delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
     }
     
     func dealModels(){
@@ -155,7 +155,7 @@ import UIKit
         }
         //获取数据内的空白区域
         chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
-        delegate?.lineChartViewYRangeChanged?(min: chartModel.minY, max: chartModel.maxY)
+        delegate?.lineChartViewYRangeChanged?(chartView: self, min: chartModel.minY, max: chartModel.maxY)
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
         addGapModel()
     }
@@ -306,7 +306,7 @@ import UIKit
             }
         }
         self.setNeedsDisplay()
-        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+        delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
         
         autoChangeDateMode()
     }
@@ -326,7 +326,7 @@ import UIKit
             chartModel.minX = chartModel.maxX-3600*24*30*12
         }
         self.setNeedsDisplay()
-        delegate?.lineChartViewXRangeChanged?(min: chartModel.minX, max: chartModel.maxX)
+        delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
     }
     
     
@@ -344,7 +344,7 @@ import UIKit
         }else if range <= 3600*24*30*12{
             chartModel.dateMode = .year
         }
-        self.delegate?.lineChartViewDateModeChanged?(mode: chartModel.dateMode)
+        self.delegate?.lineChartViewDateModeChanged?(chartView: self, mode: chartModel.dateMode)
     }
     private func addTapGesture(){
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
