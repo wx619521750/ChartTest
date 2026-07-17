@@ -38,17 +38,17 @@ import UIKit
 @objcMembers class LineChartView: UIView,UIGestureRecognizerDelegate {
     weak var delegate:LineChartViewDelegate?
     private lazy var drawer = LineChartDrawer(chartView: self)
-    private var metalLineView: MetalLineChartView?
-    private var chartOverlayView: ChartOverlayView?
+    private var metalLineLayer: MetalLineChartLayer?
+    private var chartContentLayer: ChartContentLayer?
     var usesMetalRendering = true {
         didSet {
-            metalLineView?.isHidden = !usesMetalRendering
-            chartOverlayView?.isHidden = !usesMetalRendering
+            metalLineLayer?.isHidden = !usesMetalRendering
+            chartContentLayer?.isHidden = !usesMetalRendering
             setNeedsDisplay()
         }
     }
     var isMetalRenderingActive: Bool {
-        usesMetalRendering && metalLineView?.isRendererAvailable == true
+        usesMetalRendering && drawer.isMetalRendererAvailable && metalLineLayer != nil
     }
     var chartModel = ChartModel(){
         didSet{
@@ -72,9 +72,10 @@ import UIKit
     //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
         super.draw(layer, in: ctx)
-        if isMetalRenderingActive {
-            metalLineView?.setNeedsDisplay()
-            chartOverlayView?.setNeedsDisplay()
+        if isMetalRenderingActive,
+           let metalLineLayer,
+           let chartContentLayer {
+            drawer.draw(metalLayer: metalLineLayer, contentLayer: chartContentLayer)
         } else {
             drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
         }
@@ -90,7 +91,7 @@ import UIKit
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupMetalLineView()
+        setupRenderingLayers()
         addTapGesture()
         setupPanGesture()
         setupPinchGesture()
@@ -98,27 +99,29 @@ import UIKit
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        metalLineView?.frame = bounds
-        chartOverlayView?.frame = bounds
+        let scale = window?.screen.scale ?? UIScreen.main.scale
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        metalLineLayer?.frame = bounds
+        metalLineLayer?.contentsScale = scale
+        metalLineLayer?.drawableSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+        chartContentLayer?.frame = bounds
+        chartContentLayer?.contentsScale = scale
+        CATransaction.commit()
     }
 
-    private func setupMetalLineView() {
-        let metalView = MetalLineChartView(chartView: self)
-        guard metalView.isRendererAvailable else { return }
-        metalView.frame = bounds
-        metalView.isHidden = !usesMetalRendering
-        metalView.isUserInteractionEnabled = false
-        addSubview(metalView)
-        metalLineView = metalView
-        let overlay = ChartOverlayView(chartView: self)
-        overlay.frame = bounds
-        overlay.isHidden = !usesMetalRendering
-        addSubview(overlay)
-        chartOverlayView = overlay
-    }
-
-    func drawChartOverlay(layer: CALayer, context: CGContext) {
-        drawer.drawOverlay(layer: layer, ctx: context, chartModel: chartModel)
+    private func setupRenderingLayers() {
+        guard drawer.isMetalRendererAvailable else { return }
+        let metalLayer = MetalLineChartLayer(drawer: drawer)
+        metalLayer.frame = bounds
+        metalLayer.isHidden = !usesMetalRendering
+        layer.addSublayer(metalLayer)
+        metalLineLayer = metalLayer
+        let contentLayer = ChartContentLayer(drawer: drawer)
+        contentLayer.frame = bounds
+        contentLayer.isHidden = !usesMetalRendering
+        layer.addSublayer(contentLayer)
+        chartContentLayer = contentLayer
     }
     
     func dealData(){

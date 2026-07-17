@@ -1,26 +1,8 @@
-import MetalKit
+import Metal
+import QuartzCore
 import UIKit
 
-final class ChartOverlayView: UIView {
-    private weak var chartView: LineChartView?
-
-    init(chartView: LineChartView) {
-        self.chartView = chartView
-        super.init(frame: .zero)
-        isOpaque = false
-        backgroundColor = .clear
-        isUserInteractionEnabled = false
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func draw(_ rect: CGRect) {
-        guard let context = UIGraphicsGetCurrentContext() else { return }
-        chartView?.drawChartOverlay(layer: layer, context: context)
-    }
-}
+// Low-level Metal resources used by LineChartDrawer's curve drawing path.
 
 private struct MetalChartUniforms {
     var dataBounds: SIMD4<Float>
@@ -30,39 +12,9 @@ private struct MetalChartUniforms {
     var params: SIMD4<UInt32>
 }
 
-final class MetalLineChartView: MTKView {
-    private var chartRenderer: MetalLineChartRenderer?
-
-    var isRendererAvailable: Bool { chartRenderer != nil }
-
-    init(chartView: LineChartView) {
-        let metalDevice = MTLCreateSystemDefaultDevice()
-        super.init(frame: .zero, device: metalDevice)
-        isOpaque = false
-        backgroundColor = .clear
-        clearColor = MTLClearColorMake(0, 0, 0, 0)
-        colorPixelFormat = .bgra8Unorm
-        framebufferOnly = true
-        enableSetNeedsDisplay = true
-        isPaused = true
-
-        guard let metalDevice,
-              let renderer = MetalLineChartRenderer(device: metalDevice, chartView: chartView) else {
-            isHidden = true
-            return
-        }
-        sampleCount = renderer.sampleCount
-        chartRenderer = renderer
-        delegate = renderer
-    }
-
-    required init(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-}
-
-private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
+final class MetalLineChartRenderer {
     private weak var chartView: LineChartView?
+    private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
     private var pointBuffer: MTLBuffer?
@@ -72,6 +24,7 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
     private var rangeCapacity = 0
     private var gapBuffer: MTLBuffer?
     private var gapCapacity = 0
+    private var multisampleTexture: MTLTexture?
     let sampleCount: Int
 
     init?(device: MTLDevice, chartView: LineChartView) {
@@ -227,23 +180,21 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         } catch {
             return nil
         }
+        self.device = device
         self.commandQueue = commandQueue
         self.chartView = chartView
-        super.init()
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
-
-    func draw(in view: MTKView) {
+    func draw(in layer: CAMetalLayer) {
         guard let chartView,
               chartView.usesMetalRendering,
-              view.bounds.width > 0,
-              view.bounds.height > 0,
-              let device = view.device,
-              let pass = view.currentRenderPassDescriptor,
-              let drawable = view.currentDrawable,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else { return }
+              layer.bounds.width > 0,
+              layer.bounds.height > 0,
+              let drawable = layer.nextDrawable(),
+              let commandBuffer = commandQueue.makeCommandBuffer() else { return }
+
+        let pass = renderPassDescriptor(drawable: drawable)
+        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else { return }
 
         let model = chartView.chartModel
         let points = model.lineModel.pointsShouldDraw
@@ -304,10 +255,10 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         }
         let inset = model.chartContentInsert
         let subdivisions: UInt32 = isBezier
-            ? subdivisionCount(points: points, model: model, size: view.bounds.size)
+            ? subdivisionCount(points: points, model: model, size: layer.bounds.size)
             : 1
-        let drawableScaleX = view.drawableSize.width / view.bounds.width
-        let drawableScaleY = view.drawableSize.height / view.bounds.height
+        let drawableScaleX = layer.drawableSize.width / layer.bounds.width
+        let drawableScaleY = layer.drawableSize.height / layer.bounds.height
         var uniforms = MetalChartUniforms(
             dataBounds: SIMD4<Float>(
                 0,
@@ -315,10 +266,10 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
                 Float(model.minY),
                 Float(model.maxY)
             ),
-            viewport: SIMD4<Float>(Float(view.bounds.width), Float(view.bounds.height), Float(inset.left), Float(inset.top)),
+            viewport: SIMD4<Float>(Float(layer.bounds.width), Float(layer.bounds.height), Float(inset.left), Float(inset.top)),
             plot: SIMD4<Float>(
-                Float(view.bounds.width - inset.left - inset.right),
-                Float(view.bounds.height - inset.top - inset.bottom),
+                Float(layer.bounds.width - inset.left - inset.right),
+                Float(layer.bounds.height - inset.top - inset.bottom),
                 Float(lineWidth),
                 Float(drawableScaleX)
             ),
@@ -329,8 +280,8 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         encoder.setScissorRect(MTLScissorRect(
             x: max(0, Int(inset.left * drawableScaleX)),
             y: max(0, Int(inset.top * drawableScaleY)),
-            width: max(1, Int((view.bounds.width - inset.left - inset.right) * drawableScaleX)),
-            height: max(1, Int((view.bounds.height - inset.top - inset.bottom) * drawableScaleY))
+            width: max(1, Int((layer.bounds.width - inset.left - inset.right) * drawableScaleX)),
+            height: max(1, Int((layer.bounds.height - inset.top - inset.bottom) * drawableScaleY))
         ))
         encoder.setRenderPipelineState(pipelineState)
         encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
@@ -348,6 +299,41 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         encoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    private func renderPassDescriptor(drawable: CAMetalDrawable) -> MTLRenderPassDescriptor {
+        let descriptor = MTLRenderPassDescriptor()
+        let attachment = descriptor.colorAttachments[0]!
+        attachment.clearColor = MTLClearColorMake(0, 0, 0, 0)
+        attachment.loadAction = .clear
+        if sampleCount > 1 {
+            let texture = ensureMultisampleTexture(size: drawable.texture.width, height: drawable.texture.height)
+            attachment.texture = texture
+            attachment.resolveTexture = drawable.texture
+            attachment.storeAction = .multisampleResolve
+        } else {
+            attachment.texture = drawable.texture
+            attachment.storeAction = .store
+        }
+        return descriptor
+    }
+
+    private func ensureMultisampleTexture(size: Int, height: Int) -> MTLTexture? {
+        if multisampleTexture?.width == size, multisampleTexture?.height == height {
+            return multisampleTexture
+        }
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: size,
+            height: height,
+            mipmapped: false
+        )
+        descriptor.textureType = .type2DMultisample
+        descriptor.sampleCount = sampleCount
+        descriptor.storageMode = .private
+        descriptor.usage = .renderTarget
+        multisampleTexture = device.makeTexture(descriptor: descriptor)
+        return multisampleTexture
     }
 
     private func subdivisionCount(

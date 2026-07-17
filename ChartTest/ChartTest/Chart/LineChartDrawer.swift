@@ -5,6 +5,8 @@
 //  Created by Carlo on 1/14/26.
 //
 
+import Metal
+import QuartzCore
 import UIKit
 
 class LineChartDrawer {
@@ -14,9 +16,19 @@ class LineChartDrawer {
     var chartModel = ChartModel()
     var layer = CALayer()
     private unowned let chartView: LineChartView
+    let metalDevice: MTLDevice?
+    private lazy var metalRenderer: MetalLineChartRenderer? = {
+        guard let metalDevice else { return nil }
+        return MetalLineChartRenderer(device: metalDevice, chartView: chartView)
+    }()
+
+    var isMetalRendererAvailable: Bool {
+        metalRenderer != nil
+    }
 
     init(chartView: LineChartView) {
         self.chartView = chartView
+        metalDevice = MTLCreateSystemDefaultDevice()
     }
     //需要绘制的数据
     
@@ -26,6 +38,19 @@ class LineChartDrawer {
         drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawForeground(layer: layer, ctx: ctx, chartModel: chartModel)
+    }
+
+    func draw(metalLayer: MetalLineChartLayer, contentLayer: ChartContentLayer) {
+        metalLayer.setNeedsDisplay()
+        contentLayer.setNeedsDisplay()
+    }
+
+    func drawMetalCurve(in layer: CAMetalLayer) {
+        metalRenderer?.draw(in: layer)
+    }
+
+    func drawChartContent(in layer: CALayer, context: CGContext) {
+        drawOverlay(layer: layer, ctx: context, chartModel: chartView.chartModel)
     }
 
     func drawOverlay(layer: CALayer, ctx: CGContext, chartModel: ChartModel) {
