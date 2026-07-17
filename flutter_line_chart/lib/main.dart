@@ -192,12 +192,12 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
   Widget _buildChartPanel(ChartModel model) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.lightBlue,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xffe0e6e3)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: FlutterLineChartView(
           key: _chartKey,
           model: model,

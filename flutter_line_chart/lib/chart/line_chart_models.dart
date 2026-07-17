@@ -454,7 +454,7 @@ class ChartPalette {
 class ChartModel {
   ChartModel({
     ChartLineModel? lineModel,
-    this.chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 0),
+    this.chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 40),
     this.topAxisLineStyle = const ChartLineStyle.line(
       width: 1,
       color: Colors.black,
@@ -666,7 +666,7 @@ class ChartModel {
     required double minThreshold,
     required double maxThreshold,
   }) {
-    chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 0);
+    chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 40);
     yRangeType = YRangeType.selfAdaptVisibleWithMinMax(
       min: minThreshold,
       max: maxThreshold,
@@ -757,7 +757,7 @@ class ChartModel {
   }
 
   void setupTemperatureStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 0);
+    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 40);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.temperature,
     );
@@ -807,7 +807,7 @@ class ChartModel {
   }
 
   void setupHumidityStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 0);
+    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 40);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.humidity,
     );

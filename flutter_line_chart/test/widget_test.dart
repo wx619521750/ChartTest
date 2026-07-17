@@ -115,9 +115,9 @@ void main() {
 
   test('each chart style keeps its own chart content inset', () {
     final expectedInsets = <XSChartType, EdgeInsets>{
-      XSChartType.radon: const EdgeInsets.fromLTRB(40, 0, 40, 0),
-      XSChartType.temperature: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-      XSChartType.humidity: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+      XSChartType.radon: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+      XSChartType.temperature: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+      XSChartType.humidity: const EdgeInsets.fromLTRB(20, 0, 20, 40),
     };
 
     for (final entry in expectedInsets.entries) {

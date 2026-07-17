@@ -68,4 +68,62 @@ void main() {
     expect(pixelAt(50, 48), red);
     expect(pixelAt(50, 52), green);
   });
+
+  test('bottom max min labels are drawn below the bottom axis', () async {
+    final model = ChartModel()
+      ..chartContentInset = const EdgeInsets.fromLTRB(0, 0, 0, 40)
+      ..minX = 0
+      ..maxX = 1
+      ..minY = 0
+      ..maxY = 1
+      ..topAxisLineStyle = const ChartLineStyle.none()
+      ..bottomAxisLineStyle = const ChartLineStyle.line(
+        width: 1,
+        color: Colors.black,
+      )
+      ..leftAxisLineStyle = const ChartLineStyle.none()
+      ..rightAxisLineStyle = const ChartLineStyle.none()
+      ..topAxisLabelStyle = const AxisLabelStyle.none()
+      ..bottomAxisLabelStyle = const AxisLabelStyle.none()
+      ..leftAxisLabelStyle = const AxisLabelStyle.none()
+      ..rightAxisLabelStyle = const AxisLabelStyle.none()
+      ..topAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..bottomAxisMaxMinStyle = const AxisLabelStyle.bottom(
+        color: Colors.black,
+        fontSize: 12,
+      )
+      ..leftAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisDataMaxMinStyle = const AxisLabelStyle.none()
+      ..horizontalLines = <HorizontalLine>[]
+      ..verticalColorRanges = <VerticalColorRange>[];
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    LineChartPainter(
+      chartModel: model,
+      horizontalLineFormatter: (value) => '$value',
+      tappedItemFormatter: (_) => const <String>[],
+      rightAxisDataMaxMinFormatter: (min, max) => MaxMinModel(max: '', min: ''),
+      bottomAxisMaxMinFormatter: (x) => x == 0 ? 'MIN' : 'MAX',
+    ).paint(canvas, const Size(100, 100));
+    final image = await recorder.endRecording().toImage(100, 100);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    addTearDown(image.dispose);
+
+    bool hasInkBetween(int top, int bottom) {
+      for (var y = top; y <= bottom; y += 1) {
+        for (var x = 0; x < image.width; x += 1) {
+          final alphaOffset = (y * image.width + x) * 4 + 3;
+          if (bytes!.getUint8(alphaOffset) > 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    expect(hasInkBetween(58, 62), isTrue);
+    expect(hasInkBetween(63, 99), isTrue);
+  });
 }
