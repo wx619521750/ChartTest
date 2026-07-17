@@ -39,9 +39,11 @@ import UIKit
     weak var delegate:LineChartViewDelegate?
     private lazy var drawer = LineChartDrawer(chartView: self)
     private var metalLineView: MetalLineChartView?
+    private var chartOverlayView: ChartOverlayView?
     var usesMetalRendering = true {
         didSet {
             metalLineView?.isHidden = !usesMetalRendering
+            chartOverlayView?.isHidden = !usesMetalRendering
             setNeedsDisplay()
         }
     }
@@ -70,8 +72,12 @@ import UIKit
     //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
         super.draw(layer, in: ctx)
-        drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
-        metalLineView?.setNeedsDisplay()
+        if isMetalRenderingActive {
+            metalLineView?.setNeedsDisplay()
+            chartOverlayView?.setNeedsDisplay()
+        } else {
+            drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
+        }
     }
     override func draw(_ rect: CGRect) {
         super.draw(rect)
@@ -93,6 +99,7 @@ import UIKit
     override func layoutSubviews() {
         super.layoutSubviews()
         metalLineView?.frame = bounds
+        chartOverlayView?.frame = bounds
     }
 
     private func setupMetalLineView() {
@@ -103,6 +110,15 @@ import UIKit
         metalView.isUserInteractionEnabled = false
         addSubview(metalView)
         metalLineView = metalView
+        let overlay = ChartOverlayView(chartView: self)
+        overlay.frame = bounds
+        overlay.isHidden = !usesMetalRendering
+        addSubview(overlay)
+        chartOverlayView = overlay
+    }
+
+    func drawChartOverlay(layer: CALayer, context: CGContext) {
+        drawer.drawOverlay(layer: layer, ctx: context, chartModel: chartModel)
     }
     
     func dealData(){

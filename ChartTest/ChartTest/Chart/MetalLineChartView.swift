@@ -1,6 +1,27 @@
 import MetalKit
 import UIKit
 
+final class ChartOverlayView: UIView {
+    private weak var chartView: LineChartView?
+
+    init(chartView: LineChartView) {
+        self.chartView = chartView
+        super.init(frame: .zero)
+        isOpaque = false
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        chartView?.drawChartOverlay(layer: layer, context: context)
+    }
+}
+
 private struct MetalChartUniforms {
     var dataBounds: SIMD4<Float>
     var viewport: SIMD4<Float>
@@ -256,8 +277,10 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         case .bezier(let width, let color):
             lineWidth = width; baseColor = color; isBezier = true
         }
-        let subdivisions: UInt32 = isBezier ? 16 : 1
         let inset = model.chartContentInsert
+        let subdivisions: UInt32 = isBezier
+            ? subdivisionCount(points: points, model: model, size: view.bounds.size)
+            : 1
         var uniforms = MetalChartUniforms(
             dataBounds: SIMD4<Float>(
                 0,
@@ -299,6 +322,28 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         encoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    private func subdivisionCount(
+        points: [ChartPointModel],
+        model: ChartModel,
+        size: CGSize
+    ) -> UInt32 {
+        let xRange = model.maxX - model.minX
+        let yRange = model.maxY - model.minY
+        guard xRange > 0, yRange > 0 else { return 16 }
+        let plotWidth = size.width - model.chartContentInsert.left - model.chartContentInsert.right
+        let plotHeight = size.height - model.chartContentInsert.top - model.chartContentInsert.bottom
+        var maximumDistance: CGFloat = 0
+        for index in 1..<points.count {
+            let previous = points[index - 1]
+            let current = points[index]
+            guard previous.dataType == .data, current.dataType == .data else { continue }
+            let dx = CGFloat((current.x - previous.x) / xRange) * plotWidth
+            let dy = CGFloat((current.y - previous.y) / yRange) * plotHeight
+            maximumDistance = max(maximumDistance, hypot(dx, dy))
+        }
+        return UInt32(min(64, max(16, Int(ceil(maximumDistance / 3)))))
     }
 
     private func ensurePointBuffer(device: MTLDevice, count: Int) {

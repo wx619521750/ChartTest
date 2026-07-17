@@ -24,9 +24,18 @@ class LineChartDrawer {
         self.chartModel = chartModel
         self.layer = layer
         drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        if !chartView.isMetalRenderingActive {
-            drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        }
+        drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawForeground(layer: layer, ctx: ctx, chartModel: chartModel)
+    }
+
+    func drawOverlay(layer: CALayer, ctx: CGContext, chartModel: ChartModel) {
+        self.chartModel = chartModel
+        self.layer = layer
+        drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawForeground(layer: layer, ctx: ctx, chartModel: chartModel)
+    }
+
+    private func drawForeground(layer: CALayer, ctx: CGContext, chartModel: ChartModel) {
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
