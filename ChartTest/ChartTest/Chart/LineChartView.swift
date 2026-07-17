@@ -181,7 +181,7 @@ import UIKit
         //获取数据内的空白区域
         chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
         delegate?.lineChartViewYRangeChanged?(chartView: self, min: chartModel.minY, max: chartModel.maxY)
-        chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 400)
+        chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 800)
         addGapModel()
     }
 

@@ -8,6 +8,7 @@ private struct MetalChartUniforms {
     var dataBounds: SIMD4<Float>
     var viewport: SIMD4<Float>
     var plot: SIMD4<Float>
+    var renderScale: SIMD4<Float>
     var baseColor: SIMD4<Float>
     var params: SIMD4<UInt32>
 }
@@ -37,6 +38,7 @@ final class MetalLineChartRenderer {
             float4 dataBounds;
             float4 viewport;
             float4 plot;
+            float4 renderScale;
             float4 baseColor;
             uint4 params;
         };
@@ -143,7 +145,7 @@ final class MetalLineChartRenderer {
             constant float4* colors [[buffer(2)]],
             constant float4* gaps [[buffer(3)]]) {
             if (input.valid < 0.5) { discard_fragment(); }
-            float screenX = input.position.x / max(uniforms.plot.w, 0.000001);
+            float screenX = input.position.x / max(uniforms.renderScale.x, 0.000001);
             float xProgress = (screenX - uniforms.viewport.z)
                 / max(uniforms.plot.x, 0.000001);
             float dataX = uniforms.dataBounds.x
@@ -153,8 +155,13 @@ final class MetalLineChartRenderer {
                     discard_fragment();
                 }
             }
+            float screenY = input.position.y / max(uniforms.renderScale.y, 0.000001);
+            float yProgress = 1.0 - (screenY - uniforms.viewport.w)
+                / max(uniforms.plot.y, 0.000001);
+            float fragmentDataY = uniforms.dataBounds.z
+                + yProgress * (uniforms.dataBounds.w - uniforms.dataBounds.z);
             for (uint index = 0; index < uniforms.params.z; ++index) {
-                if (input.dataY <= ranges[index].x && input.dataY >= ranges[index].y) {
+                if (fragmentDataY <= ranges[index].x && fragmentDataY >= ranges[index].y) {
                     return colors[index];
                 }
             }
@@ -271,8 +278,9 @@ final class MetalLineChartRenderer {
                 Float(layer.bounds.width - inset.left - inset.right),
                 Float(layer.bounds.height - inset.top - inset.bottom),
                 Float(lineWidth),
-                Float(drawableScaleX)
+                0
             ),
+            renderScale: SIMD4<Float>(Float(drawableScaleX), Float(drawableScaleY), 0, 0),
             baseColor: rgba(baseColor),
             params: SIMD4<UInt32>(subdivisions, isBezier ? 1 : 0, UInt32(ranges.count), UInt32(gaps.count))
         )
