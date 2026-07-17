@@ -12,6 +12,13 @@ typedef RightAxisDataMaxMinFormatter =
 typedef AxisGraduationFormatter =
     String? Function(AxisLabelPlacement direction, double value);
 typedef BottomAxisMaxMinFormatter = String Function(double x);
+typedef HorizontalLineTextFormatter = TextSpan Function(double y);
+typedef TappedItemTextFormatter = XYTextModel Function(ChartPointModel item);
+typedef RightAxisDataMaxMinTextFormatter =
+    MaxMinTextModel Function(double min, double max);
+typedef AxisGraduationTextFormatter =
+    TextSpan? Function(AxisLabelPlacement direction, double value);
+typedef BottomAxisMaxMinTextFormatter = TextSpan Function(double x);
 
 enum _TextAnchor {
   minXMinY,
@@ -28,19 +35,29 @@ enum _TextAnchor {
 class LineChartPainter extends CustomPainter {
   LineChartPainter({
     required this.chartModel,
-    required this.horizontalLineFormatter,
-    required this.tappedItemFormatter,
-    required this.rightAxisDataMaxMinFormatter,
+    this.horizontalLineFormatter,
+    this.tappedItemFormatter,
+    this.rightAxisDataMaxMinFormatter,
     this.axisGraduationFormatter,
     this.bottomAxisMaxMinFormatter,
+    this.horizontalLineTextFormatter,
+    this.tappedItemTextFormatter,
+    this.rightAxisDataMaxMinTextFormatter,
+    this.axisGraduationTextFormatter,
+    this.bottomAxisMaxMinTextFormatter,
   });
 
   final ChartModel chartModel;
-  final HorizontalLineFormatter horizontalLineFormatter;
-  final TappedItemFormatter tappedItemFormatter;
-  final RightAxisDataMaxMinFormatter rightAxisDataMaxMinFormatter;
+  final HorizontalLineFormatter? horizontalLineFormatter;
+  final TappedItemFormatter? tappedItemFormatter;
+  final RightAxisDataMaxMinFormatter? rightAxisDataMaxMinFormatter;
   final AxisGraduationFormatter? axisGraduationFormatter;
   final BottomAxisMaxMinFormatter? bottomAxisMaxMinFormatter;
+  final HorizontalLineTextFormatter? horizontalLineTextFormatter;
+  final TappedItemTextFormatter? tappedItemTextFormatter;
+  final RightAxisDataMaxMinTextFormatter? rightAxisDataMaxMinTextFormatter;
+  final AxisGraduationTextFormatter? axisGraduationTextFormatter;
+  final BottomAxisMaxMinTextFormatter? bottomAxisMaxMinTextFormatter;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -293,9 +310,22 @@ class LineChartPainter extends CustomPainter {
         final x = LineChartMath.pointToOffset(chartModel, size, stamp, 0).dx;
         final y =
             size.height - inset.bottom + chartModel.bottomAxisLabelStyle.offset;
+        final text =
+            axisGraduationTextFormatter?.call(
+              AxisLabelPlacement.bottom,
+              stamp,
+            ) ??
+            TextSpan(
+              text:
+                  axisGraduationFormatter?.call(
+                    AxisLabelPlacement.bottom,
+                    stamp,
+                  ) ??
+                  LineChartMath.formatDate(stamp, ticks.format),
+            );
         _drawText(
           canvas,
-          LineChartMath.formatDate(stamp, ticks.format),
+          text,
           Offset(x, y),
           _TextAnchor.centerXMinY,
           chartModel.bottomAxisLabelStyle.textStyle,
@@ -315,8 +345,15 @@ class LineChartPainter extends CustomPainter {
         final x =
             size.width - inset.right + chartModel.rightAxisLabelStyle.offset;
         final text =
-            axisGraduationFormatter?.call(AxisLabelPlacement.right, item) ??
-            item.toStringAsFixed(1);
+            axisGraduationTextFormatter?.call(AxisLabelPlacement.right, item) ??
+            TextSpan(
+              text:
+                  axisGraduationFormatter?.call(
+                    AxisLabelPlacement.right,
+                    item,
+                  ) ??
+                  item.toStringAsFixed(1),
+            );
         final anchor =
             chartModel.rightAxisLabelStyle.placement == AxisLabelPlacement.left
             ? _TextAnchor.maxXCenterY
@@ -363,11 +400,25 @@ class LineChartPainter extends CustomPainter {
         AxisLabelPlacement.bottom) {
       final y = size.height - chartModel.bottomAxisMaxMinStyle.offset;
       final minText =
-          bottomAxisMaxMinFormatter?.call(chartModel.minX) ??
-          LineChartMath.formatDate(chartModel.minX, 'yyyy-MM-dd HH:mm:ss');
+          bottomAxisMaxMinTextFormatter?.call(chartModel.minX) ??
+          TextSpan(
+            text:
+                bottomAxisMaxMinFormatter?.call(chartModel.minX) ??
+                LineChartMath.formatDate(
+                  chartModel.minX,
+                  'yyyy-MM-dd HH:mm:ss',
+                ),
+          );
       final maxText =
-          bottomAxisMaxMinFormatter?.call(chartModel.maxX) ??
-          LineChartMath.formatDate(chartModel.maxX, 'yyyy-MM-dd HH:mm:ss');
+          bottomAxisMaxMinTextFormatter?.call(chartModel.maxX) ??
+          TextSpan(
+            text:
+                bottomAxisMaxMinFormatter?.call(chartModel.maxX) ??
+                LineChartMath.formatDate(
+                  chartModel.maxX,
+                  'yyyy-MM-dd HH:mm:ss',
+                ),
+          );
       _drawText(
         canvas,
         minText,
@@ -427,7 +478,7 @@ class LineChartPainter extends CustomPainter {
     final ys = visibleData.map((point) => point.y).toList();
     final dataMinY = ys.reduce(math.min);
     final dataMaxY = ys.reduce(math.max);
-    final labels = rightAxisDataMaxMinFormatter(dataMinY, dataMaxY);
+    final labels = _rightAxisDataMaxMinText(dataMinY, dataMaxY);
     final positions = _rightAxisDataMaxMinDrawY(size, visibleData);
     final rect = LineChartMath.chartRect(chartModel, size);
     final x =
@@ -529,9 +580,16 @@ class LineChartPainter extends CustomPainter {
 
   void _drawHVLines(Canvas canvas, Size size) {
     final rect = LineChartMath.chartRect(chartModel, size);
-    final lineLabelPositions = _horizontalLinesMaxMinDrawY(size);
-    for (var index = 0; index < chartModel.horizontalLines.length; index += 1) {
-      final horizontalLine = chartModel.horizontalLines[index];
+    const padding = EdgeInsets.symmetric(horizontal: 6, vertical: 4);
+    final lineLabelPositions = _horizontalLinesMaxMinDrawY(
+      size,
+      padding: padding,
+      distance: 4,
+    );
+    final minLineY = chartModel.horizontalLines.isEmpty
+        ? 0.0
+        : chartModel.horizontalLines.map((line) => line.y).reduce(math.min);
+    for (final horizontalLine in chartModel.horizontalLines) {
       final point = LineChartMath.pointToOffset(
         chartModel,
         size,
@@ -551,17 +609,16 @@ class LineChartPainter extends CustomPainter {
           point.dy > rect.bottom) {
         continue;
       }
-      final padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4);
-      final text = horizontalLineFormatter(horizontalLine.y);
+      final text = _horizontalLineText(horizontalLine);
+      final labelY = horizontalLine.y == minLineY
+          ? lineLabelPositions.$1
+          : lineLabelPositions.$2;
       switch (labelStyle.placement) {
         case AxisLabelPlacement.left:
           _drawText(
             canvas,
             text,
-            Offset(
-              rect.left + labelStyle.offset,
-              index == 0 ? lineLabelPositions.$2 : lineLabelPositions.$1,
-            ),
+            Offset(rect.left + labelStyle.offset, labelY),
             _TextAnchor.maxXCenterY,
             labelStyle.textStyle,
             backgroundColor: labelStyle.color.withValues(alpha: 0.1),
@@ -572,10 +629,7 @@ class LineChartPainter extends CustomPainter {
           _drawText(
             canvas,
             text,
-            Offset(
-              rect.right + labelStyle.offset,
-              index == 0 ? lineLabelPositions.$1 : lineLabelPositions.$2,
-            ),
+            Offset(rect.right + labelStyle.offset, labelY),
             _TextAnchor.minXCenterY,
             labelStyle.textStyle,
             backgroundColor: labelStyle.color.withValues(alpha: 0.1),
@@ -608,36 +662,64 @@ class LineChartPainter extends CustomPainter {
     canvas.restore();
   }
 
-  (double, double) _horizontalLinesMaxMinDrawY(Size size) {
+  TextSpan _horizontalLineText(HorizontalLine line) {
+    return horizontalLineTextFormatter?.call(line.y) ??
+        TextSpan(
+          text:
+              horizontalLineFormatter?.call(line.y) ??
+              line.y.toStringAsFixed(1),
+        );
+  }
+
+  (double, double) _horizontalLinesMaxMinDrawY(
+    Size size, {
+    required EdgeInsets padding,
+    required double distance,
+  }) {
     final rect = LineChartMath.chartRect(chartModel, size);
     if (chartModel.horizontalLines.isEmpty) {
       return (0, 0);
     }
-    final firstLine = chartModel.horizontalLines.first;
-    final lastLine = chartModel.horizontalLines.last;
-    final style = firstLine.labelStyle.textStyle;
-    final strSize = LineChartMath.textSize('00.00', style);
-    final dataMinY = math.min(firstLine.y, lastLine.y);
-    final dataMaxY = math.max(firstLine.y, lastLine.y);
+    final minLine = chartModel.horizontalLines.reduce(
+      (current, line) => line.y < current.y ? line : current,
+    );
+    final maxLine = chartModel.horizontalLines.reduce(
+      (current, line) => line.y > current.y ? line : current,
+    );
+    final minTextSize = LineChartMath.textSpanSize(
+      _horizontalLineText(minLine),
+      fallbackStyle: minLine.labelStyle.textStyle,
+    );
+    final maxTextSize = LineChartMath.textSpanSize(
+      _horizontalLineText(maxLine),
+      fallbackStyle: maxLine.labelStyle.textStyle,
+    );
+    final minHeight = minTextSize.height + padding.top + padding.bottom;
+    final maxHeight = maxTextSize.height + padding.top + padding.bottom;
+    final dataMinY = minLine.y;
+    final dataMaxY = maxLine.y;
     var minY = LineChartMath.pointToOffset(chartModel, size, 0, dataMinY).dy;
     var maxY = LineChartMath.pointToOffset(chartModel, size, 0, dataMaxY).dy;
-    const distance = 4.0;
-    final minAllowed = rect.top + strSize.height * 0.5 + 4;
-    final maxAllowed = rect.bottom - strSize.height * 0.5 - 4;
-    if (minY >= maxAllowed) {
-      minY = maxAllowed;
-      if (maxY >= minY - strSize.height - distance) {
-        maxY = minY - strSize.height - distance;
+    final minAllowed = rect.top + maxHeight * 0.5;
+    final maxAllowed = rect.bottom - minHeight * 0.5;
+    final requiredDistance = maxHeight * 0.5 + minHeight * 0.5 + distance;
+
+    maxY = math.max(maxY, minAllowed);
+    minY = math.min(minY, maxAllowed);
+    if (minY - maxY < requiredDistance) {
+      final center = (minY + maxY) * 0.5;
+      maxY = center - requiredDistance * 0.5;
+      minY = center + requiredDistance * 0.5;
+      if (maxY < minAllowed) {
+        final shift = minAllowed - maxY;
+        maxY += shift;
+        minY += shift;
       }
-    } else if (maxY <= minAllowed) {
-      maxY = minAllowed;
-      if (minY <= maxY + strSize.height + distance) {
-        minY = maxY + strSize.height + distance;
+      if (minY > maxAllowed) {
+        final shift = minY - maxAllowed;
+        maxY -= shift;
+        minY -= shift;
       }
-    } else if (minY - maxY < strSize.height + distance * 2) {
-      final mid = rect.top + (minY + maxY - 2 * rect.top) * 0.5;
-      minY = mid + distance * 0.5 + strSize.height * 0.5;
-      maxY = mid - distance * 0.5 - strSize.height * 0.5;
     }
     return (minY, maxY);
   }
@@ -686,14 +768,22 @@ class LineChartPainter extends CustomPainter {
       height: 1.15,
       letterSpacing: 0,
     );
-    final strings = item.dataType == ChartPointDataType.data
-        ? tappedItemFormatter(item)
-        : <String>[
-            'GAP',
-            '${LineChartMath.formatDate(item.gapLeft, 'yyyy/MM/dd HH:mm')} ~ '
-                '${LineChartMath.formatDate(item.gapRight, 'yyyy/MM/dd HH:mm')}',
-          ];
-    final detailSize = LineChartMath.detailSize(strings, detailStyle);
+    final text = item.dataType == ChartPointDataType.data
+        ? _tappedItemText(item)
+        : XYTextModel(
+            yText: const TextSpan(text: 'GAP'),
+            xText: TextSpan(
+              text:
+                  '${LineChartMath.formatDate(item.gapLeft, 'yyyy/MM/dd HH:mm')} ~ '
+                  '${LineChartMath.formatDate(item.gapRight, 'yyyy/MM/dd HH:mm')}',
+            ),
+          );
+    final lines = <TextSpan>[text.yText, text.xText];
+    final detailSize = LineChartMath.detailTextSize(
+      lines,
+      fallbackStyle: detailStyle,
+    );
+    item.detailSize = detailSize;
     final detailCenter = LineChartMath.detailCenter(
       chartModel,
       size,
@@ -701,24 +791,84 @@ class LineChartPainter extends CustomPainter {
       detailSize,
     );
     _drawTooltip(canvas, detailCenter, detailSize);
-    if (strings.isNotEmpty) {
+    if (item.dataType == ChartPointDataType.data) {
+      final ySize = LineChartMath.textSpanSize(
+        text.yText,
+        fallbackStyle: detailStyle,
+      );
+      final xSize = LineChartMath.textSpanSize(
+        text.xText,
+        fallbackStyle: detailStyle,
+      );
+      final contentTop = detailCenter.dy - (ySize.height + xSize.height) * 0.5;
       _drawText(
         canvas,
-        strings.first,
+        text.yText,
+        Offset(detailCenter.dx, contentTop + ySize.height * 0.5),
+        _TextAnchor.center,
+        detailStyle,
+      );
+      _drawText(
+        canvas,
+        text.xText,
+        Offset(detailCenter.dx, contentTop + ySize.height + xSize.height * 0.5),
+        _TextAnchor.center,
+        detailStyle,
+      );
+    } else {
+      _drawText(
+        canvas,
+        text.yText,
         detailCenter.translate(0, -8),
         _TextAnchor.center,
         detailStyle,
       );
-    }
-    if (strings.length > 1) {
       _drawText(
         canvas,
-        strings.last,
+        text.xText,
         detailCenter.translate(0, 8),
         _TextAnchor.center,
         detailStyle,
       );
     }
+  }
+
+  XYTextModel _tappedItemText(ChartPointModel item) {
+    final attributed = tappedItemTextFormatter?.call(item);
+    if (attributed != null) {
+      return attributed;
+    }
+    final strings = tappedItemFormatter?.call(item);
+    if (strings != null && strings.isNotEmpty) {
+      return XYTextModel(
+        yText: TextSpan(text: strings.first),
+        xText: TextSpan(text: strings.length > 1 ? strings.last : ''),
+      );
+    }
+    return XYTextModel(
+      yText: TextSpan(text: item.y.toStringAsFixed(1)),
+      xText: TextSpan(
+        text: LineChartMath.formatDate(item.x, 'yyyy/MM/dd HH:mm'),
+      ),
+    );
+  }
+
+  MaxMinTextModel _rightAxisDataMaxMinText(double min, double max) {
+    final attributed = rightAxisDataMaxMinTextFormatter?.call(min, max);
+    if (attributed != null) {
+      return attributed;
+    }
+    final strings = rightAxisDataMaxMinFormatter?.call(min, max);
+    if (strings != null) {
+      return MaxMinTextModel(
+        max: TextSpan(text: strings.max),
+        min: TextSpan(text: strings.min),
+      );
+    }
+    return MaxMinTextModel(
+      max: TextSpan(text: max.toStringAsFixed(1)),
+      min: TextSpan(text: min.toStringAsFixed(1)),
+    );
   }
 
   Color? _colorForY(double y) {
@@ -802,7 +952,7 @@ class LineChartPainter extends CustomPainter {
 
   Size _drawText(
     Canvas canvas,
-    String text,
+    Object text,
     Offset point,
     _TextAnchor anchor,
     TextStyle style, {
@@ -811,8 +961,11 @@ class LineChartPainter extends CustomPainter {
     double? cornerRadius,
     Rect? clampRect,
   }) {
+    final textSpan = text is TextSpan
+        ? TextSpan(style: style, children: <InlineSpan>[text])
+        : TextSpan(text: text.toString(), style: style);
     final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
+      text: textSpan,
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     )..layout();

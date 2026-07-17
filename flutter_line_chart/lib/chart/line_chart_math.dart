@@ -506,6 +506,8 @@ class LineChartMath {
       case 'yyyy/MM/dd HH:mm':
         return '${date.year}/${two(date.month)}/${two(date.day)} '
             '${two(date.hour)}:${two(date.minute)}';
+      case 'yyyy':
+        return date.year.toString();
       default:
         return '${date.year}-${two(date.month)}-${two(date.day)}';
     }
@@ -519,11 +521,30 @@ class LineChartMath {
     return painter.size;
   }
 
+  static Size textSpanSize(TextSpan text, {TextStyle? fallbackStyle}) {
+    final painter = TextPainter(
+      text: TextSpan(style: fallbackStyle, children: <InlineSpan>[text]),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return painter.size;
+  }
+
   static Size detailSize(List<String> lines, TextStyle style) {
     var width = 0.0;
     var height = 0.0;
     for (final line in lines) {
       final size = textSize(line, style);
+      width = math.max(width, size.width);
+      height += size.height;
+    }
+    return Size(width + 12, height + 12);
+  }
+
+  static Size detailTextSize(List<TextSpan> lines, {TextStyle? fallbackStyle}) {
+    var width = 0.0;
+    var height = 0.0;
+    for (final line in lines) {
+      final size = textSpanSize(line, fallbackStyle: fallbackStyle);
       width = math.max(width, size.width);
       height += size.height;
     }

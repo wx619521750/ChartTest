@@ -10,7 +10,9 @@ void main() {
 }
 
 class LineChartDemoApp extends StatelessWidget {
-  const LineChartDemoApp({super.key});
+  const LineChartDemoApp({super.key, this.initialPointsByType});
+
+  final Map<XSChartType, List<ChartPointModel>>? initialPointsByType;
 
   @override
   Widget build(BuildContext context) {
@@ -25,34 +27,46 @@ class LineChartDemoApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xfff5f7f6),
         useMaterial3: true,
       ),
-      home: const ChartDemoPage(),
+      home: ChartDemoPage(initialPointsByType: initialPointsByType),
     );
   }
 }
 
 class ChartDemoPage extends StatefulWidget {
-  const ChartDemoPage({super.key});
+  const ChartDemoPage({super.key, this.initialPointsByType});
+
+  final Map<XSChartType, List<ChartPointModel>>? initialPointsByType;
 
   @override
   State<ChartDemoPage> createState() => _ChartDemoPageState();
 }
 
 class _ChartDemoPageState extends State<ChartDemoPage> {
-  final _chartKey = GlobalKey<FlutterLineChartViewState>();
+  final Map<XSChartType, GlobalKey<FlutterLineChartViewState>> _chartKeys = {
+    for (final type in XSChartType.values)
+      type: GlobalKey<FlutterLineChartViewState>(),
+  };
   Map<XSChartType, List<ChartPointModel>> _pointsByType = const {};
-  ChartModel? _model;
-  XSChartType _selectedType = XSChartType.radon;
+  Map<XSChartType, ChartModel> _models = const {};
+  final Map<XSChartType, (double, double)> _yRanges = {};
   DateMode _selectedMode = DateMode.day;
   double? _minX;
   double? _maxX;
-  double? _minY;
-  double? _maxY;
   Object? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    final initialPoints = widget.initialPointsByType;
+    if (initialPoints == null) {
+      _loadData();
+    } else {
+      _pointsByType = initialPoints;
+      _models = {
+        for (final type in XSChartType.values) type: _createModel(type),
+      };
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncFromRadon());
+    }
   }
 
   Future<void> _loadData() async {
@@ -63,8 +77,11 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
       }
       setState(() {
         _pointsByType = points;
-        _model = _createModel(_selectedType);
+        _models = {
+          for (final type in XSChartType.values) type: _createModel(type),
+        };
       });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncFromRadon());
     } catch (error) {
       if (!mounted) {
         return;
@@ -85,27 +102,39 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
     return model;
   }
 
-  void _selectType(XSChartType type) {
-    if (type == _selectedType) {
+  void _syncFromRadon() {
+    if (!mounted) {
       return;
     }
-    setState(() {
-      _selectedType = type;
-      _selectedMode = DateMode.day;
-      _model = _createModel(type);
-      _minX = null;
-      _maxX = null;
-      _minY = null;
-      _maxY = null;
-    });
+    final source = _chartKeys[XSChartType.radon]?.currentState;
+    if (source == null) {
+      return;
+    }
+    _syncVisibleRange(
+      min: source.chartModel.minX,
+      max: source.chartModel.maxX,
+      source: source,
+    );
   }
 
   void _selectDateMode(DateMode mode) {
     setState(() => _selectedMode = mode);
-    _chartKey.currentState?.changeDateMode(mode);
+    final source = _chartKeys[XSChartType.radon]?.currentState;
+    source?.changeDateMode(mode);
+    if (source != null) {
+      _syncVisibleRange(
+        min: source.chartModel.minX,
+        max: source.chartModel.maxX,
+        source: source,
+      );
+    }
   }
 
-  void _handleXRangeChanged(double min, double max) {
+  void _handleXRangeChanged(
+    FlutterLineChartViewState chartView,
+    double min,
+    double max,
+  ) {
     if (_minX == min && _maxX == max) {
       return;
     }
@@ -115,17 +144,57 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
     });
   }
 
-  void _handleYRangeChanged(double min, double max) {
-    if (_minY == min && _maxY == max) {
+  void _handleUserXRangeChanged(
+    FlutterLineChartViewState chartView,
+    double min,
+    double max,
+  ) {
+    _syncVisibleRange(min: min, max: max, source: chartView);
+  }
+
+  void _syncVisibleRange({
+    required double min,
+    required double max,
+    FlutterLineChartViewState? source,
+  }) {
+    if (min >= max) {
+      return;
+    }
+    for (final key in _chartKeys.values) {
+      final chartView = key.currentState;
+      if (chartView != null && chartView != source) {
+        chartView.changeXRange(min: min, max: max);
+      }
+    }
+    _updateXRange(min, max);
+  }
+
+  void _updateXRange(double min, double max) {
+    if (!mounted || (_minX == min && _maxX == max)) {
       return;
     }
     setState(() {
-      _minY = min;
-      _maxY = max;
+      _minX = min;
+      _maxX = max;
     });
   }
 
-  void _handleDateModeChanged(DateMode mode) {
+  void _handleYRangeChanged(
+    FlutterLineChartViewState chartView,
+    double min,
+    double max,
+  ) {
+    final type = chartView.chartModel.chartType;
+    if (_yRanges[type] == (min, max)) {
+      return;
+    }
+    setState(() => _yRanges[type] = (min, max));
+  }
+
+  void _handleDateModeChanged(
+    FlutterLineChartViewState chartView,
+    DateMode mode,
+  ) {
     if (_selectedMode == mode) {
       return;
     }
@@ -134,7 +203,6 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final model = _model;
     return Scaffold(
       appBar: AppBar(
         title: const Text('LineChartView Flutter'),
@@ -143,76 +211,73 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
       body: SafeArea(
         child: _loadError != null
             ? Center(child: Text('Load failed: $_loadError'))
-            : model == null
+            : _models.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
-                  _buildTypeControl(),
-                  const SizedBox(height: 12),
-                  _buildChartPanel(model),
-                  const SizedBox(height: 12),
+                  for (final type in XSChartType.values) ...[
+                    _buildChartPanel(type, _models[type]!),
+                    const SizedBox(height: 12),
+                  ],
                   _buildDateModeControl(),
                   const SizedBox(height: 12),
-                  _buildRangeStrip(),
+                  _buildDateRangeControls(),
+                  const SizedBox(height: 12),
+                  _buildYRangeStrip(),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildTypeControl() {
-    return SegmentedButton<XSChartType>(
-      segments: const [
-        ButtonSegment(
-          value: XSChartType.radon,
-          label: Text('Radon'),
-          icon: Icon(Icons.blur_on),
-        ),
-        ButtonSegment(
-          value: XSChartType.temperature,
-          label: Text('Temp'),
-          icon: Icon(Icons.device_thermostat),
-        ),
-        ButtonSegment(
-          value: XSChartType.humidity,
-          label: Text('Humidity'),
-          icon: Icon(Icons.water_drop_outlined),
-        ),
-      ],
-      selected: {_selectedType},
-      onSelectionChanged: (selection) => _selectType(selection.first),
-      showSelectedIcon: false,
-      style: const ButtonStyle(
-        visualDensity: VisualDensity(horizontal: -1, vertical: -1),
-      ),
-    );
-  }
-
-  Widget _buildChartPanel(ChartModel model) {
+  Widget _buildChartPanel(XSChartType type, ChartModel model) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xffe0e6e3)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-        child: FlutterLineChartView(
-          key: _chartKey,
-          model: model,
-          height: 260,
-          onDateModeChanged: _handleDateModeChanged,
-          onXRangeChanged: _handleXRangeChanged,
-          onYRangeChanged: _handleYRangeChanged,
-          horizontalLineFormatter: (y) => y.toStringAsFixed(0),
-          tappedItemFormatter: _formatTappedItem,
-          rightAxisDataMaxMinFormatter: (min, max) =>
-              MaxMinModel(max: 'Max:${max.floor()}', min: 'Min:${min.floor()}'),
-          axisGraduationFormatter: (_, value) => value.toStringAsFixed(1),
-          bottomAxisMaxMinFormatter: (x) =>
-              LineChartMath.formatDate(x, 'yyyy/MM/dd HH:mm'),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+            child: Row(
+              children: [
+                Text(
+                  type.title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  type.unit,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: const Color(0xff66736f),
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FlutterLineChartView(
+            key: _chartKeys[type],
+            model: model,
+            height: 240,
+            onDateModeChangedWithChart: _handleDateModeChanged,
+            onXRangeChangedWithChart: _handleXRangeChanged,
+            onXRangeChangedByUserInteraction: _handleUserXRangeChanged,
+            onYRangeChangedWithChart: _handleYRangeChanged,
+            // horizontalLineTextFormatter: _formatHorizontalLine,
+            // tappedItemTextFormatter: _formatTappedItem,
+            // rightAxisDataMaxMinTextFormatter: _formatRightAxisDataRange,
+            // axisGraduationTextFormatter: _formatAxisGraduation,
+            // bottomAxisMaxMinTextFormatter: _formatBottomAxisRange,
+          ),
+        ],
       ),
     );
   }
@@ -234,30 +299,174 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
     );
   }
 
-  Widget _buildRangeStrip() {
-    final xRange = _minX == null || _maxX == null
-        ? '--'
-        : '${LineChartMath.formatDate(_minX!, 'yyyy/MM/dd HH:mm')}  -  '
-              '${LineChartMath.formatDate(_maxX!, 'yyyy/MM/dd HH:mm')}';
-    final yRange = _minY == null || _maxY == null
-        ? '--'
-        : '${_minY!.toStringAsFixed(1)}  -  ${_maxY!.toStringAsFixed(1)}';
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+  Widget _buildDateRangeControls() {
+    return Row(
       children: [
-        _RangePill(label: 'X', value: xRange),
-        _RangePill(label: 'Y', value: yRange),
+        Expanded(child: _buildDateButton(isMinimum: true)),
+        const SizedBox(width: 8),
+        Expanded(child: _buildDateButton(isMinimum: false)),
       ],
     );
   }
 
-  List<String> _formatTappedItem(ChartPointModel item) {
-    return <String>[
-      '${item.y.toStringAsFixed(1)} ${_selectedType.unit}',
-      LineChartMath.formatDate(item.x, 'yyyy/MM/dd HH:mm'),
-    ];
+  Widget _buildDateButton({required bool isMinimum}) {
+    final value = isMinimum ? _minX : _maxX;
+    final label = value == null
+        ? '--'
+        : LineChartMath.formatDate(value, 'yyyy/MM/dd HH:mm');
+    return OutlinedButton.icon(
+      onPressed: value == null
+          ? null
+          : () => _pickDateTime(isMinimum: isMinimum),
+      icon: const Icon(Icons.calendar_month_outlined, size: 18),
+      label: Text(
+        '${isMinimum ? 'From' : 'To'}\n$label',
+        textAlign: TextAlign.left,
+      ),
+      style: const ButtonStyle(
+        alignment: Alignment.centerLeft,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
   }
+
+  Future<void> _pickDateTime({required bool isMinimum}) async {
+    final seconds = isMinimum ? _minX : _maxX;
+    if (seconds == null) {
+      return;
+    }
+    final initial = DateTime.fromMillisecondsSinceEpoch(
+      (seconds * 1000).round(),
+    );
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (date == null || !mounted) {
+      return;
+    }
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) {
+      return;
+    }
+    final selected =
+        DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        ).millisecondsSinceEpoch /
+        1000;
+    final min = isMinimum ? selected : _minX!;
+    final max = isMinimum ? _maxX! : selected;
+    if (min >= max) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The start time must be before the end time.'),
+        ),
+      );
+      return;
+    }
+    _syncVisibleRange(min: min, max: max);
+  }
+
+  Widget _buildYRangeStrip() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final type in XSChartType.values)
+          _RangePill(
+            label: type.shortTitle,
+            value: _formatYRange(_yRanges[type]),
+          ),
+      ],
+    );
+  }
+
+  String _formatYRange((double, double)? range) {
+    return range == null
+        ? '--'
+        : '${range.$1.toStringAsFixed(1)} - ${range.$2.toStringAsFixed(1)}';
+  }
+
+  TextSpan _formatHorizontalLine(
+    FlutterLineChartViewState chartView,
+    double y,
+  ) {
+    return TextSpan(text: '$y', style: _demoTextStyle);
+  }
+
+  XYTextModel _formatTappedItem(
+    FlutterLineChartViewState chartView,
+    double x,
+    double y,
+  ) {
+    return XYTextModel(
+      xText: TextSpan(
+        text: LineChartMath.formatDate(x, 'yyyy/MM/dd HH:mm'),
+        style: _demoTextStyle,
+      ),
+      yText: TextSpan(
+        text: '$y ${chartView.chartModel.chartType.unit}',
+        style: _demoTextStyle.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  MaxMinTextModel _formatRightAxisDataRange(
+    FlutterLineChartViewState chartView,
+    double min,
+    double max,
+  ) {
+    return MaxMinTextModel(
+      max: TextSpan(text: 'Max:${max.floor()}', style: _demoTextStyle),
+      min: TextSpan(text: 'Min:${min.floor()}', style: _demoTextStyle),
+    );
+  }
+
+  TextSpan? _formatAxisGraduation(
+    FlutterLineChartViewState chartView,
+    AxisLabelPlacement direction,
+    double value,
+  ) {
+    switch (direction) {
+      case AxisLabelPlacement.bottom:
+        return TextSpan(
+          text: LineChartMath.formatDate(value, 'yyyy'),
+          style: _demoTextStyle,
+        );
+      case AxisLabelPlacement.right:
+        return TextSpan(text: value.toStringAsFixed(1), style: _demoTextStyle);
+      case AxisLabelPlacement.top:
+      case AxisLabelPlacement.left:
+      case AxisLabelPlacement.none:
+        return null;
+    }
+  }
+
+  TextSpan _formatBottomAxisRange(
+    FlutterLineChartViewState chartView,
+    double x,
+  ) {
+    return TextSpan(
+      text: LineChartMath.formatDate(x, 'yyyy/MM/dd HH:mm'),
+      style: _demoTextStyle,
+    );
+  }
+
+  static const _demoTextStyle = TextStyle(
+    color: Colors.red,
+    fontSize: 18,
+    height: 1.1,
+    letterSpacing: 0,
+  );
 }
 
 class _RangePill extends StatelessWidget {

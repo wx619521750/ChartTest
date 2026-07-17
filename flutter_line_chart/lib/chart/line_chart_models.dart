@@ -441,6 +441,20 @@ class MaxMinModel {
   final String min;
 }
 
+class MaxMinTextModel {
+  const MaxMinTextModel({required this.max, required this.min});
+
+  final TextSpan max;
+  final TextSpan min;
+}
+
+class XYTextModel {
+  const XYTextModel({required this.xText, required this.yText});
+
+  final TextSpan xText;
+  final TextSpan yText;
+}
+
 class ChartPalette {
   static const lineColorGreen = Color(0xff56c06f);
   static const lineColorYellow = Color(0xffffcf31);
@@ -565,8 +579,8 @@ class ChartModel {
   factory ChartModel.fromPoints({
     required List<ChartPointModel> points,
     required XSChartType type,
-    double minThreshold = 30,
-    double maxThreshold = 80,
+    double minThreshold = 75,
+    double maxThreshold = 150,
     EdgeInsets? chartContentInset,
   }) {
     final model = ChartModel(chartType: type);
@@ -666,7 +680,7 @@ class ChartModel {
     required double minThreshold,
     required double maxThreshold,
   }) {
-    chartContentInset = const EdgeInsets.fromLTRB(40, 0, 40, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(40, 8, 40, 40);
     yRangeType = YRangeType.selfAdaptVisibleWithMinMax(
       min: minThreshold,
       max: maxThreshold,
@@ -757,7 +771,7 @@ class ChartModel {
   }
 
   void setupTemperatureStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(0, 8, 0, 40);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.temperature,
     );
@@ -765,7 +779,7 @@ class ChartModel {
       width: 3,
       color: Colors.black,
     );
-    enableDeceleration = true;
+    enableDeceleration = false;
     topAxisLineStyle = const ChartLineStyle.none();
     rightAxisLineStyle = const ChartLineStyle.none();
     leftAxisLineStyle = const ChartLineStyle.none();
@@ -807,7 +821,7 @@ class ChartModel {
   }
 
   void setupHumidityStyle() {
-    chartContentInset = const EdgeInsets.fromLTRB(20, 0, 20, 40);
+    chartContentInset = const EdgeInsets.fromLTRB(0, 8, 0, 40);
     yRangeType = const YRangeType.selfAdaptVisibleWithType(
       chartType: XSChartType.humidity,
     );
@@ -815,7 +829,7 @@ class ChartModel {
       width: 3,
       color: Colors.black,
     );
-    enableDeceleration = true;
+    enableDeceleration = false;
     topAxisLineStyle = const ChartLineStyle.none();
     rightAxisLineStyle = const ChartLineStyle.none();
     leftAxisLineStyle = const ChartLineStyle.none();

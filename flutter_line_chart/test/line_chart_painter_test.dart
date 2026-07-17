@@ -126,4 +126,65 @@ void main() {
     expect(hasInkBetween(58, 62), isTrue);
     expect(hasInkBetween(63, 99), isTrue);
   });
+
+  test('rich horizontal line formatter controls text color and size', () async {
+    final model = ChartModel()
+      ..chartContentInset = const EdgeInsets.fromLTRB(40, 8, 0, 20)
+      ..minX = 0
+      ..maxX = 1
+      ..minY = 0
+      ..maxY = 100
+      ..topAxisLineStyle = const ChartLineStyle.none()
+      ..bottomAxisLineStyle = const ChartLineStyle.none()
+      ..leftAxisLineStyle = const ChartLineStyle.none()
+      ..rightAxisLineStyle = const ChartLineStyle.none()
+      ..topAxisLabelStyle = const AxisLabelStyle.none()
+      ..bottomAxisLabelStyle = const AxisLabelStyle.none()
+      ..leftAxisLabelStyle = const AxisLabelStyle.none()
+      ..rightAxisLabelStyle = const AxisLabelStyle.none()
+      ..topAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..bottomAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..leftAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisDataMaxMinStyle = const AxisLabelStyle.none()
+      ..verticalColorRanges = <VerticalColorRange>[]
+      ..horizontalLines = const <HorizontalLine>[
+        HorizontalLine(
+          y: 50,
+          lineStyle: ChartLineStyle.none(),
+          labelStyle: AxisLabelStyle.left(color: Colors.black, fontSize: 8),
+        ),
+      ];
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    LineChartPainter(
+      chartModel: model,
+      horizontalLineTextFormatter: (_) => const TextSpan(
+        text: 'RICH',
+        style: TextStyle(
+          color: Colors.red,
+          fontSize: 28,
+          height: 1,
+          letterSpacing: 0,
+        ),
+      ),
+    ).paint(canvas, const Size(120, 100));
+    final image = await recorder.endRecording().toImage(120, 100);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    addTearDown(image.dispose);
+
+    var redPixels = 0;
+    for (var offset = 0; offset < bytes!.lengthInBytes; offset += 4) {
+      final red = bytes.getUint8(offset);
+      final green = bytes.getUint8(offset + 1);
+      final blue = bytes.getUint8(offset + 2);
+      final alpha = bytes.getUint8(offset + 3);
+      if (red > 180 && green < 100 && blue < 100 && alpha > 0) {
+        redPixels += 1;
+      }
+    }
+
+    expect(redPixels, greaterThan(20));
+  });
 }
