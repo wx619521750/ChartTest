@@ -24,7 +24,9 @@ class LineChartDrawer {
         self.chartModel = chartModel
         self.layer = layer
         drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        if !chartView.isMetalRenderingActive {
+            drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        }
         drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)

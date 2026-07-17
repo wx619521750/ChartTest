@@ -38,6 +38,16 @@ import UIKit
 @objcMembers class LineChartView: UIView,UIGestureRecognizerDelegate {
     weak var delegate:LineChartViewDelegate?
     private lazy var drawer = LineChartDrawer(chartView: self)
+    private var metalLineView: MetalLineChartView?
+    var usesMetalRendering = true {
+        didSet {
+            metalLineView?.isHidden = !usesMetalRendering
+            setNeedsDisplay()
+        }
+    }
+    var isMetalRenderingActive: Bool {
+        usesMetalRendering && metalLineView?.isRendererAvailable == true
+    }
     var chartModel = ChartModel(){
         didSet{
             dealData()
@@ -60,8 +70,8 @@ import UIKit
     //重绘视图
     override func draw(_ layer: CALayer, in ctx: CGContext) {
         super.draw(layer, in: ctx)
-        dealModels()
         drawer.draw(layer: layer,ctx: ctx, chartModel: chartModel)
+        metalLineView?.setNeedsDisplay()
     }
     override func draw(_ rect: CGRect) {
         super.draw(rect)
@@ -74,19 +84,33 @@ import UIKit
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        setupMetalLineView()
         addTapGesture()
         setupPanGesture()
         setupPinchGesture()
     }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        metalLineView?.frame = bounds
+    }
+
+    private func setupMetalLineView() {
+        let metalView = MetalLineChartView(chartView: self)
+        guard metalView.isRendererAvailable else { return }
+        metalView.frame = bounds
+        metalView.isHidden = !usesMetalRendering
+        metalView.isUserInteractionEnabled = false
+        addSubview(metalView)
+        metalLineView = metalView
+    }
     
     func dealData(){
-        let xs = chartModel.lineModel.points.map { $0.x }
         let now = Date().timeIntervalSince1970
-        //xRangeType = .distaceByNow的时候，数据超出当前时间，初始拖动会闪动，考虑到数据一般不会超出当前时间，暂不修改
-        chartModel.minX = xs.min() ?? now
-        chartModel.maxX = xs.max() ?? now
         chartModel.lineModel.points.sort(by: {$0.x<$1.x})
-        dealModels()
+        //xRangeType = .distaceByNow的时候，数据超出当前时间，初始拖动会闪动，考虑到数据一般不会超出当前时间，暂不修改
+        chartModel.minX = chartModel.lineModel.points.first?.x ?? now
+        chartModel.maxX = chartModel.lineModel.points.last?.x ?? now
         changeDateMode(mode: chartModel.dateMode)
         delegate?.lineChartViewDateModeChanged?(chartView: self, mode: chartModel.dateMode)
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
@@ -94,27 +118,7 @@ import UIKit
     
     func dealModels(){
         //根据窗口大小获取可展示的数据
-        var vasivledata = [ChartPointModel]()
-        let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
-        let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
-        if let leftData = leftData,let rightData = rightData{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x>=leftData.x)&&($0.x<=rightData.x)
-            })
-        }
-        if let leftData = leftData,rightData == nil{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x>=leftData.x)
-            })
-        }
-        if leftData == nil,let rightData = rightData{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x<=rightData.x)
-            })
-        }
-        if leftData == nil, rightData == nil{
-            vasivledata = chartModel.lineModel.points
-        }
+        let vasivledata = visiblePoints()
         switch chartModel.yRangeType {
         case .selfAdaptAll:
             let ys = chartModel.lineModel.points.map { $0.y }
@@ -158,8 +162,36 @@ import UIKit
         //获取数据内的空白区域
         chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
         delegate?.lineChartViewYRangeChanged?(chartView: self, min: chartModel.minY, max: chartModel.maxY)
-        chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
+        chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 400)
         addGapModel()
+    }
+
+    private func visiblePoints() -> [ChartPointModel] {
+        let points = chartModel.lineModel.points
+        guard !points.isEmpty else { return [] }
+        let start = max(0, lowerBound(points, chartModel.minX) - 1)
+        let end = min(points.count, upperBound(points, chartModel.maxX) + 1)
+        return start < end ? Array(points[start..<end]) : []
+    }
+
+    private func lowerBound(_ points: [ChartPointModel], _ x: Double) -> Int {
+        var low = 0
+        var high = points.count
+        while low < high {
+            let mid = (low + high) / 2
+            if points[mid].x < x { low = mid + 1 } else { high = mid }
+        }
+        return low
+    }
+
+    private func upperBound(_ points: [ChartPointModel], _ x: Double) -> Int {
+        var low = 0
+        var high = points.count
+        while low < high {
+            let mid = (low + high) / 2
+            if points[mid].x <= x { low = mid + 1 } else { high = mid }
+        }
+        return low
     }
     
     //通过两点的距离获取空数据区域
@@ -236,7 +268,7 @@ import UIKit
                 .map(\.y).reduce(0, +) / CGFloat(nextEnd - rangeStart)
             
             var maxArea: CGFloat = -1
-            var selected = data[rangeStart]
+            var selectedIndex = rangeStart
             for j in rangeStart..<min(rangeEnd, data.count) {
                 let area = abs(
                     (data[a].x - avgX) * (data[j].y - data[a].y) -
@@ -244,7 +276,7 @@ import UIKit
                 )
                 if area > maxArea {
                     maxArea = area
-                    selected = data[j]
+                    selectedIndex = j
                 }
                 //添加正在展示的点
                 if data[j].x == chartModel.tapedItem?.x&&chartModel.tapedItem?.style != .normal{
@@ -255,8 +287,8 @@ import UIKit
                     result.append(data[j])
                 }
             }
-            result.append(selected)
-            a = data.firstIndex { $0.x == selected.x && $0.y == selected.y }!
+            result.append(data[selectedIndex])
+            a = selectedIndex
         }
         
         result.append(data.last!)
@@ -315,6 +347,7 @@ import UIKit
                 self.chartModel.maxX = max
             }
         }
+        dealModels()
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
         if isUserInteraction {
@@ -341,6 +374,7 @@ import UIKit
         case .year:
             chartModel.minX = chartModel.maxX-3600*24*30*12
         }
+        dealModels()
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
     }
