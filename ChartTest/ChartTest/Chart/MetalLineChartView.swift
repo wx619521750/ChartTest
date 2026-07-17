@@ -70,6 +70,8 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
     private var rangeBuffer: MTLBuffer?
     private var colorBuffer: MTLBuffer?
     private var rangeCapacity = 0
+    private var gapBuffer: MTLBuffer?
+    private var gapCapacity = 0
     let sampleCount: Int
 
     init?(device: MTLDevice, chartView: LineChartView) {
@@ -185,8 +187,19 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
             VertexOut input [[stage_in]],
             constant Uniforms& uniforms [[buffer(0)]],
             constant float4* ranges [[buffer(1)]],
-            constant float4* colors [[buffer(2)]]) {
+            constant float4* colors [[buffer(2)]],
+            constant float4* gaps [[buffer(3)]]) {
             if (input.valid < 0.5) { discard_fragment(); }
+            float screenX = input.position.x / max(uniforms.plot.w, 0.000001);
+            float xProgress = (screenX - uniforms.viewport.z)
+                / max(uniforms.plot.x, 0.000001);
+            float dataX = uniforms.dataBounds.x
+                + xProgress * (uniforms.dataBounds.y - uniforms.dataBounds.x);
+            for (uint index = 0; index < uniforms.params.w; ++index) {
+                if (dataX > gaps[index].x && dataX < gaps[index].y) {
+                    discard_fragment();
+                }
+            }
             for (uint index = 0; index < uniforms.params.z; ++index) {
                 if (input.dataY <= ranges[index].x && input.dataY >= ranges[index].y) {
                     return colors[index];
@@ -267,6 +280,18 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
             colorBuffer?.contents().copyMemory(from: bytes.baseAddress!, byteCount: bytes.count)
         }
 
+        let gaps = model.lineModel.emptyAreas
+        ensureGapBuffer(device: device, count: max(gaps.count, 1))
+        var packedGaps = gaps.map {
+            SIMD4<Float>(Float($0.left - xOrigin), Float($0.right - xOrigin), 0, 0)
+        }
+        if packedGaps.isEmpty {
+            packedGaps = [SIMD4<Float>(0, 0, 0, 0)]
+        }
+        packedGaps.withUnsafeBytes { bytes in
+            gapBuffer?.contents().copyMemory(from: bytes.baseAddress!, byteCount: bytes.count)
+        }
+
         let lineStyle = model.lineModel.datalineStyle
         let lineWidth: CGFloat
         let baseColor: UIColor
@@ -281,6 +306,8 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         let subdivisions: UInt32 = isBezier
             ? subdivisionCount(points: points, model: model, size: view.bounds.size)
             : 1
+        let drawableScaleX = view.drawableSize.width / view.bounds.width
+        let drawableScaleY = view.drawableSize.height / view.bounds.height
         var uniforms = MetalChartUniforms(
             dataBounds: SIMD4<Float>(
                 0,
@@ -293,19 +320,17 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
                 Float(view.bounds.width - inset.left - inset.right),
                 Float(view.bounds.height - inset.top - inset.bottom),
                 Float(lineWidth),
-                0
+                Float(drawableScaleX)
             ),
             baseColor: rgba(baseColor),
-            params: SIMD4<UInt32>(subdivisions, isBezier ? 1 : 0, UInt32(ranges.count), UInt32(points.count))
+            params: SIMD4<UInt32>(subdivisions, isBezier ? 1 : 0, UInt32(ranges.count), UInt32(gaps.count))
         )
 
-        let scaleX = view.drawableSize.width / view.bounds.width
-        let scaleY = view.drawableSize.height / view.bounds.height
         encoder.setScissorRect(MTLScissorRect(
-            x: max(0, Int(inset.left * scaleX)),
-            y: max(0, Int(inset.top * scaleY)),
-            width: max(1, Int((view.bounds.width - inset.left - inset.right) * scaleX)),
-            height: max(1, Int((view.bounds.height - inset.top - inset.bottom) * scaleY))
+            x: max(0, Int(inset.left * drawableScaleX)),
+            y: max(0, Int(inset.top * drawableScaleY)),
+            width: max(1, Int((view.bounds.width - inset.left - inset.right) * drawableScaleX)),
+            height: max(1, Int((view.bounds.height - inset.top - inset.bottom) * drawableScaleY))
         ))
         encoder.setRenderPipelineState(pipelineState)
         encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
@@ -313,6 +338,7 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         encoder.setFragmentBytes(&uniforms, length: MemoryLayout<MetalChartUniforms>.stride, index: 0)
         encoder.setFragmentBuffer(rangeBuffer, offset: 0, index: 1)
         encoder.setFragmentBuffer(colorBuffer, offset: 0, index: 2)
+        encoder.setFragmentBuffer(gapBuffer, offset: 0, index: 3)
         encoder.drawPrimitives(
             type: .triangle,
             vertexStart: 0,
@@ -361,6 +387,15 @@ private final class MetalLineChartRenderer: NSObject, MTKViewDelegate {
         let length = rangeCapacity * MemoryLayout<SIMD4<Float>>.stride
         rangeBuffer = device.makeBuffer(length: length, options: .storageModeShared)
         colorBuffer = device.makeBuffer(length: length, options: .storageModeShared)
+    }
+
+    private func ensureGapBuffer(device: MTLDevice, count: Int) {
+        guard count > gapCapacity else { return }
+        gapCapacity = max(count, gapCapacity * 2, 4)
+        gapBuffer = device.makeBuffer(
+            length: gapCapacity * MemoryLayout<SIMD4<Float>>.stride,
+            options: .storageModeShared
+        )
     }
 
     private func rgba(_ color: UIColor) -> SIMD4<Float> {
