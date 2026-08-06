@@ -260,6 +260,15 @@ import UIKit
         }
         
         result.append(data.last!)
+        if let minPoint = data.min(by: { $0.y < $1.y }),
+           !result.contains(where: { $0 === minPoint }) {
+            result.append(minPoint)
+        }
+        if let maxPoint = data.max(by: { $0.y < $1.y }),
+           !result.contains(where: { $0 === maxPoint }) {
+            result.append(maxPoint)
+        }
+        result.sort { $0.x < $1.x }
         return result
     }
     
