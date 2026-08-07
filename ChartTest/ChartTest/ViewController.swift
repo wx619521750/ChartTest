@@ -48,26 +48,25 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             )?.timeIntervalSince1970 ?? startOfDay.timeIntervalSince1970
         }
 
-        binaryTimelineChartView.points = [
-            BinaryTimelinePoint(timestamp: timestamp(hour: 0, minute: 0), value: 0),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 1, minute: 0), value: 0),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 2, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 3, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 4, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 5, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 6, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 7, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 8, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 9, minute: 0), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 13, minute: 46), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 14, minute: 46), value: 1),
-
-            BinaryTimelinePoint(timestamp: timestamp(hour: 15, minute: 39), value: 0),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 16, minute: 5), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 16, minute: 25), value: 0),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 18, minute: 40), value: 1),
-            BinaryTimelinePoint(timestamp: timestamp(hour: 20, minute: 55), value: 0)
-        ]
+        binaryTimelineChartView.chartModel = BinaryTimelineChartModel(points: [
+            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 1, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 2, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 4, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 5, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 6, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 7, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 8, minute: 0), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 9, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 13, minute: 46), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 14, minute: 46), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 15, minute: 39), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 5), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 25), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 18, minute: 40), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 0)
+        ])
     }
 
     func loadChartPoints() -> [ChartPoint] {
