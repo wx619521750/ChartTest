@@ -20,7 +20,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         scrollView.addSubview(segmentView)
         scrollView.addSubview(minDatePicker)
         scrollView.addSubview(maxDatePicker)
+        scrollView.addSubview(binaryTimelineChartView)
         initChartData()
+        initBinaryTimelineData()
     }
 
     func initChartData() {
@@ -33,6 +35,39 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             max: radonChartView.chartModel.maxX,
             source: radonChartView
         )
+    }
+
+    private func initBinaryTimelineData() {
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        func timestamp(hour: Int, minute: Int) -> TimeInterval {
+            Calendar.current.date(
+                bySettingHour: hour,
+                minute: minute,
+                second: 0,
+                of: startOfDay
+            )?.timeIntervalSince1970 ?? startOfDay.timeIntervalSince1970
+        }
+
+        binaryTimelineChartView.points = [
+            BinaryTimelinePoint(timestamp: timestamp(hour: 0, minute: 0), value: 0),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 1, minute: 0), value: 0),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 2, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 3, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 4, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 5, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 6, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 7, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 8, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 9, minute: 0), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 13, minute: 46), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 14, minute: 46), value: 1),
+
+            BinaryTimelinePoint(timestamp: timestamp(hour: 15, minute: 39), value: 0),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 16, minute: 5), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 16, minute: 25), value: 0),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 18, minute: 40), value: 1),
+            BinaryTimelinePoint(timestamp: timestamp(hour: 20, minute: 55), value: 0)
+        ]
     }
 
     func loadChartPoints() -> [ChartPoint] {
@@ -97,7 +132,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     lazy var scrollView: UIScrollView = {
         let view = UIScrollView()
-        view.contentSize = .init(width: UIScreen.main.bounds.width, height: 952)
+        view.contentSize = .init(width: UIScreen.main.bounds.width, height: 1200)
         view.frame = .init(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         return view
     }()
@@ -127,6 +162,13 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         view.addTarget(self,
                             action: #selector(dateChanged(_:)),
                             for: .valueChanged)
+        return view
+    }()
+
+    lazy var binaryTimelineChartView: BinaryTimelineChartView = {
+        let view = BinaryTimelineChartView(
+            frame: CGRect(x: 20, y: 952, width: UIScreen.main.bounds.width - 40, height: 220)
+        )
         return view
     }()
     
