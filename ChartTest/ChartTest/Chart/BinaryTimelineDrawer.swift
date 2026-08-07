@@ -9,7 +9,8 @@ final class BinaryTimelineDrawer {
         model: BinaryTimelineChartModel,
         visibleRange: Range<TimeInterval>,
         blocks: [BinaryTimelineStateBlock],
-        selectedRange: Range<TimeInterval>?
+        selectedRange: Range<TimeInterval>?,
+        revealProgress: CGFloat = 1
     ) {
         model.backgroundColor.setFill()
         context.fill(bounds)
@@ -27,11 +28,12 @@ final class BinaryTimelineDrawer {
             blocks: blocks,
             plotRect: plotRect,
             activeY: activeY,
-            inactiveY: inactiveY
+            inactiveY: inactiveY,
+            revealProgress: revealProgress
         )
         drawAxis(bounds: bounds, model: model, visibleRange: visibleRange, plotRect: plotRect)
 
-        if model.showsSelection, let selectedRange {
+        if model.showsSelection, revealProgress >= 1, let selectedRange {
             drawSelection(
                 context: context,
                 bounds: bounds,
@@ -66,10 +68,27 @@ final class BinaryTimelineDrawer {
         blocks: [BinaryTimelineStateBlock],
         plotRect: CGRect,
         activeY: CGFloat,
-        inactiveY: CGFloat
+        inactiveY: CGFloat,
+        revealProgress: CGFloat
     ) {
         guard !blocks.isEmpty else { return }
         context.saveGState()
+        let progress = min(1, max(0, revealProgress))
+        guard progress > 0 else {
+            context.restoreGState()
+            return
+        }
+
+        // 加载动画只裁剪状态图形区域，坐标轴保持完整显示。
+        if progress < 1 {
+            let revealRect = CGRect(
+                x: plotRect.minX,
+                y: 0,
+                width: plotRect.width * progress,
+                height: plotRect.maxY + model.blockHeight
+            )
+            context.clip(to: revealRect)
+        }
 
         // 先画竖向渐变连接线，随后色块覆盖连接线端点，保证交界处无圆头。
         for index in 0..<(blocks.count - 1) {

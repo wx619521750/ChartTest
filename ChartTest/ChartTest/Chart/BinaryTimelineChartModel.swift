@@ -69,6 +69,10 @@ final class BinaryTimelineChartModel {
     var enablePinch = true
     /// 是否开启左右滑动惯性。
     var enableDeceleration = true
+    /// 设置模型或重新加载数据时，是否播放从左到右的加载动画。
+    var enableLoadAnimation = true
+    /// 加载动画时长，默认 400ms。
+    var loadAnimationDuration: TimeInterval = 0.4
 
     // MARK: - Selection
 

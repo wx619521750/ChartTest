@@ -20,6 +20,9 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
     private var lastDecelerationTimestamp: CFTimeInterval = 0
     private let decelerationStartVelocityThreshold: CGFloat = 120
     private let decelerationStopVelocityThreshold: CGFloat = 5
+    private var loadAnimationDisplayLink: CADisplayLink?
+    private var loadAnimationStartTimestamp: CFTimeInterval = 0
+    private var loadAnimationProgress: CGFloat = 1
 
     /// 代码创建 View 时调用，完成父类初始化后统一执行视图基础配置。
     override init(frame: CGRect) {
@@ -36,6 +39,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
     /// View 释放时停止 DisplayLink，避免惯性回调继续持有已经销毁的视图。
     deinit {
         stopDeceleration()
+        stopLoadAnimation(finish: false)
     }
 
     /// 系统触发重绘时调用；View 负责准备数据，真正的路径绘制交给 Drawer。
@@ -51,7 +55,8 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             model: chartModel,
             visibleRange: visibleRange,
             blocks: stateBlocks,
-            selectedRange: selectedRange
+            selectedRange: selectedRange,
+            revealProgress: loadAnimationProgress
         )
     }
 
@@ -67,20 +72,24 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         chartModel.points = sortedPoints
 
         guard let range = makeDataRange(points: sortedPoints) else {
+            stopLoadAnimation(finish: false)
             dataRange = nil
             visibleRange = nil
             stateBlocks = []
             activeRanges = []
             selectedRangeIndex = nil
+            loadAnimationProgress = 1
             setNeedsDisplay()
             return
         }
 
+        loadAnimationProgress = chartModel.enableLoadAnimation ? 0 : 1
         dataRange = range
         let shouldUseExistingRange = chartModel.minX < chartModel.maxX
         let minX = shouldUseExistingRange ? chartModel.minX : range.lowerBound
         let maxX = shouldUseExistingRange ? chartModel.maxX : range.upperBound
         updateXRange(min: minX, max: maxX, isUserInteraction: false)
+        startLoadAnimationIfNeeded()
     }
 
     /// 初始化 View 的基础显示属性和点击、平移、缩放手势。
@@ -103,6 +112,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
 
     /// 手指直接触摸图表时停止惯性，避免手势和 DisplayLink 同时修改窗口。
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        stopLoadAnimation(finish: true)
         stopDeceleration()
         super.touchesBegan(touches, with: event)
     }
@@ -220,6 +230,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
 
     /// 处理点击选中逻辑；只允许选中连续的 y=1 区间。
     @objc private func didTap(_ gesture: UITapGestureRecognizer) {
+        stopLoadAnimation(finish: true)
         stopDeceleration()
         guard chartModel.showsSelection, let visibleRange else { return }
         // 点击位置先转换为当天时间戳，再命中连续的 y=1 区间。
@@ -239,6 +250,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         guard chartModel.enablePan else { return }
         switch gesture.state {
         case .began:
+            stopLoadAnimation(finish: true)
             stopDeceleration()
         case .changed:
             let translation = gesture.translation(in: self)
@@ -258,6 +270,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         guard chartModel.enablePinch, let visibleRange else { return }
         switch gesture.state {
         case .began:
+            stopLoadAnimation(finish: true)
             stopDeceleration()
             pinchAnchorPoint = gesture.location(in: self)
             pinchStartMinX = visibleRange.lowerBound
@@ -319,6 +332,53 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         decelerationDisplayLink = nil
         decelerationVelocityX = 0
         lastDecelerationTimestamp = 0
+    }
+
+    /// 根据模型配置启动从左到右的加载动画。
+    private func startLoadAnimationIfNeeded() {
+        stopLoadAnimation(finish: false)
+        guard chartModel.enableLoadAnimation,
+              chartModel.loadAnimationDuration > 0,
+              visibleRange != nil else {
+            loadAnimationProgress = 1
+            setNeedsDisplay()
+            return
+        }
+
+        loadAnimationProgress = 0
+        loadAnimationStartTimestamp = 0
+        let displayLink = CADisplayLink(target: self, selector: #selector(handleLoadAnimationTick(_:)))
+        displayLink.add(to: .main, forMode: .common)
+        loadAnimationDisplayLink = displayLink
+        setNeedsDisplay()
+    }
+
+    /// 停止加载动画；finish 为 true 时直接展示完整图形。
+    private func stopLoadAnimation(finish: Bool) {
+        loadAnimationDisplayLink?.invalidate()
+        loadAnimationDisplayLink = nil
+        loadAnimationStartTimestamp = 0
+        if finish {
+            loadAnimationProgress = 1
+            setNeedsDisplay()
+        }
+    }
+
+    /// 每一帧推进加载动画进度，进度达到 1 后停止 DisplayLink。
+    @objc private func handleLoadAnimationTick(_ displayLink: CADisplayLink) {
+        if loadAnimationStartTimestamp == 0 {
+            loadAnimationStartTimestamp = displayLink.timestamp
+            return
+        }
+
+        let elapsed = displayLink.timestamp - loadAnimationStartTimestamp
+        let progress = elapsed / chartModel.loadAnimationDuration
+        loadAnimationProgress = CGFloat(min(1, max(0, progress)))
+        setNeedsDisplay()
+
+        if loadAnimationProgress >= 1 {
+            stopLoadAnimation(finish: true)
+        }
     }
 
     /// 每一帧根据剩余速度继续移动窗口，并模拟 UIScrollView 的减速曲线。

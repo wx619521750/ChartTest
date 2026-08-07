@@ -20,9 +20,12 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         scrollView.addSubview(segmentView)
         scrollView.addSubview(minDatePicker)
         scrollView.addSubview(maxDatePicker)
-        scrollView.addSubview(binaryTimelineChartView)
+        DispatchQueue.main.asyncAfter(deadline: .now()+5, execute: {
+            
+            self.scrollView.addSubview(self.binaryTimelineChartView)
+            self.initBinaryTimelineData()
+        })
         initChartData()
-        initBinaryTimelineData()
     }
 
     func initChartData() {
