@@ -12,6 +12,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
     private var stateBlocks: [BinaryTimelineStateBlock] = []
     private var activeRanges: [Range<TimeInterval>] = []
     private var selectedRangeIndex: Int?
+    private var isBrowsingSelection = false
     private var pinchStartMinX: TimeInterval = 0
     private var pinchStartMaxX: TimeInterval = 0
     private var pinchAnchorPoint: CGPoint = .zero
@@ -224,7 +225,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         if let selectedRangeIndex, activeRanges.indices.contains(selectedRangeIndex) {
             self.selectedRangeIndex = selectedRangeIndex
         } else {
-            selectedRangeIndex = activeRanges.indices.first
+            selectedRangeIndex = nil
         }
     }
 
@@ -232,17 +233,15 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
     @objc private func didTap(_ gesture: UITapGestureRecognizer) {
         stopLoadAnimation(finish: true)
         stopDeceleration()
-        guard chartModel.showsSelection, let visibleRange else { return }
-        // 点击位置先转换为当天时间戳，再命中连续的 y=1 区间。
-        let timestamp = drawer.timestamp(
-            at: gesture.location(in: self).x,
-            bounds: bounds,
-            model: chartModel,
-            visibleRange: visibleRange
-        )
-        guard let index = activeRanges.firstIndex(where: { $0.contains(timestamp) }) else { return }
-        selectedRangeIndex = index
-        setNeedsDisplay()
+        guard chartModel.showsSelection else { return }
+        let location = gesture.location(in: self)
+        if isPointInsideSelectedTooltip(location) {
+            selectedRangeIndex = nil
+            setNeedsDisplay()
+            return
+        }
+        // 点击命中 y=1 区间时显示 tooltip；点击其他区域时取消当前 tooltip。
+        updateSelection(at: location, clearWhenMiss: true)
     }
 
     /// 处理左右平移手势，手指松开后按配置决定是否启动惯性。
@@ -252,17 +251,65 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         case .began:
             stopLoadAnimation(finish: true)
             stopDeceleration()
+            // 和 LineChartView 一样：只有按在 tooltip 框内部，拖动才用于浏览 tooltip。
+            isBrowsingSelection = isPointInsideSelectedTooltip(gesture.location(in: self))
+            if isBrowsingSelection {
+                updateSelection(at: gesture.location(in: self), clearWhenMiss: false)
+            }
         case .changed:
+            if isBrowsingSelection {
+                updateSelection(at: gesture.location(in: self), clearWhenMiss: false)
+                return
+            }
             let translation = gesture.translation(in: self)
             gesture.setTranslation(.zero, in: self)
             _ = shiftVisibleRange(by: dataOffsetFromViewTranslation(translation.x))
         case .ended:
+            if isBrowsingSelection {
+                isBrowsingSelection = false
+                return
+            }
             startDeceleration(with: gesture.velocity(in: self).x)
         case .cancelled, .failed:
+            isBrowsingSelection = false
             stopDeceleration()
         default:
             break
         }
+    }
+
+    /// 根据触点位置更新 tooltip 选中区间；点击空白处时可选择清空选中状态。
+    private func updateSelection(at location: CGPoint, clearWhenMiss: Bool) {
+        guard let visibleRange else { return }
+        let timestamp = drawer.timestamp(
+            at: location.x,
+            bounds: bounds,
+            model: chartModel,
+            visibleRange: visibleRange
+        )
+        if let index = activeRanges.firstIndex(where: { $0.contains(timestamp) }) {
+            selectedRangeIndex = index
+        } else if clearWhenMiss {
+            selectedRangeIndex = nil
+        }
+        setNeedsDisplay()
+    }
+
+    /// 判断触点是否落在当前 tooltip 内；只有命中 tooltip 才接管拖动浏览。
+    private func isPointInsideSelectedTooltip(_ point: CGPoint) -> Bool {
+        guard chartModel.showsSelection,
+              let visibleRange,
+              let selectedRangeIndex,
+              activeRanges.indices.contains(selectedRangeIndex) else {
+            return false
+        }
+        let rect = drawer.tooltipRect(
+            bounds: bounds,
+            model: chartModel,
+            visibleRange: visibleRange,
+            range: activeRanges[selectedRangeIndex]
+        )
+        return rect.contains(point)
     }
 
     /// 处理双指缩放，缩放中心固定在手势开始的位置。

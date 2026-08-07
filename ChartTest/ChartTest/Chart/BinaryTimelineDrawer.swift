@@ -60,6 +60,28 @@ final class BinaryTimelineDrawer {
         return visibleRange.lowerBound + TimeInterval(progress) * (visibleRange.upperBound - visibleRange.lowerBound)
     }
 
+    /// 计算 tooltip 的实际绘制区域，供 View 在拖动开始时判断触点是否落在 tooltip 内。
+    func tooltipRect(
+        bounds: CGRect,
+        model: BinaryTimelineChartModel,
+        visibleRange: Range<TimeInterval>,
+        range: Range<TimeInterval>
+    ) -> CGRect {
+        let plotRect = plotRect(in: bounds, model: model)
+        let centerX = xPosition(
+            (range.lowerBound + range.upperBound) * 0.5,
+            visibleRange: visibleRange,
+            plotRect: plotRect
+        )
+        let tooltipSize = selectionTooltipSize(model: model, range: range)
+        return selectionTooltipRect(
+            centerX: centerX,
+            size: tooltipSize,
+            model: model,
+            plotRect: plotRect
+        )
+    }
+
     /// 绘制所有红灰状态块，并在状态切换处绘制竖向渐变连接线。
     private func drawStateBlocks(
         context: CGContext,
@@ -251,22 +273,11 @@ final class BinaryTimelineDrawer {
 
         let font = model.tooltipFont
         let lineHeight = font.lineHeight
-        let textWidth = max(
-            durationText.size(withAttributes: [.font: font]).width,
-            timeText.size(withAttributes: [.font: font]).width
-        )
-        let tooltipSize = CGSize(
-            width: textWidth + model.tooltipHorizontalPadding * 2,
-            height: lineHeight * 2 + model.tooltipVerticalPadding * 2
-        )
-        // 提示框优先相对锚点居中，靠近左右边缘时整体收回 View 内。
-        let tooltipX = min(
-            bounds.width - tooltipSize.width - 8,
-            max(8, centerX - tooltipSize.width * 0.5)
-        )
-        let tooltipRect = CGRect(
-            origin: CGPoint(x: tooltipX, y: model.tooltipTop),
-            size: tooltipSize
+        let tooltipRect = selectionTooltipRect(
+            centerX: centerX,
+            size: selectionTooltipSize(model: model, range: range),
+            model: model,
+            plotRect: plotRect
         )
 
         // 虚线先绘制，提示框后绘制，从而隐藏虚线进入提示框内部的部分。
@@ -296,6 +307,46 @@ final class BinaryTimelineDrawer {
             y: tooltipRect.minY + model.tooltipVerticalPadding + lineHeight,
             rect: tooltipRect,
             attributes: attributes
+        )
+    }
+
+    /// 计算 tooltip 的尺寸，绘制和命中检测共用同一套尺寸逻辑。
+    private func selectionTooltipSize(
+        model: BinaryTimelineChartModel,
+        range: Range<TimeInterval>
+    ) -> CGSize {
+        let duration = max(0, Int(range.upperBound - range.lowerBound))
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
+        let durationText = hours > 0 ? "Duration: \(hours)h \(minutes)min" : "Duration: \(minutes)min"
+        let timeText = "\(timeString(range.lowerBound)) - \(timeString(range.upperBound))"
+        let font = model.tooltipFont
+        let textWidth = max(
+            durationText.size(withAttributes: [.font: font]).width,
+            timeText.size(withAttributes: [.font: font]).width
+        )
+        return CGSize(
+            width: textWidth + model.tooltipHorizontalPadding * 2,
+            height: font.lineHeight * 2 + model.tooltipVerticalPadding * 2
+        )
+    }
+
+    /// 计算 tooltip 的位置，并把左右移动范围限制在图表状态块的绘制范围内。
+    private func selectionTooltipRect(
+        centerX: CGFloat,
+        size: CGSize,
+        model: BinaryTimelineChartModel,
+        plotRect: CGRect
+    ) -> CGRect {
+        let minTooltipX = plotRect.minX
+        let maxTooltipX = max(plotRect.minX, plotRect.maxX - size.width)
+        let tooltipX = min(
+            maxTooltipX,
+            max(minTooltipX, centerX - size.width * 0.5)
+        )
+        return CGRect(
+            origin: CGPoint(x: tooltipX, y: model.tooltipTop),
+            size: size
         )
     }
 
