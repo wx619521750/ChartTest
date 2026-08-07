@@ -1,6 +1,6 @@
 import UIKit
 
-/// 二值时间轴的原始数据点。x 为当天时间戳，y 只保留 0 或 1。
+/// 二值时间轴的原始数据点。x 为任意时间戳，y 只保留 0 或 1。
 final class BinaryTimelinePointModel {
     var x: TimeInterval
     private var storedY: Int
@@ -45,9 +45,30 @@ final class BinaryTimelineChartModel {
     var maximumCornerRadius: CGFloat = 4
     /// 时间刻度文本底边相对 View 底部的距离。
     var axisLabelBottom: CGFloat = 34
-    /// 需要显示的小时刻度。
-    var axisHours = [0, 8, 12, 16, 24]
+    /// 底部时间刻度字体。
     var axisFont = UIFont.systemFont(ofSize: 14)
+
+    // MARK: - Range
+
+    /// 当前可视窗口的最小 X 时间戳。
+    var minX: TimeInterval = 0
+    /// 当前可视窗口的最大 X 时间戳。
+    var maxX: TimeInterval = 0
+    /// X 轴滑动和缩放边界。
+    var XRangeType: BinaryTimelineXRangeType = .limitedByData
+    /// 允许缩放到的最小可视时间跨度，默认 30 分钟。
+    var minimumVisibleDuration: TimeInterval = 1800
+    /// 允许缩放到的最大可视时间跨度；nil 表示不额外限制。
+    var maximumVisibleDuration: TimeInterval?
+
+    // MARK: - Interaction
+
+    /// 是否允许左右平移。
+    var enablePan = true
+    /// 是否允许双指缩放。
+    var enablePinch = true
+    /// 是否开启左右滑动惯性。
+    var enableDeceleration = true
 
     // MARK: - Selection
 
@@ -72,4 +93,16 @@ struct BinaryTimelineStateBlock {
     let value: Int
 
     var range: Range<TimeInterval> { start..<end }
+}
+
+/// 二值时间轴的 X 轴交互范围限制。
+enum BinaryTimelineXRangeType {
+    /// 不限制边界，图表可以任意滑动和缩放。
+    case unlimited
+    /// 限制在数据首尾时间范围内。
+    case limitedByData
+    /// 限制在指定的最小和最大时间范围内。
+    case limited(minX: TimeInterval, maxX: TimeInterval)
+    /// 限制在当前时间往前固定时长的范围内。
+    case distanceByNow(TimeInterval)
 }
