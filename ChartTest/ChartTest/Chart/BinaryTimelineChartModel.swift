@@ -34,7 +34,7 @@ final class BinaryTimelineChartModel {
     // MARK: - Layout
 
     /// 绘图区边距；顶部需要为提示框预留空间，底部需要为时间刻度预留空间。
-    var contentInsets = UIEdgeInsets(top: 74, left: 12, bottom: 68, right: 12)
+    var contentInsets = UIEdgeInsets(top: 50, left: 0, bottom: 50, right: 0)
     /// 红、灰状态块的高度。
     var blockHeight: CGFloat = 18
     /// 红色块中心与灰色块中心之间的垂直距离。

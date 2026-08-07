@@ -66,7 +66,9 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 5), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 25), y: 0),
             BinaryTimelinePointModel(x: timestamp(hour: 18, minute: 40), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 0)
+            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 0),
+            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 0)
+
         ])
     }
 

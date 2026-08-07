@@ -14,9 +14,10 @@ final class BinaryTimelineDrawer {
         model.backgroundColor.setFill()
         context.fill(bounds)
 
-        // y=1 位于上方，y=0 按配置的中心距位于下方。
+        // y=1 位于上方，y=0 位于下方；两条状态轨道整体在 contentInsets 对应的绘图区内垂直居中。
         let plotRect = plotRect(in: bounds, model: model)
-        let activeY = plotRect.minY + model.blockHeight * 0.5
+        let totalStateHeight = model.stateVerticalDistance + model.blockHeight
+        let activeY = plotRect.midY - totalStateHeight * 0.5 + model.blockHeight * 0.5
         let inactiveY = activeY + model.stateVerticalDistance
 
         drawStateBlocks(
