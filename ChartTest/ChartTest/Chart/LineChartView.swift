@@ -24,14 +24,14 @@ import UIKit
     @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double)->NSAttributedString?
     //回调底部首尾时间标签 X 值，返回时间富文本
     @objc optional func lineChartViewBottomAxisMaxMinFormatStr(chartView:LineChartView,x:Double)->NSAttributedString
-    
+
     /// 当前点击的点的格式化字符串
     /// - Parameters:
     ///   - x: 当前点击的数据的x
     ///   - y: 当前点击的数据的x
     /// - Returns: 格式化后的 X、Y 富文本
     @objc optional func lineChartViewTapedItemFormatStrs(chartView:LineChartView,x:Double,y:Double)->XYAttrModel
-    
+
 }
 
 
@@ -66,19 +66,19 @@ import UIKit
     override func draw(_ rect: CGRect) {
         super.draw(rect)
     }
-    
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         stopDeceleration()
         super.touchesBegan(touches, with: event)
     }
-    
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         addTapGesture()
         setupPanGesture()
         setupPinchGesture()
     }
-    
+
     func dealData(){
         let xs = chartModel.lineModel.points.map { $0.x }
         let now = Date().timeIntervalSince1970
@@ -91,7 +91,7 @@ import UIKit
         delegate?.lineChartViewDateModeChanged?(chartView: self, mode: chartModel.dateMode)
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
     }
-    
+
     func dealModels(){
         //根据窗口大小获取可展示的数据
         var vasivledata = [ChartPointModel]()
@@ -161,7 +161,7 @@ import UIKit
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
         addGapModel()
     }
-    
+
     //通过两点的距离获取空数据区域
     func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [horizontalEmptyAreaModel] {
         
@@ -185,7 +185,7 @@ import UIKit
         }
         return result
     }
-    
+
     
     /// 添加gap模型，便于使用chartpointmodel一样的交互逻辑
     func addGapModel(){
@@ -203,9 +203,9 @@ import UIKit
         }
         chartModel.lineModel.pointsShouldDraw.sort(by: {$0.x<$1.x})
     }
+
     
-    
-    
+
     /// 数据量多的时候重载样
     /// - Parameters:
     ///   - data: 总数据
@@ -271,16 +271,16 @@ import UIKit
         result.sort { $0.x < $1.x }
         return result
     }
-    
+
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     deinit {
         stopDeceleration()
     }
-    
+
     
     /// 设置窗口最大最小X
     /// - Parameters:
@@ -353,7 +353,7 @@ import UIKit
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
     }
-    
+
     
     //根据显示范围自定确定日期显示模式
     private func autoChangeDateMode(){
@@ -399,7 +399,7 @@ import UIKit
         chartModel.tapedItem?.style = .circle(radius: 8, width: 2, color: .gray)
         self.setNeedsDisplay()
     }
-    
+
     //数据点和view的pt之间的转换
     private func dataPointFromPointInView(point:CGPoint)->CGPoint{
         let x = chartModel.minX + (point.x-chartModel.chartContentInsert.left)/(self.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*(chartModel.maxX-chartModel.minX)
@@ -416,7 +416,7 @@ import UIKit
             abs($0.x - x) < abs($1.x - x)
         }
     }
-    
+
     
     private func setupPanGesture() {
         let panGesture = UIPanGestureRecognizer(
@@ -480,7 +480,7 @@ import UIKit
             break
         }
     }
-    
+
     private func setupPinchGesture() {
         // 创建 Pinch 手势识别器
         let pinchGesture = UIPinchGestureRecognizer(
@@ -490,7 +490,7 @@ import UIKit
         // 将手势添加到视图
         self.addGestureRecognizer(pinchGesture)
     }
-    
+
     @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         guard let view = gesture.view else { return }
         switch gesture.state {
@@ -532,12 +532,12 @@ import UIKit
             break
         }
     }
-    
+
     private func dataOffsetFromViewTranslation(_ translationX: CGFloat) -> Double {
         guard self.layer.bounds.width > 0 else { return 0 }
         return Double((translationX / self.layer.bounds.width) * CGFloat(chartModel.maxX - chartModel.minX))
     }
-    
+
     @discardableResult
     private func shiftVisibleRange(by dataOffset: Double) -> Bool {
         let newMinX = chartModel.minX - dataOffset
@@ -584,7 +584,7 @@ import UIKit
             return true
         }
     }
-    
+
     private func startDeceleration(with velocityX: CGFloat) {
         stopDeceleration()
         guard chartModel.enableDeceleration else { return }
@@ -596,14 +596,14 @@ import UIKit
         displayLink.add(to: .main, forMode: .common)
         decelerationDisplayLink = displayLink
     }
-    
+
     private func stopDeceleration() {
         decelerationDisplayLink?.invalidate()
         decelerationDisplayLink = nil
         decelerationVelocityX = 0
         lastDecelerationTimestamp = 0
     }
-    
+
     @objc private func handleDecelerationTick(_ displayLink: CADisplayLink) {
         if lastDecelerationTimestamp == 0 {
             lastDecelerationTimestamp = displayLink.timestamp
@@ -621,7 +621,7 @@ import UIKit
             stopDeceleration()
         }
     }
-    
+
     
 }
 
@@ -631,7 +631,7 @@ import UIKit
     var lineModel:ChartLineModel = ChartLineModel()
     //图表曲线显示内容的insert
     var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 0)
-    
+
     
     //顶部轴线类型
     var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
@@ -641,7 +641,7 @@ import UIKit
     var leftAxisLineStyle:LineStyle = .line(width: 1, color: .black)
     //右部轴线类型
     var rightAxisLineStyle:LineStyle = .line(width: 1, color: .black)
-    
+
     
     //顶部轴线文字配置
     var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
@@ -651,7 +651,7 @@ import UIKit
     var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
-    
+
     var topAxisStepType:AxisStepType = .none
     var bottomAxisStepType:AxisStepType = .dateAdapt
     var leftAxisStepType:AxisStepType = .distance(distace: 5, align: 5)
@@ -666,20 +666,23 @@ import UIKit
     var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
     //右部轴线最大最小值配置
     var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: -0)
-    
+
     
     //右部数据最大最小值配置
     var rightAxisDataMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
-    
+
     
     //横向线段配置
     var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [5,5]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [5,5]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
     //竖向线段配置
     var verticalLines:[VerticalLine] = []
     //竖向线段颜色配置
-    var verticalColorRnages:[VerticalColorRange] = [.init(showType: .line, top: 100, bottom: 60, color: .red),
-                                                    .init(showType: .line, top: 60, bottom: 20, color: .yellow),
-                                                    .init(showType: .line, top: 20, bottom: 0, color: .green)]
+    var verticalColorRnages:[VerticalColorRange] = [.init(top: 100, bottom: 60, topColor: .red,bottomColor: .red),
+                                                    .init(top: 60, bottom: 20, topColor: .yellow,bottomColor: .yellow),
+                                                    .init(top: 20, bottom: 0, topColor: .green,bottomColor: .green)]
+
+    //竖向线段底部颜色配置
+    var verticalBGColorRnages:[VerticalColorRange]? = nil
     //日期显示模式
     var dateMode:DateMode = .day
     //图标数据显示范围，四个参数定义的区间的数据才会绘制到图表（定义窗口大小）
@@ -701,9 +704,9 @@ import UIKit
     var graduationType:GraduationType = .none
     //是否开启左右滑动惯性
     var enableDeceleration = true
-    
 
-    
+
+
 }
 
 @objcMembers class MaxMinAttrModel:NSObject{
@@ -752,7 +755,7 @@ class ChartLineModel{
     var emptyAreas = [horizontalEmptyAreaModel]()
 
 
-    
+
 }
 
 //空白区域模型
@@ -797,7 +800,7 @@ class horizontalEmptyAreaModel{
     var detailColor:UIColor = .white
     var canTouch:Bool = false
     var style:Style = .normal
-    
+
     var gapLeft:Double = 0
     var gapRight:Double = 0
 }
@@ -820,22 +823,18 @@ class HorizontalColorRange{
 }
 //竖向背景颜色
 class VerticalColorRange{
-    enum ShowType{
-        case line
-        case background
-    }
-    var showType:ShowType
     var top:CGFloat
     var bottom:CGFloat
-    var color:UIColor
+    var topColor:UIColor
+    var bottomColor:UIColor
 
-    init(showType: ShowType, top: CGFloat, bottom: CGFloat, color: UIColor) {
-        self.showType = showType
+    init(top: CGFloat, bottom: CGFloat, topColor: UIColor,bottomColor: UIColor) {
         self.top = top
         self.bottom = bottom
-        self.color = color
+        self.topColor = topColor
+        self.bottomColor = bottomColor
     }
-    
+
 }
 //横向指示线模型
 class HorizontalLine{
@@ -922,7 +921,7 @@ enum GraduationType{
 //提供给oc 定义样式
 extension ChartModel{
     @objc convenience init(points:[ChartPoint],type:XSChartType) {
-        self.init(points: points, type: type, minThreshold: 75, maxThreshold: 150)
+        self.init(points: points, type: type, minThreshold: 40, maxThreshold: 80)
     }
 
     @objc convenience init(points:[ChartPoint], type:XSChartType, minThreshold: Double, maxThreshold: Double) {
@@ -974,11 +973,15 @@ extension ChartModel{
             .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]
-        verticalColorRnages = [
-            .init(showType: .line, top: 1000, bottom: maxThreshold, color: .lineColorRed),
-            .init(showType: .line, top:  maxThreshold, bottom: minThreshold, color: .lineColorYellow),
-            .init(showType: .line, top:  minThreshold, bottom:  0, color: .lineColorGreen)
-        ]
+//        verticalColorRnages = [.init(top: 1000000, bottom: maxThreshold, topColor: .lineColorRed,bottomColor: .lineColorRed),
+//                               .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
+//                               .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)]
+        
+        verticalColorRnages = [.init(top: 1000000, bottom: 0, topColor: .blue,bottomColor: .blue)]
+
+        verticalBGColorRnages = [.init(top: 1000000, bottom: maxThreshold, topColor: .lineColorRed,bottomColor: .lineColorRed),
+                                 .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
+                                 .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)]
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
@@ -1005,7 +1008,7 @@ extension ChartModel{
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
 
         horizontalLines = []
-        verticalColorRnages = [.init(showType: .line, top: 100, bottom: -50, color: .lineColorBlue)]
+        verticalColorRnages = [.init(top: 100, bottom: -50, topColor: .lineColorBlue,bottomColor: .lineColorBlue)]
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
@@ -1032,7 +1035,7 @@ extension ChartModel{
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
 
         horizontalLines = []
-        verticalColorRnages = [.init(showType: .line, top: 100, bottom: 0, color: .lineColorBlue)]
+        verticalColorRnages = [.init(top: 100, bottom: 0, topColor: .lineColorBlue,bottomColor:.lineColorBlue )]
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
@@ -1045,7 +1048,7 @@ extension UIColor {
     static func hex(_ hexValue: Int , alpha: CGFloat = 1.0) -> UIColor {
         return UIColor(red: (CGFloat)((hexValue & 0xFF0000) >> 16) / 255.0, green: (CGFloat)((hexValue & 0xFF00) >> 8) / 255.0, blue: (CGFloat)(hexValue & 0xFF) / 255.0, alpha: alpha)
     }
-    
+
     convenience init(hex: Int, alpha: CGFloat = 1.0) {
         self.init(
             red: CGFloat((hex >> 16) & 0xFF) / 255.0,
@@ -1062,7 +1065,7 @@ extension UIColor {
     @objc static let lineColorYellow = UIColor.hex(0xFFCF31)
     @objc static let lineColorRed = UIColor.hex(0xE67077)
     @objc static let lineColorBlue = UIColor.hex(0x68A7ED)
-    
+
     @objc static let axisLineColor = UIColor.hex(0xeeeeee)
     @objc static let bottomLabelColor = UIColor.hex(0x666666)
     @objc static let rightLabelColor = UIColor.hex(0x999999)
