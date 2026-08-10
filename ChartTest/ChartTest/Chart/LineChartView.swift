@@ -683,6 +683,8 @@ import UIKit
 
     //竖向线段底部颜色配置
     var verticalBGColorRnages:[VerticalColorRange]? = nil
+    // 贝塞尔模式下，相邻点小于该屏幕距离时退化为直线，降低密集点绘制开销；0 表示关闭。
+    var bezierToLineMinDistance: CGFloat = 2
     //日期显示模式
     var dateMode:DateMode = .day
     //图标数据显示范围，四个参数定义的区间的数据才会绘制到图表（定义窗口大小）
@@ -979,9 +981,10 @@ extension ChartModel{
         
         verticalColorRnages = [.init(top: 1000000, bottom: 0, topColor: .blue,bottomColor: .blue)]
 
-        verticalBGColorRnages = [.init(top: 1000000, bottom: maxThreshold, topColor: .lineColorRed,bottomColor: .lineColorRed),
-                                 .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
-                                 .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)]
+        verticalBGColorRnages = [.init(top: 100, bottom: 0, topColor: .blue ,bottomColor: .white),
+//                                 .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
+//                                 .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)
+        ]
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false

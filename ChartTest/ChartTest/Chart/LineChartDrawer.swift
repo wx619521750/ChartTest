@@ -274,11 +274,19 @@ class LineChartDrawer {
                 case .bezier:
                     let preItem = segment[index - 1]
                     let prePt = ptPointFromPoint(point: .init(x: preItem.x, y: preItem.y))
-                    let t = 0.5
-                    let control1 = CGPoint(x: prePt.x + (pt.x - prePt.x) * t, y: prePt.y)
-                    let control2 = CGPoint(x: pt.x - (pt.x - prePt.x) * t, y: pt.y)
-                    linePath.addCurve(to: pt, control1: control1, control2: control2)
-                    areaPath.addCurve(to: pt, control1: control1, control2: control2)
+                    let distanceX = abs(pt.x - prePt.x)
+                    if chartModel.bezierToLineMinDistance > 0,
+                       distanceX < chartModel.bezierToLineMinDistance {
+                        // 点在屏幕上非常密集时，贝塞尔视觉差异很小，退化为直线可明显减少路径计算。
+                        linePath.addLine(to: pt)
+                        areaPath.addLine(to: pt)
+                    } else {
+                        let t = 0.5
+                        let control1 = CGPoint(x: prePt.x + (pt.x - prePt.x) * t, y: prePt.y)
+                        let control2 = CGPoint(x: pt.x - (pt.x - prePt.x) * t, y: pt.y)
+                        linePath.addCurve(to: pt, control1: control1, control2: control2)
+                        areaPath.addCurve(to: pt, control1: control1, control2: control2)
+                    }
                 }
             }
 
