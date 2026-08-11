@@ -52,10 +52,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         }
 
         binaryTimelineChartView.chartModel = BinaryTimelineChartModel(points: [
-            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 1),
 //            BinaryTimelinePointModel(x: timestamp(hour: 1, minute: 0), y: 0),
 //            BinaryTimelinePointModel(x: timestamp(hour: 2, minute: 0), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 0),
+            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 4, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 5, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 6, minute: 0), y: 1),
@@ -69,8 +69,8 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 5), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 25), y: 0),
             BinaryTimelinePointModel(x: timestamp(hour: 18, minute: 40), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 0),
-            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 0)
+            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 1),
+            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 1)
 
         ])
     }

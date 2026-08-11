@@ -31,7 +31,9 @@ final class BinaryTimelineDrawer {
             inactiveY: inactiveY,
             revealProgress: revealProgress
         )
-        drawAxis(bounds: bounds, model: model, visibleRange: visibleRange, plotRect: plotRect)
+        if model.showsAxisLabels {
+            drawAxis(bounds: bounds, model: model, visibleRange: visibleRange, plotRect: plotRect)
+        }
 
         if model.showsSelection, revealProgress >= 1, let selectedRange {
             drawSelection(
@@ -214,8 +216,11 @@ final class BinaryTimelineDrawer {
         hasRightConnector: Bool
     ) -> UIRectCorner {
         if value == 1 {
-            // 红块底部与连接线接触，因此只有顶部两个角允许圆角。
-            return [.topLeft, .topRight]
+            // 红块顶角始终可圆；底部只有与连接线接触的一侧需要保持直角。
+            var corners: UIRectCorner = [.topLeft, .topRight]
+            if !hasLeftConnector { corners.insert(.bottomLeft) }
+            if !hasRightConnector { corners.insert(.bottomRight) }
+            return corners
         }
 
         // 灰块底角始终可圆；与连接线接触一侧的顶部角必须保持直角。

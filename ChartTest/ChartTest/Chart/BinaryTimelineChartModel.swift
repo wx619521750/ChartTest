@@ -47,6 +47,8 @@ final class BinaryTimelineChartModel {
     var axisLabelBottom: CGFloat = 34
     /// 底部时间刻度字体。
     var axisFont = UIFont.systemFont(ofSize: 14)
+    /// 是否显示底部时间刻度文本。
+    var showsAxisLabels = true
 
     // MARK: - Range
 
