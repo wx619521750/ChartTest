@@ -183,42 +183,28 @@ class LineChartDrawer {
         }
         ctx.clip(using: .evenOdd)
 
-        
-        switch chartModel.lineModel.datalineStyle{
-        case .straight(let width, let color):
+        let paths = makeLineAndAreaPaths(
+            layer: layer,
+            chartModel: chartModel,
+            data: data
+        )
+
+        if let areaPath = paths.areaPath,
+           let verticalBGColorRnages = chartModel.verticalBGColorRnages,
+           !verticalBGColorRnages.isEmpty {
+            drawLineBottomGradient(
+                ctx: ctx,
+                areaPath: areaPath,
+                colorRanges: verticalBGColorRnages
+            )
+        }
+
+        switch chartModel.lineModel.datalineStyle {
+        case .straight(let width, let color),
+             .bezier(let width, let color):
             ctx.setLineWidth(width)
             ctx.setStrokeColor(color.cgColor)
-            for (index,item) in data.enumerated(){
-                let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else if item.dataType == .gap{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else if data[index-1].dataType == .gap{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else{
-                    ctx.addLine(to: .init(x: pt.x, y: pt.y))
-                }
-            }
-        case .bezier(let width, let color):
-            ctx.setLineWidth(width)
-            ctx.setStrokeColor(color.cgColor)
-            for (index,item) in data.enumerated(){
-                //print(item.x,item.y)
-                let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-                if index == 0{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else if item.dataType == .gap{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else if data[index-1].dataType == .gap{
-                    ctx.move(to: .init(x: pt.x, y: pt.y))
-                }else{
-                    let preItem = data[index-1]
-                    let prePt = ptPointFromPoint(point: .init(x: preItem.x, y: preItem.y))
-                    let t = 0.5
-                    ctx.addCurve(to: .init(x: pt.x, y: pt.y), control1: .init(x: prePt.x+(pt.x-prePt.x)*t, y: prePt.y), control2: .init(x: pt.x-(pt.x-prePt.x)*t, y: pt.y))
-                }
-            }
+            ctx.addPath(paths.linePath)
         }
         ctx.replacePathWithStrokedPath()
         ctx.clip()
@@ -232,8 +218,8 @@ class LineChartDrawer {
             let topY = toppt.y
             let bottomY = bottompt.y
             let colors = [
-                verticalColorRnage.color.cgColor,
-                verticalColorRnage.color.cgColor
+                verticalColorRnage.topColor.cgColor,
+                verticalColorRnage.bottomColor.cgColor
             ]
             
             let gradient = CGGradient(
@@ -252,6 +238,125 @@ class LineChartDrawer {
         
         ctx.restoreGState()
         
+    }
+
+    //一次遍历生成曲线路径和曲线下方面积路径，避免背景和线条重复计算贝塞尔曲线
+    private func makeLineAndAreaPaths(
+        layer: CALayer,
+        chartModel: ChartModel,
+        data: [ChartPointModel]
+    ) -> (linePath: CGPath, areaPath: CGPath?) {
+        let segments = continuousDataSegments(data)
+        let linePath = CGMutablePath()
+        let areaPath = CGMutablePath()
+        let bottomY = layer.bounds.height - chartModel.chartContentInsert.bottom
+        var hasAreaPath = false
+
+        for segment in segments {
+            guard let firstItem = segment.first else { continue }
+            let firstPoint = ptPointFromPoint(point: .init(x: firstItem.x, y: firstItem.y))
+            linePath.move(to: firstPoint)
+
+            if segment.count > 1 {
+                hasAreaPath = true
+                areaPath.move(to: CGPoint(x: firstPoint.x, y: bottomY))
+                areaPath.addLine(to: firstPoint)
+            }
+
+            for index in 1..<segment.count {
+                let item = segment[index]
+                let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
+
+                switch chartModel.lineModel.datalineStyle {
+                case .straight:
+                    linePath.addLine(to: pt)
+                    areaPath.addLine(to: pt)
+                case .bezier:
+                    let preItem = segment[index - 1]
+                    let prePt = ptPointFromPoint(point: .init(x: preItem.x, y: preItem.y))
+                    let distanceX = abs(pt.x - prePt.x)
+                    if chartModel.bezierToLineMinDistance > 0,
+                       distanceX < chartModel.bezierToLineMinDistance {
+                        // 点在屏幕上非常密集时，贝塞尔视觉差异很小，退化为直线可明显减少路径计算。
+                        linePath.addLine(to: pt)
+                        areaPath.addLine(to: pt)
+                    } else {
+                        let t = 0.5
+                        let control1 = CGPoint(x: prePt.x + (pt.x - prePt.x) * t, y: prePt.y)
+                        let control2 = CGPoint(x: pt.x - (pt.x - prePt.x) * t, y: pt.y)
+                        linePath.addCurve(to: pt, control1: control1, control2: control2)
+                        areaPath.addCurve(to: pt, control1: control1, control2: control2)
+                    }
+                }
+            }
+
+            if segment.count > 1 {
+                let lastItem = segment[segment.count - 1]
+                let lastPoint = ptPointFromPoint(point: .init(x: lastItem.x, y: lastItem.y))
+                areaPath.addLine(to: CGPoint(x: lastPoint.x, y: bottomY))
+                areaPath.closeSubpath()
+            }
+        }
+
+        return (linePath, hasAreaPath ? areaPath : nil)
+    }
+
+    //绘制曲线下方的渐变背景
+    private func drawLineBottomGradient(
+        ctx: CGContext,
+        areaPath: CGPath,
+        colorRanges: [VerticalColorRange]
+    ) {
+        ctx.saveGState()
+        ctx.addPath(areaPath)
+        ctx.clip()
+
+        for verticalBGColorRnage in colorRanges {
+            let topPt = ptPointFromPoint(point: .init(x: 0, y: verticalBGColorRnage.top))
+            let bottomPt = ptPointFromPoint(point: .init(x: 0, y: verticalBGColorRnage.bottom))
+            let colors = [
+                verticalBGColorRnage.topColor.cgColor,
+                verticalBGColorRnage.bottomColor.cgColor
+            ]
+
+            guard let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors as CFArray,
+                locations: [0, 1]
+            ) else { continue }
+
+            ctx.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: 0, y: topPt.y),
+                end: CGPoint(x: 0, y: bottomPt.y),
+                options: []
+            )
+        }
+
+        ctx.restoreGState()
+    }
+
+    //按照 gap 将数据拆分成多段连续数据，避免背景跨过空洞区域
+    private func continuousDataSegments(_ data: [ChartPointModel]) -> [[ChartPointModel]] {
+        var segments: [[ChartPointModel]] = []
+        var current: [ChartPointModel] = []
+
+        for item in data {
+            if item.dataType == .gap {
+                if !current.isEmpty {
+                    segments.append(current)
+                    current.removeAll()
+                }
+            } else {
+                current.append(item)
+            }
+        }
+
+        if !current.isEmpty {
+            segments.append(current)
+        }
+
+        return segments
     }
     
     func getLineWidth()->CGFloat{
@@ -437,7 +542,7 @@ class LineChartDrawer {
                 ctx.strokePath()
                 
                 ctx.setLineWidth(radius-width)
-                ctx.setFillColor(firstRange.color.cgColor)
+                ctx.setFillColor(firstRange.topColor.cgColor)
                 ctx.addEllipse(in: CGRect(
                     x: point.x - (radius-width*0.5),
                     y: point.y - (radius-width*0.5),
@@ -445,7 +550,7 @@ class LineChartDrawer {
                     height: (radius-width*0.5) * 2
                 ))
                 ctx.fillPath()
-                ctx.setStrokeColor(firstRange.color.cgColor)
+                ctx.setStrokeColor(firstRange.topColor.cgColor)
                 ctx.setLineWidth(1)
                 ctx.setLineDash(phase: 0, lengths: [6,3])
                 ctx.move(to: .init(x: point.x, y: chartModel.chartContentInsert.top))
