@@ -25,7 +25,9 @@ class LineChartDrawer {
         self.layer = layer
         drawAxis(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
-        drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        if case .distance = chartModel.gapStyle {
+            drawEmptyArea(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        }
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisDataMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
@@ -173,15 +175,16 @@ class LineChartDrawer {
         )
         ctx.clip(to: clipRect)
         
-        ctx.addRect(clipRect)
-        for point in chartModel.lineModel.emptyAreas{
-            let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
-            let point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
-            let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top-lineWidth*0.5, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom+lineWidth)
-            ctx.addRect(gapRect)
-            
+        if case .distance = chartModel.gapStyle {
+            ctx.addRect(clipRect)
+            for point in chartModel.lineModel.emptyAreas{
+                let point1 = ptPointFromPoint(point: .init(x: point.left, y: 0))
+                let point2 = ptPointFromPoint(point: .init(x: point.right, y: 0))
+                let gapRect:CGRect = .init(x: point1.x, y:chartModel.chartContentInsert.top-lineWidth*0.5, width: point2.x-point1.x, height: layer.bounds.height-chartModel.chartContentInsert.top-chartModel.chartContentInsert.bottom+lineWidth)
+                ctx.addRect(gapRect)
+            }
+            ctx.clip(using: .evenOdd)
         }
-        ctx.clip(using: .evenOdd)
 
         let paths = makeLineAndAreaPaths(
             layer: layer,
@@ -252,7 +255,13 @@ class LineChartDrawer {
         chartModel: ChartModel,
         data: [ChartPointModel]
     ) -> (linePath: CGPath, areaPath: CGPath?) {
-        let segments = continuousDataSegments(data)
+        let segments: [[ChartPointModel]]
+        switch chartModel.gapStyle {
+        case .none:
+            segments = [data]
+        case .distance:
+            segments = continuousDataSegments(data)
+        }
         let linePath = CGMutablePath()
         let areaPath = CGMutablePath()
         let bottomY = layer.bounds.height - chartModel.chartContentInsert.bottom

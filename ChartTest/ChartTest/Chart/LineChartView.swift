@@ -155,17 +155,28 @@ import UIKit
             chartModel.minY = min<dataMin ? min:dataMin
             chartModel.maxY = max>dataMax ? max:dataMax
         }
-        //获取数据内的空白区域
-        chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata)
+        switch chartModel.gapStyle {
+        case .none:
+            // 关闭 gap 后清理历史空白区域和已选中的 gap，后续不再执行 gap 相关处理。
+            chartModel.lineModel.emptyAreas.removeAll()
+            if chartModel.tapedItem?.dataType == .gap {
+                chartModel.tapedItem = nil
+            }
+        case .distance(let distance):
+            // 相邻数据点的 X 距离超过配置值时，将两点之间识别为 gap。
+            chartModel.lineModel.emptyAreas = filterPointsByXDistance(vasivledata, threshold: distance)
+        }
         delegate?.lineChartViewYRangeChanged?(chartView: self, min: chartModel.minY, max: chartModel.maxY)
         chartModel.lineModel.pointsShouldDraw = resampleLTTB(data: vasivledata, threshold: 200)
-        addGapModel()
+        if case .distance = chartModel.gapStyle {
+            addGapModel()
+        }
     }
 
     //通过两点的距离获取空数据区域
-    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat = 7200) -> [horizontalEmptyAreaModel] {
+    func filterPointsByXDistance(_ points: [ChartPointModel], threshold: CGFloat) -> [horizontalEmptyAreaModel] {
         
-        guard points.count > 1 else { return [] }
+        guard threshold > 0, points.count > 1 else { return [] }
         
         var result: [horizontalEmptyAreaModel] = []
         
@@ -683,6 +694,8 @@ import UIKit
 
     //竖向线段底部颜色配置
     var verticalBGColorRnages:[VerticalColorRange]? = nil
+    // gap 配置；默认关闭，配置距离后相邻点超过该 X 距离才显示 gap。
+    var gapStyle: GapStyle = .none
     // 贝塞尔模式下，相邻点小于该屏幕距离时退化为直线，降低密集点绘制开销；0 表示关闭。
     var bezierToLineMinDistance: CGFloat = 2
     //日期显示模式
@@ -874,6 +887,12 @@ case straight(width:CGFloat,color:UIColor)//直线
 case bezier(width:CGFloat,color:UIColor)//贝塞尔
 }
 
+//数据空白区域配置
+enum GapStyle {
+    case none
+    case distance(CGFloat)
+}
+
 //线段类型
 enum LineStyle {
     case line(width:CGFloat,color:UIColor)//实线
@@ -983,6 +1002,7 @@ extension ChartModel{
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
         graduationType          = .none
+        gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
 
@@ -1010,6 +1030,7 @@ extension ChartModel{
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
         graduationType          = .none
+        gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
 
@@ -1037,6 +1058,7 @@ extension ChartModel{
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
         graduationType          = .none
+        gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
 }
