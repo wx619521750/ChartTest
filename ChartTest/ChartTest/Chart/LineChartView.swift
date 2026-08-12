@@ -923,7 +923,7 @@ enum GraduationType{
 //提供给oc 定义样式
 extension ChartModel{
     @objc convenience init(points:[ChartPoint],type:XSChartType) {
-        self.init(points: points, type: type, minThreshold: 40, maxThreshold: 80)
+        self.init(points: points, type: type, minThreshold: 75, maxThreshold: 150)
     }
 
     @objc convenience init(points:[ChartPoint], type:XSChartType, minThreshold: Double, maxThreshold: Double) {
@@ -953,18 +953,17 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
         topAxisLineStyle    = .none
-        rightAxisLineStyle  = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
+        rightAxisLineStyle  = .none
         leftAxisLineStyle   = .none
         bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
-        rightAxisLabelStyel       = .right(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
-        rightAxisStepType = .distance(distace: 30, align: 30)
+        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         rightAxisMaxMinStyel      = .none
         rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
@@ -975,15 +974,10 @@ extension ChartModel{
             .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]
-//        verticalColorRnages = [.init(top: 1000000, bottom: maxThreshold, topColor: .lineColorRed,bottomColor: .lineColorRed),
-//                               .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
-//                               .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)]
-        
-        verticalColorRnages = [.init(top: 1000000, bottom: 0, topColor: .blue,bottomColor: .blue)]
-
-        verticalBGColorRnages = [.init(top: 100, bottom: 0, topColor: .blue ,bottomColor: .white),
-//                                 .init(top: maxThreshold, bottom: minThreshold, topColor:.lineColorYellow,bottomColor: .lineColorYellow),
-//                                 .init(top: minThreshold, bottom: 0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)
+        verticalColorRnages = [
+            .init(top: 100000000, bottom: maxThreshold, topColor: .lineColorRed,bottomColor: .lineColorRed),
+            .init(top:  maxThreshold, bottom: minThreshold, topColor: .lineColorYellow,bottomColor: .lineColorYellow),
+            .init(top:  minThreshold, bottom:  0, topColor: .lineColorGreen,bottomColor: .lineColorGreen)
         ]
 
         horizontalAxisFullFrame = true
@@ -997,7 +991,7 @@ extension ChartModel{
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .temperature)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
-        enableDeceleration = false
+        enableDeceleration = true
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -1024,7 +1018,7 @@ extension ChartModel{
         chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .humidity)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
-        enableDeceleration = false
+        enableDeceleration = true
 
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -1038,7 +1032,7 @@ extension ChartModel{
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
 
         horizontalLines = []
-        verticalColorRnages = [.init(top: 100, bottom: 0, topColor: .lineColorBlue,bottomColor:.lineColorBlue )]
+        verticalColorRnages = [.init(top: 100, bottom: 0, topColor: .lineColorBlue,bottomColor: .lineColorBlue)]
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
@@ -1051,7 +1045,7 @@ extension UIColor {
     static func hex(_ hexValue: Int , alpha: CGFloat = 1.0) -> UIColor {
         return UIColor(red: (CGFloat)((hexValue & 0xFF0000) >> 16) / 255.0, green: (CGFloat)((hexValue & 0xFF00) >> 8) / 255.0, blue: (CGFloat)(hexValue & 0xFF) / 255.0, alpha: alpha)
     }
-
+    
     convenience init(hex: Int, alpha: CGFloat = 1.0) {
         self.init(
             red: CGFloat((hex >> 16) & 0xFF) / 255.0,
@@ -1068,7 +1062,7 @@ extension UIColor {
     @objc static let lineColorYellow = UIColor.hex(0xFFCF31)
     @objc static let lineColorRed = UIColor.hex(0xE67077)
     @objc static let lineColorBlue = UIColor.hex(0x68A7ED)
-
+    
     @objc static let axisLineColor = UIColor.hex(0xeeeeee)
     @objc static let bottomLabelColor = UIColor.hex(0x666666)
     @objc static let rightLabelColor = UIColor.hex(0x999999)
