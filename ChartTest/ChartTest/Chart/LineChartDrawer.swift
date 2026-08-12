@@ -200,9 +200,15 @@ class LineChartDrawer {
         }
 
         switch chartModel.lineModel.datalineStyle {
-        case .straight(let width, let color),
-             .bezier(let width, let color):
+        case .straight(let width, let color):
             ctx.setLineWidth(width)
+            ctx.setStrokeColor(color.cgColor)
+            ctx.addPath(paths.linePath)
+        case .bezier(let width, let color):
+            ctx.setLineWidth(width)
+            // 密集点退化为直线后，使用圆角连接和圆形端点，避免相邻线段形成尖锐顶点。
+            ctx.setLineJoin(.round)
+            ctx.setLineCap(.round)
             ctx.setStrokeColor(color.cgColor)
             ctx.addPath(paths.linePath)
         }
