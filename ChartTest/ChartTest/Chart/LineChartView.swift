@@ -664,7 +664,7 @@ import UIKit
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
 
     var topGraduationStepType:AxisStepType = .none
-    var bottomGraduationStepType:AxisStepType = .none
+    var bottomGraduationStepType:AxisStepType = .dateAdapt
     var leftGraduationStepType:AxisStepType = .none
     var rightGraduationStepType:AxisStepType = .none
     
@@ -976,7 +976,7 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
@@ -986,7 +986,7 @@ extension ChartModel{
         bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
-        rightAxisLabelStyel       = .right(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         rightAxisMaxMinStyel      = .none
         rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
@@ -1005,9 +1005,6 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        rightGraduationStepType = .distance(distace: 50, align: 50)
-        bottomGraduationType    = .line(lenght: 10,width: 1, color: .rightLabelColor)
-        rightGraduationType     = .dashLine(width: 1, color: .rightLabelColor,lengths: [4,2])
         bottomGraduationStepType = .dateAdapt
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
@@ -1033,11 +1030,10 @@ extension ChartModel{
 
         horizontalLines = []
         verticalColorRnages = [.init(top: 100, bottom: -50, topColor: .lineColorBlue,bottomColor: .lineColorBlue)]
-
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        bottomGraduationType    = .none
-        rightGraduationType     = .none
+        bottomGraduationType          = .none
+        bottomGraduationStepType = .dateAdapt
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
@@ -1065,8 +1061,8 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        bottomGraduationType    = .none
-        rightGraduationType     = .none
+        bottomGraduationType          = .none
+        bottomGraduationStepType = .dateAdapt
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
