@@ -457,12 +457,14 @@ class LineChartDrawer {
             case .line(let width, let color):
                 ctx.setLineWidth(width)
                 ctx.setStrokeColor(color.cgColor)
+                ctx.setLineDash(phase: 0, lengths: [])
             case .dashLine(let width, let color, let lengths):
                 ctx.setLineWidth(width)
                 ctx.setStrokeColor(color.cgColor)
                 ctx.setLineDash(phase: 0, lengths: lengths)
             case .none:
-                return
+                ctx.restoreGState()
+                continue
             }
             let startPoint = CGPoint.init(x: chartModel.chartContentInsert.left, y: point.y)
             let endPoint = CGPoint.init(x: layer.bounds.width-chartModel.chartContentInsert.right, y: point.y)
@@ -516,12 +518,13 @@ class LineChartDrawer {
             case .line(let width, let color):
                 ctx.setLineWidth(width)
                 ctx.setStrokeColor(color.cgColor)
+                ctx.setLineDash(phase: 0, lengths: [])
             case .dashLine(let width, let color, let lengths):
                 ctx.setLineWidth(width)
                 ctx.setStrokeColor(color.cgColor)
                 ctx.setLineDash(phase: 0, lengths: lengths)
             case .none:
-                return
+                continue
             }
             let startPoint = CGPoint.init(x: point.x, y: chartModel.chartContentInsert.top)
             let endPoint = CGPoint.init(x: point.x, y: layer.bounds.height-chartModel.chartContentInsert.bottom)
@@ -538,15 +541,16 @@ class LineChartDrawer {
         
         guard  let item = data.first(where: {$0.style != .normal}) else{return}
         guard case let .circle(radius ,width ,color) =  item.style else{return}
-        ctx.saveGState()
         let point = ptPointFromPoint(point: .init(x: item.x, y: item.y))
         if chartModel.chartContentInsert.left>point.x||point.x>layer.bounds.width-chartModel.chartContentInsert.right||chartModel.chartContentInsert.top>point.y||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
             return
         }
+        ctx.saveGState()
         
         if item.dataType == .data{
             if let firstRange = chartModel.verticalColorRnages.first(where: {$0.top>item.y&&$0.bottom<=item.y}){
                 ctx.setLineWidth(width)
+                ctx.setLineDash(phase: 0, lengths: [])
                 ctx.setStrokeColor(UIColor.white.cgColor)
                 ctx.addEllipse(in: CGRect(
                     x: point.x - radius,
@@ -573,6 +577,7 @@ class LineChartDrawer {
                 ctx.strokePath()
             }else{
                 ctx.setLineWidth(width)
+                ctx.setLineDash(phase: 0, lengths: [])
                 ctx.setStrokeColor(color.cgColor)
                 ctx.addEllipse(in: CGRect(
                     x: point.x - radius,
@@ -690,6 +695,9 @@ class LineChartDrawer {
     
     //绘制轴线的刻度文本
     func drawAxisLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){
+        ctx.saveGState()
+        defer { ctx.restoreGState() }
+
         switch chartModel.bottomAxisStepType {
         case .dateAdapt:
             let trup = getDateAdaptStamps()
