@@ -663,10 +663,10 @@ import UIKit
     //右部轴线文字配置
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
 
-    var topAxisStepType:AxisStepType = .none
-    var bottomAxisStepType:AxisStepType = .none
-    var leftAxisStepType:AxisStepType = .none
-    var rightAxisStepType:AxisStepType = .none
+    var topGraduationStepType:AxisStepType = .none
+    var bottomGraduationStepType:AxisStepType = .none
+    var leftGraduationStepType:AxisStepType = .none
+    var rightGraduationStepType:AxisStepType = .none
     
     //底部刻度线配置
     var bottomGraduationType:GraduationType = .none
@@ -1005,9 +1005,10 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        rightAxisStepType = .distance(distace: 50, align: 50)
+        rightGraduationStepType = .distance(distace: 50, align: 50)
         bottomGraduationType    = .line(lenght: 10,width: 1, color: .rightLabelColor)
         rightGraduationType     = .dashLine(width: 1, color: .rightLabelColor,lengths: [4,2])
+        bottomGraduationStepType = .dateAdapt
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
