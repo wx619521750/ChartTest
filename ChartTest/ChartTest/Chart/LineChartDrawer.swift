@@ -698,7 +698,7 @@ class LineChartDrawer {
         ctx.saveGState()
         defer { ctx.restoreGState() }
 
-        switch chartModel.bottomAxisStepType {
+        switch chartModel.bottomGraduationStepType {
         case .dateAdapt:
             let trup = getDateAdaptStamps()
             switch chartModel.bottomAxisLabelStyel {
@@ -743,7 +743,7 @@ class LineChartDrawer {
                 ctx.strokePath()
                 
             default:
-                let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.bottomAxisStepType)
+                let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.bottomGraduationStepType)
                 switch chartModel.bottomAxisLabelStyel {
                 case .bottom(let color, let font,let offset):
                     for item in steps{
@@ -791,7 +791,7 @@ class LineChartDrawer {
        
         
         
-        let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.rightAxisStepType)
+        let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.rightGraduationStepType)
         switch chartModel.rightAxisLabelStyel {
         case .right(let color, let font,let offset):
             for item in steps{
