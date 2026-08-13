@@ -710,12 +710,23 @@ class LineChartDrawer {
                     UIGraphicsPushContext(ctx)
                     drawText(str, point: CGPoint.init(x: x, y: y), anchor: .centerxminy, clampToChartContent: false)
                     UIGraphicsPopContext()
-                    switch chartModel.graduationType {
+                    switch chartModel.bottomGraduationType {
                     case .line(let lenght, let width, let color):
                         ctx.setStrokeColor(color.cgColor)
                         ctx.setLineWidth(width)
-                        ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-                        ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-lenght))
+                        ctx.setLineDash(phase: 0, lengths: [])
+                        let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
+                        let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                        ctx.move(to: .init(x: x, y: bottomY))
+                        ctx.addLine(to: .init(x: x, y: endY))
+                    case .dashLine(let lenght, let width, let color, let lengths):
+                        ctx.setStrokeColor(color.cgColor)
+                        ctx.setLineWidth(width)
+                        ctx.setLineDash(phase: 0, lengths: lengths)
+                        let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
+                        let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                        ctx.move(to: .init(x: x, y: bottomY))
+                        ctx.addLine(to: .init(x: x, y: endY))
                     case .none:
                         break
                     }
@@ -736,14 +747,25 @@ class LineChartDrawer {
                             value: item
                         ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                         UIGraphicsPushContext(ctx)
-                        let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
+                        let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery, clampToChartContent: false)
                         UIGraphicsPopContext()
-                        switch chartModel.graduationType {
+                        switch chartModel.bottomGraduationType {
                         case .line(let lenght, let width, let color):
                             ctx.setStrokeColor(color.cgColor)
                             ctx.setLineWidth(width)
-                            ctx.move(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom))
-                            ctx.addLine(to: .init(x: x, y: layer.bounds.height-chartModel.chartContentInsert.bottom-lenght))
+                            ctx.setLineDash(phase: 0, lengths: [])
+                            let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
+                            let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                            ctx.move(to: .init(x: x, y: bottomY))
+                            ctx.addLine(to: .init(x: x, y: endY))
+                        case .dashLine(let lenght, let width, let color, let lengths):
+                            ctx.setStrokeColor(color.cgColor)
+                            ctx.setLineWidth(width)
+                            ctx.setLineDash(phase: 0, lengths: lengths)
+                            let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
+                            let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                            ctx.move(to: .init(x: x, y: bottomY))
+                            ctx.addLine(to: .init(x: x, y: endY))
                         case .none:
                             break
                         }
@@ -773,14 +795,63 @@ class LineChartDrawer {
                     value: item
                 ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
-                let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery)
+                let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery, clampToChartContent: false)
                 UIGraphicsPopContext()
-                switch chartModel.graduationType {
+                switch chartModel.rightGraduationType {
                 case .line(let lenght, let width, let color):
                     ctx.setStrokeColor(color.cgColor)
                     ctx.setLineWidth(width)
-                    ctx.move(to: .init(x: layer.bounds.width-chartModel.chartContentInsert.right, y:y))
-                    ctx.addLine(to: .init(x: layer.bounds.width-chartModel.chartContentInsert.right-lenght, y: y))
+                    ctx.setLineDash(phase: 0, lengths: [])
+                    let rightX = layer.bounds.width-chartModel.chartContentInsert.right
+                    let endX = lenght.map { rightX-$0 } ?? chartModel.chartContentInsert.left
+                    ctx.move(to: .init(x: rightX, y:y))
+                    ctx.addLine(to: .init(x: endX, y: y))
+                case .dashLine(let lenght, let width, let color, let lengths):
+                    ctx.setStrokeColor(color.cgColor)
+                    ctx.setLineWidth(width)
+                    ctx.setLineDash(phase: 0, lengths: lengths)
+                    let rightX = layer.bounds.width-chartModel.chartContentInsert.right
+                    let endX = lenght.map { rightX-$0 } ?? chartModel.chartContentInsert.left
+                    ctx.move(to: .init(x: rightX, y:y))
+                    ctx.addLine(to: .init(x: endX, y: y))
+                case .none:
+                    break
+                }
+            }
+            ctx.strokePath()
+        case .left(let color, let font, let offset):
+            for item in steps {
+                let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
+                let rightX = layer.bounds.width-chartModel.chartContentInsert.right
+                let textRightX = rightX+(offset ?? 0)
+                let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
+                    chartView: chartView,
+                    direction: .right,
+                    value: item
+                ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
+                let textLeftX = textRightX-str.size().width
+                UIGraphicsPushContext(ctx)
+                let _ = drawText(str, point: CGPoint(x: textRightX, y: y), anchor: .maxxcentery, clampToChartContent: false)
+                UIGraphicsPopContext()
+
+                // 右轴文字位于绘图区内时，刻度线在文字左侧结束，避免线条穿过文字。
+                let lineEndX = textLeftX-4
+                guard lineEndX > chartModel.chartContentInsert.left else { continue }
+                switch chartModel.rightGraduationType {
+                case .line(let lenght, let width, let color):
+                    ctx.setStrokeColor(color.cgColor)
+                    ctx.setLineWidth(width)
+                    ctx.setLineDash(phase: 0, lengths: [])
+                    let lineStartX = lenght.map { max(chartModel.chartContentInsert.left, lineEndX-$0) } ?? chartModel.chartContentInsert.left
+                    ctx.move(to: .init(x: lineStartX, y: y))
+                    ctx.addLine(to: .init(x: lineEndX, y: y))
+                case .dashLine(let lenght, let width, let color, let lengths):
+                    ctx.setStrokeColor(color.cgColor)
+                    ctx.setLineWidth(width)
+                    ctx.setLineDash(phase: 0, lengths: lengths)
+                    let lineStartX = lenght.map { max(chartModel.chartContentInsert.left, lineEndX-$0) } ?? chartModel.chartContentInsert.left
+                    ctx.move(to: .init(x: lineStartX, y: y))
+                    ctx.addLine(to: .init(x: lineEndX, y: y))
                 case .none:
                     break
                 }

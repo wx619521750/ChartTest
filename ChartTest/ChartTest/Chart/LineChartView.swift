@@ -715,8 +715,10 @@ import UIKit
     var horizontalAxisFullFrame = true
     //垂直坐标轴是否全屏显示
     var verticalAxisFullFrame = false
-    //是否显示刻度尺
-    var graduationType:GraduationType = .none
+    //底部刻度线配置
+    var bottomGraduationType:GraduationType = .none
+    //右侧刻度线配置
+    var rightGraduationType:GraduationType = .none
     //是否开启左右滑动惯性
     var enableDeceleration = true
 
@@ -923,7 +925,8 @@ enum AxisStepType{
 }
 
 enum GraduationType{
-    case line(lenght:CGFloat,width:CGFloat,color:UIColor)
+    case line(lenght:CGFloat? = nil,width:CGFloat,color:UIColor)
+    case dashLine(lenght:CGFloat? = nil,width:CGFloat,color:UIColor,lengths:[CGFloat])
     case none
 }
 
@@ -972,7 +975,7 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
@@ -982,7 +985,7 @@ extension ChartModel{
         bottomAxisLineStyle = .dashLine(width: 1, color: .axisLineColor, lengths: [5, 5])
 
         bottomAxisLabelStyel      = .bottom(color: .bottomLabelColor, font: .systemFont(ofSize: 11), offset: 8)
-        rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisLabelStyel       = .right(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         rightAxisMaxMinStyel      = .none
         rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
@@ -1001,7 +1004,9 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        graduationType          = .none
+        rightAxisStepType = .seprateCount(count: 5)
+        bottomGraduationType    = .line(lenght: 10,width: 1, color: .rightLabelColor)
+        rightGraduationType     = .dashLine(width: 1, color: .rightLabelColor,lengths: [4,2])
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
@@ -1029,7 +1034,8 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        graduationType          = .none
+        bottomGraduationType    = .none
+        rightGraduationType     = .none
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
@@ -1057,7 +1063,8 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        graduationType          = .none
+        bottomGraduationType    = .none
+        rightGraduationType     = .none
         gapStyle = .distance(7200)
         XRangeType              = .distaceByNow(3600*24*365)
     }
