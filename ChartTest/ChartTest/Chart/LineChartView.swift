@@ -664,9 +664,14 @@ import UIKit
     var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
 
     var topAxisStepType:AxisStepType = .none
-    var bottomAxisStepType:AxisStepType = .dateAdapt
-    var leftAxisStepType:AxisStepType = .distance(distace: 5, align: 5)
-    var rightAxisStepType:AxisStepType = .seprateCount(count: 4)
+    var bottomAxisStepType:AxisStepType = .none
+    var leftAxisStepType:AxisStepType = .none
+    var rightAxisStepType:AxisStepType = .none
+    
+    //底部刻度线配置
+    var bottomGraduationType:GraduationType = .none
+    //右侧刻度线配置
+    var rightGraduationType:GraduationType = .none
 
 
     //顶部轴线最大最小值配置
@@ -715,10 +720,6 @@ import UIKit
     var horizontalAxisFullFrame = true
     //垂直坐标轴是否全屏显示
     var verticalAxisFullFrame = false
-    //底部刻度线配置
-    var bottomGraduationType:GraduationType = .none
-    //右侧刻度线配置
-    var rightGraduationType:GraduationType = .none
     //是否开启左右滑动惯性
     var enableDeceleration = true
 
@@ -1004,7 +1005,7 @@ extension ChartModel{
 
         horizontalAxisFullFrame = true
         verticalAxisFullFrame   = false
-        rightAxisStepType = .seprateCount(count: 5)
+        rightAxisStepType = .distance(distace: 50, align: 50)
         bottomGraduationType    = .line(lenght: 10,width: 1, color: .rightLabelColor)
         rightGraduationType     = .dashLine(width: 1, color: .rightLabelColor,lengths: [4,2])
         gapStyle = .distance(7200)
