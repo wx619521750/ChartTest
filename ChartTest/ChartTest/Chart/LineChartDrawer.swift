@@ -621,7 +621,9 @@ class LineChartDrawer {
             let text = chartView.delegate?.lineChartViewTapedItemFormatStrs?(
                 chartView: chartView,
                 x: item.x,
-                y: item.y
+                y: item.y,
+                color: item.detailColor,
+                font: item.detailFont
             ) ?? defaultText
             let attributedStrings = [text.yAttr, text.xAttr]
             item.detailSize = deteminItemDetaiFrameSize(strs: attributedStrings)
@@ -710,7 +712,9 @@ class LineChartDrawer {
                     let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
                         chartView: chartView,
                         direction: .bottom,
-                        value: item
+                        value: item,
+                        color: color,
+                        font: font
                     ) ?? NSAttributedString(
                         string: date.toString(format: trup.1),
                         attributes: [.foregroundColor: color, .font: font]
@@ -752,7 +756,9 @@ class LineChartDrawer {
                         let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
                             chartView: chartView,
                             direction: .bottom,
-                            value: item
+                            value: item,
+                            color: color,
+                            font: font
                         ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                         UIGraphicsPushContext(ctx)
                         let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery, clampToChartContent: false)
@@ -800,7 +806,9 @@ class LineChartDrawer {
                 let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
                     chartView: chartView,
                     direction: .right,
-                    value: item
+                    value: item,
+                    color: color,
+                    font: font
                 ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                 UIGraphicsPushContext(ctx)
                 let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery, clampToChartContent: false)
@@ -835,7 +843,9 @@ class LineChartDrawer {
                 let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
                     chartView: chartView,
                     direction: .right,
-                    value: item
+                    value: item,
+                    color: color,
+                    font: font
                 ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
                 let textLeftX = textRightX-str.size().width
                 UIGraphicsPushContext(ctx)
@@ -983,7 +993,9 @@ class LineChartDrawer {
             let miny = layer.bounds.height-(offset ?? 0)
             let minstr = chartView.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(
                 chartView: chartView,
-                x: chartModel.minX
+                x: chartModel.minX,
+                color: color,
+                font: font
             ) ?? NSAttributedString(string: Date(timeIntervalSince1970: chartModel.minX).toString(format: "yyyy-MM-dd HH:mm:ss"), attributes: [.foregroundColor:color,.font:font])
             UIGraphicsPushContext(ctx)
             drawText(minstr, point: CGPoint.init(x: minx, y: miny), anchor: .minxmaxy, clampToChartContent: false)
@@ -993,7 +1005,9 @@ class LineChartDrawer {
             let maxy = layer.bounds.height-(offset ?? 0)
             let maxstr = chartView.delegate?.lineChartViewBottomAxisMaxMinFormatStr?(
                 chartView: chartView,
-                x: chartModel.maxX
+                x: chartModel.maxX,
+                color: color,
+                font: font
             ) ?? NSAttributedString(string: Date(timeIntervalSince1970: chartModel.maxX).toString(format: "yyyy-MM-dd HH:mm:ss"), attributes: [.foregroundColor:color,.font:font])
             UIGraphicsPushContext(ctx)
             drawText(maxstr, point: CGPoint.init(x: maxx, y: maxy), anchor: .maxxmaxy, clampToChartContent: false)
@@ -1058,7 +1072,9 @@ class LineChartDrawer {
                 let formatMaxMin = chartView.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(
                     chartView: chartView,
                     min: dataMinY,
-                    max: dataMaxY
+                    max: dataMaxY,
+                    color: color,
+                    font: font
                 )
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let minstr = formatMaxMin?.min ?? NSAttributedString(string: String(format: "%.1f", dataMinY), attributes: [.foregroundColor:color,.font:font])
@@ -1102,7 +1118,9 @@ class LineChartDrawer {
                 let formatMaxMin = chartView.delegate?.lineChartViewRightAxisDataMaxMinFormatStr?(
                     chartView: chartView,
                     min: dataMinY,
-                    max: dataMaxY
+                    max: dataMaxY,
+                    color: color,
+                    font: font
                 )
                 let minx = layer.bounds.width - chartModel.chartContentInsert.right+(offset ?? 0)
                 let minstr = formatMaxMin?.min ?? NSAttributedString(string: "\(dataMinY)", attributes: [.foregroundColor:color,.font:font])
@@ -1185,7 +1203,9 @@ class LineChartDrawer {
     func horizontalLineAttributedText(_ line: HorizontalLine, color: UIColor, font: UIFont) -> NSAttributedString {
         if let text = chartView.delegate?.lineChartViewHLineFormatAttributeStr?(
             chartView: chartView,
-            y: line.y
+            y: line.y,
+            color: color,
+            font: font
         ) {
             return text
         }

@@ -16,21 +16,23 @@ import UIKit
     @objc optional func lineChartViewXRangeChangedByUserInteraction(chartView:LineChartView,min:Double,max:Double)
     //显示窗口最大最小Y值回调
     @objc optional func lineChartViewYRangeChanged(chartView:LineChartView,min:Double,max:Double)
-    //回调横向线段 Y 值，富文本属性用于控制文字格式和大小
-    @objc optional func lineChartViewHLineFormatAttributeStr(chartView:LineChartView,y:Double)->NSAttributedString
-    //回调右侧最值标签 Y 值，返回最大值和最小值富文本
-    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(chartView:LineChartView,min:Double,max:Double)->MaxMinAttrModel
-    //回调坐标轴刻度值，返回刻度富文本
-    @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double)->NSAttributedString?
-    //回调底部首尾时间标签 X 值，返回时间富文本
-    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(chartView:LineChartView,x:Double)->NSAttributedString
+    //回调横向线段 Y 值，同时传入当前标签配置的颜色和字体
+    @objc optional func lineChartViewHLineFormatAttributeStr(chartView:LineChartView,y:Double,color:UIColor,font:UIFont)->NSAttributedString
+    //回调右侧最值标签 Y 值，同时传入当前标签配置的颜色和字体
+    @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(chartView:LineChartView,min:Double,max:Double,color:UIColor,font:UIFont)->MaxMinAttrModel
+    //回调坐标轴刻度值，同时传入对应方向标签配置的颜色和字体
+    @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double,color:UIColor,font:UIFont)->NSAttributedString?
+    //回调底部首尾时间标签 X 值，同时传入当前标签配置的颜色和字体
+    @objc optional func lineChartViewBottomAxisMaxMinFormatStr(chartView:LineChartView,x:Double,color:UIColor,font:UIFont)->NSAttributedString
 
     /// 当前点击的点的格式化字符串
     /// - Parameters:
     ///   - x: 当前点击的数据的x
     ///   - y: 当前点击的数据的x
+    ///   - color: 当前点详情配置的文字颜色
+    ///   - font: 当前点详情配置的字体
     /// - Returns: 格式化后的 X、Y 富文本
-    @objc optional func lineChartViewTapedItemFormatStrs(chartView:LineChartView,x:Double,y:Double)->XYAttrModel
+    @objc optional func lineChartViewTapedItemFormatStrs(chartView:LineChartView,x:Double,y:Double,color:UIColor,font:UIFont)->XYAttrModel
 
 }
 
