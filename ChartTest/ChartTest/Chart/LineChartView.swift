@@ -703,7 +703,7 @@ import UIKit
     var verticalBGColorRnages:[VerticalColorRange]? = nil
     // gap 配置；默认关闭，配置距离后相邻点超过该 X 距离才显示 gap。
     var gapStyle: GapStyle = .none
-    // 贝塞尔模式下，相邻点小于该屏幕距离时退化为直线，降低密集点绘制开销；0 表示关闭。
+    // 曲线模式下，相邻点小于该屏幕距离时退化为直线，降低密集点绘制开销；0 表示关闭。
     var bezierToLineMinDistance: CGFloat = 2
     //日期显示模式
     var dateMode:DateMode = .day
@@ -888,8 +888,10 @@ class VerticalLine{
 
 //数据线类型
 enum DataLineStyle {
-case straight(width:CGFloat,color:UIColor)//直线
-case bezier(width:CGFloat,color:UIColor)//贝塞尔
+    case straight(width:CGFloat,color:UIColor)//直线
+    case bezier(width:CGFloat,color:UIColor)//传统贝塞尔
+    case monotoneCubic(width:CGFloat,color:UIColor)//单调三次插值
+    case catmullRom(width:CGFloat,color:UIColor)//Catmull-Rom 平滑曲线
 }
 
 //数据空白区域配置
@@ -980,7 +982,7 @@ extension ChartModel{
 
         chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
-        lineModel.datalineStyle = .bezier(width: 3, color: .black)
+        lineModel.datalineStyle = .monotoneCubic(width: 3, color: .black)
         enableDeceleration = true
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -1014,7 +1016,7 @@ extension ChartModel{
 
     private func setupTemperatureStyle() {
 
-        chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .temperature)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true

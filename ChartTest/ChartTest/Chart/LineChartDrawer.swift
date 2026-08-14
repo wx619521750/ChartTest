@@ -207,9 +207,11 @@ class LineChartDrawer {
             ctx.setLineWidth(width)
             ctx.setStrokeColor(color.cgColor)
             ctx.addPath(paths.linePath)
-        case .bezier(let width, let color):
+        case .bezier(let width, let color),
+             .monotoneCubic(let width, let color),
+             .catmullRom(let width, let color):
             ctx.setLineWidth(width)
-            // 密集点退化为直线后，使用圆角连接和圆形端点，避免相邻线段形成尖锐顶点。
+            // 曲线路径使用圆角连接和圆形端点，避免端点出现尖锐接缝。
             ctx.setLineJoin(.round)
             ctx.setLineCap(.round)
             ctx.setStrokeColor(color.cgColor)
@@ -268,30 +270,29 @@ class LineChartDrawer {
         var hasAreaPath = false
 
         for segment in segments {
-            guard let firstItem = segment.first else { continue }
-            let firstPoint = ptPointFromPoint(point: .init(x: firstItem.x, y: firstItem.y))
+            let points = segment.map {
+                ptPointFromPoint(point: .init(x: $0.x, y: $0.y))
+            }
+            guard let firstPoint = points.first else { continue }
             linePath.move(to: firstPoint)
 
-            if segment.count > 1 {
+            if points.count > 1 {
                 hasAreaPath = true
                 areaPath.move(to: CGPoint(x: firstPoint.x, y: bottomY))
                 areaPath.addLine(to: firstPoint)
             }
 
-            for index in 1..<segment.count {
-                let item = segment[index]
-                let pt = ptPointFromPoint(point: .init(x: item.x, y: item.y))
-
-                switch chartModel.lineModel.datalineStyle {
-                case .straight:
+            switch chartModel.lineModel.datalineStyle {
+            case .straight:
+                for pt in points.dropFirst() {
                     linePath.addLine(to: pt)
                     areaPath.addLine(to: pt)
-                case .bezier:
-                    let preItem = segment[index - 1]
-                    let prePt = ptPointFromPoint(point: .init(x: preItem.x, y: preItem.y))
-                    let distanceX = abs(pt.x - prePt.x)
-                    if chartModel.bezierToLineMinDistance > 0,
-                       distanceX < chartModel.bezierToLineMinDistance {
+                }
+            case .bezier:
+                for index in 1..<points.count {
+                    let prePt = points[index - 1]
+                    let pt = points[index]
+                    if shouldFallbackToStraightLine(from: prePt, to: pt) {
                         // 点在屏幕上非常密集时，贝塞尔视觉差异很小，退化为直线可明显减少路径计算。
                         linePath.addLine(to: pt)
                         areaPath.addLine(to: pt)
@@ -303,17 +304,217 @@ class LineChartDrawer {
                         areaPath.addCurve(to: pt, control1: control1, control2: control2)
                     }
                 }
+            case .monotoneCubic:
+                let controls = monotoneCubicControlPoints(points)
+                for index in controls.indices {
+                    let startPoint = points[index]
+                    let endPoint = points[index + 1]
+                    if shouldFallbackToStraightLine(from: startPoint, to: endPoint) {
+                        linePath.addLine(to: endPoint)
+                        areaPath.addLine(to: endPoint)
+                    } else {
+                        linePath.addCurve(
+                            to: endPoint,
+                            control1: controls[index].control1,
+                            control2: controls[index].control2
+                        )
+                        areaPath.addCurve(
+                            to: endPoint,
+                            control1: controls[index].control1,
+                            control2: controls[index].control2
+                        )
+                    }
+                }
+            case .catmullRom:
+                let controls = catmullRomControlPoints(points)
+                for index in controls.indices {
+                    let startPoint = points[index]
+                    let endPoint = points[index + 1]
+                    if shouldFallbackToStraightLine(from: startPoint, to: endPoint) {
+                        linePath.addLine(to: endPoint)
+                        areaPath.addLine(to: endPoint)
+                    } else {
+                        linePath.addCurve(
+                            to: endPoint,
+                            control1: controls[index].control1,
+                            control2: controls[index].control2
+                        )
+                        areaPath.addCurve(
+                            to: endPoint,
+                            control1: controls[index].control1,
+                            control2: controls[index].control2
+                        )
+                    }
+                }
             }
 
-            if segment.count > 1 {
-                let lastItem = segment[segment.count - 1]
-                let lastPoint = ptPointFromPoint(point: .init(x: lastItem.x, y: lastItem.y))
+            if let lastPoint = points.last, points.count > 1 {
                 areaPath.addLine(to: CGPoint(x: lastPoint.x, y: bottomY))
                 areaPath.closeSubpath()
             }
         }
 
         return (linePath, hasAreaPath ? areaPath : nil)
+    }
+
+    /// 当相邻点的屏幕 X 距离小于配置阈值时，将当前曲线段退化为直线。
+    private func shouldFallbackToStraightLine(from start: CGPoint, to end: CGPoint) -> Bool {
+        let minimumDistance = chartModel.bezierToLineMinDistance
+        return minimumDistance > 0 && abs(end.x - start.x) < minimumDistance
+    }
+
+    /// 计算单调三次 Hermite 曲线对应的贝塞尔控制点，避免曲线越过相邻数据点的值域。
+    private func monotoneCubicControlPoints(
+        _ points: [CGPoint]
+    ) -> [(control1: CGPoint, control2: CGPoint)] {
+        guard points.count > 1 else { return [] }
+
+        let minimumDistance: CGFloat = 0.0001
+        var intervals = [CGFloat](repeating: 0, count: points.count - 1)
+        var slopes = [CGFloat](repeating: 0, count: points.count - 1)
+
+        for index in intervals.indices {
+            let distanceX = points[index + 1].x - points[index].x
+            intervals[index] = distanceX
+            if distanceX > minimumDistance {
+                slopes[index] = (points[index + 1].y - points[index].y) / distanceX
+            }
+        }
+
+        var tangents = [CGFloat](repeating: 0, count: points.count)
+        tangents[0] = slopes[0]
+        tangents[points.count - 1] = slopes[slopes.count - 1]
+
+        if points.count > 2 {
+            for index in 1..<(points.count - 1) {
+                let previousSlope = slopes[index - 1]
+                let nextSlope = slopes[index]
+                guard previousSlope * nextSlope > 0 else {
+                    tangents[index] = 0
+                    continue
+                }
+
+                let previousInterval = max(intervals[index - 1], minimumDistance)
+                let nextInterval = max(intervals[index], minimumDistance)
+                let firstWeight = 2 * nextInterval + previousInterval
+                let secondWeight = nextInterval + 2 * previousInterval
+                tangents[index] = (firstWeight + secondWeight)
+                    / (firstWeight / previousSlope + secondWeight / nextSlope)
+            }
+        }
+
+        return intervals.indices.map { index in
+            let distanceX = intervals[index]
+            let controlDistance = distanceX / 3
+            return (
+                control1: CGPoint(
+                    x: points[index].x + controlDistance,
+                    y: points[index].y + tangents[index] * controlDistance
+                ),
+                control2: CGPoint(
+                    x: points[index + 1].x - controlDistance,
+                    y: points[index + 1].y - tangents[index + 1] * controlDistance
+                )
+            )
+        }
+    }
+
+    /// 将 centripetal Catmull-Rom 曲线转换为 Core Graphics 可绘制的三次贝塞尔控制点。
+    private func catmullRomControlPoints(
+        _ points: [CGPoint]
+    ) -> [(control1: CGPoint, control2: CGPoint)] {
+        guard points.count > 1 else { return [] }
+
+        var controls: [(control1: CGPoint, control2: CGPoint)] = []
+        controls.reserveCapacity(points.count - 1)
+
+        for index in 0..<(points.count - 1) {
+            let point1 = points[index]
+            let point2 = points[index + 1]
+            let point0 = index > 0
+                ? points[index - 1]
+                : CGPoint(x: point1.x * 2 - point2.x, y: point1.y * 2 - point2.y)
+            let point3 = index + 2 < points.count
+                ? points[index + 2]
+                : CGPoint(x: point2.x * 2 - point1.x, y: point2.y * 2 - point1.y)
+
+            let time0: CGFloat = 0
+            let time1 = time0 + catmullRomParameterDistance(from: point0, to: point1)
+            let time2 = time1 + catmullRomParameterDistance(from: point1, to: point2)
+            let time3 = time2 + catmullRomParameterDistance(from: point2, to: point3)
+            let segmentDuration = time2 - time1
+
+            let firstTangent = catmullRomTangent(
+                previous: point0,
+                current: point1,
+                next: point2,
+                previousTime: time0,
+                currentTime: time1,
+                nextTime: time2
+            )
+            let secondTangent = catmullRomTangent(
+                previous: point1,
+                current: point2,
+                next: point3,
+                previousTime: time1,
+                currentTime: time2,
+                nextTime: time3
+            )
+            let tangent1 = CGPoint(
+                x: firstTangent.x * segmentDuration,
+                y: firstTangent.y * segmentDuration
+            )
+            let tangent2 = CGPoint(
+                x: secondTangent.x * segmentDuration,
+                y: secondTangent.y * segmentDuration
+            )
+
+            let minimumX = min(point1.x, point2.x)
+            let maximumX = max(point1.x, point2.x)
+            let control1 = CGPoint(
+                x: min(maximumX, max(minimumX, point1.x + tangent1.x / 3)),
+                y: point1.y + tangent1.y / 3
+            )
+            let control2 = CGPoint(
+                x: min(maximumX, max(minimumX, point2.x - tangent2.x / 3)),
+                y: point2.y - tangent2.y / 3
+            )
+            controls.append((control1: control1, control2: control2))
+        }
+
+        return controls
+    }
+
+    /// 计算非均匀 Catmull-Rom 参数区间内某个数据点的切线。
+    private func catmullRomTangent(
+        previous: CGPoint,
+        current: CGPoint,
+        next: CGPoint,
+        previousTime: CGFloat,
+        currentTime: CGFloat,
+        nextTime: CGFloat
+    ) -> CGPoint {
+        let previousDuration = currentTime - previousTime
+        let nextDuration = nextTime - currentTime
+        let totalDuration = nextTime - previousTime
+
+        let previousX = (current.x - previous.x) / previousDuration
+        let previousY = (current.y - previous.y) / previousDuration
+        let totalX = (next.x - previous.x) / totalDuration
+        let totalY = (next.y - previous.y) / totalDuration
+        let nextX = (next.x - current.x) / nextDuration
+        let nextY = (next.y - current.y) / nextDuration
+
+        return CGPoint(
+            x: previousX - totalX + nextX,
+            y: previousY - totalY + nextY
+        )
+    }
+
+    /// alpha=0.5 的参数距离可减少 Catmull-Rom 在密集点附近产生尖点和回环。
+    private func catmullRomParameterDistance(from start: CGPoint, to end: CGPoint) -> CGFloat {
+        let distance = hypot(end.x - start.x, end.y - start.y)
+        return max(sqrt(distance), 0.0001)
     }
 
     //绘制曲线下方的渐变背景
@@ -379,7 +580,9 @@ class LineChartDrawer {
         switch chartModel.lineModel.datalineStyle{
         case .straight(let width, _):
           lineWidth = width
-        case .bezier(let width, _):
+        case .bezier(let width, _),
+             .monotoneCubic(let width, _),
+             .catmullRom(let width, _):
             lineWidth = width
         }
         return lineWidth
