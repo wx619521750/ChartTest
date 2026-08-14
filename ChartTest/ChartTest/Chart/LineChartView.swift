@@ -367,6 +367,8 @@ import UIKit
             chartModel.minX = chartModel.maxX-3600*24*30
         case .year:
             chartModel.minX = chartModel.maxX-3600*24*30*12
+        case .none:
+            break
         }
         self.setNeedsDisplay()
         delegate?.lineChartViewXRangeChanged?(chartView: self, min: chartModel.minX, max: chartModel.maxX)
@@ -894,11 +896,12 @@ class VerticalLine{
 
 //日期显示模型
 @objc enum DateMode:Int{
-    case hour = 0
-    case day = 1
-    case week = 2
-    case month = 3
-    case year = 4
+    case none = 0
+    case hour = 1
+    case day = 2
+    case week = 3
+    case month = 4
+    case year = 5
 }
 
 //数据线类型
