@@ -80,6 +80,11 @@ import UIKit
         setupPanGesture()
         setupPinchGesture()
     }
+    
+    func reloadData() {
+        dealData()
+        setNeedsDisplay()
+    }
 
     func dealData(){
         let xs = chartModel.lineModel.points.map { $0.x }
@@ -520,11 +525,15 @@ import UIKit
             let locationX = (location.x-chartModel.chartContentInsert.left)/(self.bounds.width-chartModel.chartContentInsert.left-chartModel.chartContentInsert.right)*(tempMaxX-tempMinX)+tempMinX
             var newMinX = locationX - (locationX-tempMinX)*(1/gesture.scale)
             var newMaxX = locationX + (tempMaxX-locationX)*(1/gesture.scale)
-            //最小一个小时，不能再放大了
-            if newMaxX-newMinX<3600{
-                newMinX = (chartModel.maxX+chartModel.minX)*0.5-1800
-                newMaxX = (chartModel.maxX+chartModel.minX)*0.5+1800
-                gesture.state = .cancelled
+            let minimumXRange = max(chartModel.minimumXRange, 0)
+            if minimumXRange > 0, newMaxX - newMinX < minimumXRange {
+                // 到达最小窗口时保留手指锚点，仅限制范围，不取消缩放手势。
+                let originalRange = tempMaxX - tempMinX
+                let anchorRatio = originalRange > 0
+                    ? min(max((locationX - tempMinX) / originalRange, 0), 1)
+                    : 0.5
+                newMinX = locationX - minimumXRange * anchorRatio
+                newMaxX = newMinX + minimumXRange
             }
             //根据不同的X轴范围处理缩放事件事件
             switch chartModel.XRangeType {
@@ -643,30 +652,30 @@ import UIKit
     //图表线模型
     var lineModel:ChartLineModel = ChartLineModel()
     //图表曲线显示内容的insert
-    var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 40, bottom: 40, right: 0)
+    var chartContentInsert:UIEdgeInsets = .init(top: 0, left: 0, bottom: 0, right: 0)
 
     
     //顶部轴线类型
-    var topAxisLineStyle:LineStyle = .line(width: 1, color: .black)
+    var topAxisLineStyle:LineStyle = .none
     //底部轴线类型
-    var bottomAxisLineStyle:LineStyle = .line(width: 1, color: .black)
+    var bottomAxisLineStyle:LineStyle = .none
     //左部轴线类型
-    var leftAxisLineStyle:LineStyle = .line(width: 1, color: .black)
+    var leftAxisLineStyle:LineStyle = .none
     //右部轴线类型
-    var rightAxisLineStyle:LineStyle = .line(width: 1, color: .black)
+    var rightAxisLineStyle:LineStyle = .none
 
     
     //顶部轴线文字配置
-    var topAxisLabelStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    var topAxisLabelStyel:AxisLabelStyle = .none
     //底部轴线文字配置
-    var bottomAxisLabelStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset: 0)
+    var bottomAxisLabelStyel:AxisLabelStyle = .none
     //左部轴线文字配置
-    var leftAxisLabelStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    var leftAxisLabelStyel:AxisLabelStyle = .none
     //右部轴线文字配置
-    var rightAxisLabelStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    var rightAxisLabelStyel:AxisLabelStyle = .none
 
     var topGraduationStepType:AxisStepType = .none
-    var bottomGraduationStepType:AxisStepType = .dateAdapt
+    var bottomGraduationStepType:AxisStepType = .none
     var leftGraduationStepType:AxisStepType = .none
     var rightGraduationStepType:AxisStepType = .none
     
@@ -677,27 +686,25 @@ import UIKit
 
 
     //顶部轴线最大最小值配置
-    var topAxisMaxMinStyel:AxisLabelStyle = .top(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    var topAxisMaxMinStyel:AxisLabelStyle = .none
     //底部轴线最大最小值配置
-    var bottomAxisMaxMinStyel:AxisLabelStyle = .bottom(color: .gray, font: .systemFont(ofSize: 12),offset:0)
+    var bottomAxisMaxMinStyel:AxisLabelStyle = .none
     //左部轴线最大最小值配置
-    var leftAxisMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    var leftAxisMaxMinStyel:AxisLabelStyle = .none
     //右部轴线最大最小值配置
-    var rightAxisMaxMinStyel:AxisLabelStyle = .right(color: .black, font: .systemFont(ofSize: 12),offset: -0)
+    var rightAxisMaxMinStyel:AxisLabelStyle = .none
 
     
     //右部数据最大最小值配置
-    var rightAxisDataMaxMinStyel:AxisLabelStyle = .left(color: .black, font: .systemFont(ofSize: 12),offset: 0)
+    var rightAxisDataMaxMinStyel:AxisLabelStyle = .none
 
     
     //横向线段配置
-    var horizontalLines:[HorizontalLine] = [.init(y: 60, lineStyle: .dashLine(width: 1, color: .red, lengths: [5,5]),lableStyle: .left(color: .red, font: .systemFont(ofSize: 11), offset: 0)),.init(y: 20, lineStyle: .dashLine(width: 1, color: .green, lengths: [5,5]),lableStyle: .left(color: .green, font: .systemFont(ofSize: 11), offset: 0))]
+    var horizontalLines:[HorizontalLine] = []
     //竖向线段配置
     var verticalLines:[VerticalLine] = []
     //竖向线段颜色配置
-    var verticalColorRnages:[VerticalColorRange] = [.init(top: 100, bottom: 60, topColor: .red,bottomColor: .red),
-                                                    .init(top: 60, bottom: 20, topColor: .yellow,bottomColor: .yellow),
-                                                    .init(top: 20, bottom: 0, topColor: .green,bottomColor: .green)]
+    var verticalColorRnages:[VerticalColorRange] = []
 
     //竖向线段底部颜色配置
     var verticalBGColorRnages:[VerticalColorRange]? = nil
@@ -705,6 +712,8 @@ import UIKit
     var gapStyle: GapStyle = .none
     // 曲线模式下，相邻点小于该屏幕距离时退化为直线，降低密集点绘制开销；0 表示关闭。
     var bezierToLineMinDistance: CGFloat = 2
+    // X 轴允许缩放到的最小时间跨度，单位为秒；0 表示不限制。
+    var minimumXRange: CGFloat = 3600
     //日期显示模式
     var dateMode:DateMode = .day
     //图标数据显示范围，四个参数定义的区间的数据才会绘制到图表（定义窗口大小）
@@ -717,13 +726,13 @@ import UIKit
     //是否自适应y轴范围
     var yRangeType:YRangeType = .fixed(min: 19, max: 100)
     //是否自适应y轴范围
-    var XRangeType:XRangeType = .unlimited
+    var XRangeType:XRangeType = .limitedByData
     //水平坐标轴是否全屏显示
-    var horizontalAxisFullFrame = true
+    var horizontalAxisFullFrame = false
     //垂直坐标轴是否全屏显示
     var verticalAxisFullFrame = false
     //是否开启左右滑动惯性
-    var enableDeceleration = true
+    var enableDeceleration = false
 
 
 
