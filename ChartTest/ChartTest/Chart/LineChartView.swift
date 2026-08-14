@@ -982,7 +982,7 @@ extension ChartModel{
 
         chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
-        lineModel.datalineStyle = .monotoneCubic(width: 3, color: .black)
+        lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
         topAxisLineStyle    = .none
         rightAxisLineStyle  = .none
@@ -1016,7 +1016,7 @@ extension ChartModel{
 
     private func setupTemperatureStyle() {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 0, bottom: 40, right: 0)
         yRangeType = .selfAdaptVisibleWithType(type: .temperature)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
