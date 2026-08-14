@@ -823,6 +823,12 @@ class horizontalEmptyAreaModel{
 
     var gapLeft:Double = 0
     var gapRight:Double = 0
+    init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
+    init() {
+    }
 }
 //横向背景颜色
 class HorizontalColorRange{
