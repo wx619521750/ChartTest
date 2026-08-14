@@ -40,7 +40,7 @@ final class BinaryTimelineChartModel {
     /// 红色块中心与灰色块中心之间的垂直距离。
     var stateVerticalDistance: CGFloat = 36
     /// 红灰状态切换时竖向渐变连接线的宽度。
-    var connectorWidth: CGFloat = 3
+    var connectorWidth: CGFloat = 1
     /// 色块最大圆角；当色块宽度不足两倍圆角时，实际圆角使用宽度的一半。
     var maximumCornerRadius: CGFloat = 4
     /// 时间刻度文本底边相对 View 底部的距离。

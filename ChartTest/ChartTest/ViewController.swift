@@ -221,6 +221,8 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         case .year:
             segmentView.selectIndex(index: 3, withDelegate: false)
 
+        case .none:
+            break
         }
     }
     

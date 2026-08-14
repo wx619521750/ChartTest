@@ -950,51 +950,65 @@ class LineChartDrawer {
                 ctx.strokePath()
                 
             default:
-                let steps = generateAxisSteps(min: chartModel.minY, max: chartModel.maxY, type: chartModel.bottomGraduationStepType)
-                switch chartModel.bottomAxisLabelStyel {
-                case .bottom(let color, let font,let offset):
-                    for item in steps{
-                        let y = ptPointFromPoint(point: .init(x: 0, y: item)).y
-                        let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
-                        let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
-                            chartView: chartView,
-                            direction: .bottom,
-                            value: item,
-                            color: color,
-                            font: font
-                        ) ?? NSAttributedString(string: String(format: "%.1f", item), attributes: [.foregroundColor:color,.font:font])
-                        UIGraphicsPushContext(ctx)
-                        let _ = drawText(str, point: CGPoint.init(x: x, y: y), anchor: .minxcentery, clampToChartContent: false)
-                        UIGraphicsPopContext()
-                        switch chartModel.bottomGraduationType {
-                        case .line(let lenght, let width, let color):
-                            ctx.setStrokeColor(color.cgColor)
-                            ctx.setLineWidth(width)
-                            ctx.setLineDash(phase: 0, lengths: [])
-                            let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
-                            let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
-                            ctx.move(to: .init(x: x, y: bottomY))
-                            ctx.addLine(to: .init(x: x, y: endY))
-                        case .dashLine(let lenght, let width, let color, let lengths):
-                            ctx.setStrokeColor(color.cgColor)
-                            ctx.setLineWidth(width)
-                            ctx.setLineDash(phase: 0, lengths: lengths)
-                            let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
-                            let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
-                            ctx.move(to: .init(x: x, y: bottomY))
-                            ctx.addLine(to: .init(x: x, y: endY))
-                        case .none:
-                            break
-                        }
-                    }
-                    ctx.strokePath()
-                    
-                default:
-                    break
-                }
+                break
             }
-        
-        default:
+
+        case .distance, .seprateCount:
+            let steps = generateAxisSteps(
+                min: chartModel.minX,
+                max: chartModel.maxX,
+                type: chartModel.bottomGraduationStepType
+            )
+            switch chartModel.bottomAxisLabelStyel {
+            case .bottom(let color, let font, let offset):
+                for item in steps {
+                    let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
+                    let bottomY = layer.bounds.height-chartModel.chartContentInsert.bottom
+                    let textY = bottomY+(offset ?? 0)
+                    let str = chartView.delegate?.lineChartViewAxisGraduationFormatStr?(
+                        chartView: chartView,
+                        direction: .bottom,
+                        value: item,
+                        color: color,
+                        font: font
+                    ) ?? NSAttributedString(
+                        string: String(format: "%.1f", item),
+                        attributes: [.foregroundColor: color, .font: font]
+                    )
+                    UIGraphicsPushContext(ctx)
+                    drawText(
+                        str,
+                        point: CGPoint(x: x, y: textY),
+                        anchor: .centerxminy,
+                        clampToChartContent: false
+                    )
+                    UIGraphicsPopContext()
+
+                    switch chartModel.bottomGraduationType {
+                    case .line(let lenght, let width, let color):
+                        ctx.setStrokeColor(color.cgColor)
+                        ctx.setLineWidth(width)
+                        ctx.setLineDash(phase: 0, lengths: [])
+                        let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                        ctx.move(to: CGPoint(x: x, y: bottomY))
+                        ctx.addLine(to: CGPoint(x: x, y: endY))
+                    case .dashLine(let lenght, let width, let color, let lengths):
+                        ctx.setStrokeColor(color.cgColor)
+                        ctx.setLineWidth(width)
+                        ctx.setLineDash(phase: 0, lengths: lengths)
+                        let endY = lenght.map { bottomY-$0 } ?? chartModel.chartContentInsert.top
+                        ctx.move(to: CGPoint(x: x, y: bottomY))
+                        ctx.addLine(to: CGPoint(x: x, y: endY))
+                    case .none:
+                        break
+                    }
+                }
+                ctx.strokePath()
+            default:
+                break
+            }
+
+        case .none:
             break
         }
        
