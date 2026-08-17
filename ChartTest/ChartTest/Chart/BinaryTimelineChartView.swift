@@ -529,10 +529,14 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         points: [BinaryTimelinePointModel],
         visibleRange: Range<TimeInterval>
     ) -> [BinaryTimelineStateBlock] {
-        let changes = points.filter { $0.x > visibleRange.lowerBound && $0.x < visibleRange.upperBound }
+        // 状态图形最多绘制到当前时间；可视窗口中超出当前时间的部分保留为空白。
+        let drawableUpperBound = min(visibleRange.upperBound, Date().timeIntervalSince1970)
+        guard drawableUpperBound > visibleRange.lowerBound else { return [] }
+        let drawableRange = visibleRange.lowerBound..<drawableUpperBound
+        let changes = points.filter { $0.x > drawableRange.lowerBound && $0.x < drawableRange.upperBound }
         var blocks: [BinaryTimelineStateBlock] = []
-        var start = visibleRange.lowerBound
-        var value = points.last(where: { $0.x <= visibleRange.lowerBound })?.y ?? 0
+        var start = drawableRange.lowerBound
+        var value = points.last(where: { $0.x <= drawableRange.lowerBound })?.y ?? 0
         // 只有状态改变时才结束当前块，重复的相同状态点不会拆分区间。
         for point in changes where point.y != value {
             if point.x > start {
@@ -541,9 +545,9 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             start = point.x
             value = point.y
         }
-        // 最后一个状态持续到当前可视窗口结束。
-        if visibleRange.upperBound > start {
-            blocks.append(BinaryTimelineStateBlock(start: start, end: visibleRange.upperBound, value: value))
+        // 最后一个有效状态只持续到可绘制上限，不延伸进入未来时间区域。
+        if drawableRange.upperBound > start {
+            blocks.append(BinaryTimelineStateBlock(start: start, end: drawableRange.upperBound, value: value))
         }
         return blocks
     }
