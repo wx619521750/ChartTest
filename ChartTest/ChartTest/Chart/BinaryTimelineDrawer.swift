@@ -73,9 +73,9 @@ final class BinaryTimelineDrawer {
         range: Range<TimeInterval>
     ) -> CGRect {
         let plotRect = plotRect(in: bounds, model: model)
-        // tooltip 始终锚定在活动区间的时间中点，而不是可见色块的像素中点。
+        // tooltip 锚定在活动区间当前可见部分的时间中点。
         let centerX = xPosition(
-            (range.lowerBound + range.upperBound) * 0.5,
+            visibleCenterTimestamp(of: range, in: visibleRange),
             visibleRange: visibleRange,
             plotRect: plotRect
         )
@@ -276,9 +276,9 @@ final class BinaryTimelineDrawer {
         plotRect: CGRect,
         activeY: CGFloat
     ) {
-        // 提示框和虚线锚定在选中 y=1 区间的时间中心。
+        // 红块被可视窗口裁掉一部分时，提示框和虚线跟随剩余可见部分重新居中。
         let centerX = xPosition(
-            (range.lowerBound + range.upperBound) * 0.5,
+            visibleCenterTimestamp(of: range, in: visibleRange),
             visibleRange: visibleRange,
             plotRect: plotRect
         )
@@ -401,6 +401,16 @@ final class BinaryTimelineDrawer {
         // 将当前窗口内的时间进度线性映射到绘图区，并裁剪到窗口首尾。
         let progress = (timestamp - visibleRange.lowerBound) / (visibleRange.upperBound - visibleRange.lowerBound)
         return plotRect.minX + CGFloat(min(1, max(0, progress))) * plotRect.width
+    }
+
+    /// 返回选中区间与当前可视范围交集的时间中点，作为 tooltip 和虚线的共同锚点。
+    private func visibleCenterTimestamp(
+        of range: Range<TimeInterval>,
+        in visibleRange: Range<TimeInterval>
+    ) -> TimeInterval {
+        let visibleLowerBound = max(range.lowerBound, visibleRange.lowerBound)
+        let visibleUpperBound = min(range.upperBound, visibleRange.upperBound)
+        return (visibleLowerBound + visibleUpperBound) * 0.5
     }
 
     /// 参照 LineChartView 的逻辑，根据当前时间跨度生成自适应刻度和日期格式。
