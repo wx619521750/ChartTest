@@ -247,8 +247,15 @@ final class BinaryTimelineDrawer {
             let text = dateString(timestamp, format: axisInfo.format)
             let size = text.size(withAttributes: attributes)
             let x = xPosition(timestamp, visibleRange: visibleRange, plotRect: plotRect)
-            // 中间刻度按时间点居中，首尾刻度会限制在 View 内避免文本被截断。
-            let originX = min(bounds.width - size.width, max(0, x - size.width * 0.5))
+            let centeredOriginX = x - size.width * 0.5
+            let originX: CGFloat
+            if model.automaticallyInsetsAxisLabels {
+                // 自动缩进时仅调整文本起点，刻度的真实时间坐标不变。
+                let maximumOriginX = max(0, bounds.width - size.width)
+                originX = min(maximumOriginX, max(0, centeredOriginX))
+            } else {
+                originX = centeredOriginX
+            }
             text.draw(at: CGPoint(x: originX, y: labelY), withAttributes: attributes)
         }
     }

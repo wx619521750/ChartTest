@@ -49,6 +49,8 @@ final class BinaryTimelineChartModel {
     var axisFont = UIFont.systemFont(ofSize: 14)
     /// 是否显示底部时间刻度文本。
     var showsAxisLabels = true
+    /// 是否将首尾时间文本自动缩进 View 边界内；false 时按真实时间位置居中。
+    var automaticallyInsetsAxisLabels = true
 
     // MARK: - Range
 
