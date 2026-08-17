@@ -2,27 +2,49 @@ import UIKit
 
 /// 负责原始数据处理、选中状态、平移缩放和点击交互；具体绘制由 BinaryTimelineDrawer 完成。
 final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
+    /// 图表数据与配置；替换整个模型时会重新整理数据并播放配置的加载动画。
     var chartModel = BinaryTimelineChartModel() {
         didSet { reloadData() }
     }
 
+    /// 负责坐标换算和 Core Graphics 绘制的对象，View 本身只管理数据与交互。
     private let drawer = BinaryTimelineDrawer()
+    /// 原始数据或 XRangeType 配置允许覆盖的完整时间范围。
     private var dataRange: Range<TimeInterval>?
+    /// 当前屏幕实际展示的时间范围，平移和缩放都会更新它。
     private var visibleRange: Range<TimeInterval>?
+    /// 当前可视范围内合并后的连续 0/1 状态块。
     private var stateBlocks: [BinaryTimelineStateBlock] = []
+    /// 从状态块中提取的 y=1 区间，作为 tooltip 的可选目标。
     private var activeRanges: [Range<TimeInterval>] = []
-    private var selectedRangeIndex: Int?
+    /// 当前 tooltip 对应的实际时间范围；保存范围而非数组下标，避免平移后错误切换选中项。
+    private var selectedRange: Range<TimeInterval>?
+    /// 当前平移手势是否从 tooltip 内开始，并用于拖动浏览选中区间。
     private var isBrowsingSelection = false
+
+    /// 双指缩放开始时记录的可视范围下界，用于避免累计缩放误差。
     private var pinchStartMinX: TimeInterval = 0
+    /// 双指缩放开始时记录的可视范围上界。
     private var pinchStartMaxX: TimeInterval = 0
+    /// 双指缩放开始时的锚点；该位置对应的时间在缩放期间保持不变。
     private var pinchAnchorPoint: CGPoint = .zero
+
+    /// 驱动平移惯性逐帧更新的 DisplayLink。
     private var decelerationDisplayLink: CADisplayLink?
+    /// 当前惯性横向速度，单位为 pt/s。
     private var decelerationVelocityX: CGFloat = 0
+    /// 上一帧惯性回调的系统时间戳，用于计算真实帧间隔。
     private var lastDecelerationTimestamp: CFTimeInterval = 0
+    /// 触发惯性所需的最小离手速度，单位为 pt/s。
     private let decelerationStartVelocityThreshold: CGFloat = 120
+    /// 惯性速度低于该值时停止逐帧更新，单位为 pt/s。
     private let decelerationStopVelocityThreshold: CGFloat = 5
+
+    /// 驱动状态块从左到右显示的加载动画 DisplayLink。
     private var loadAnimationDisplayLink: CADisplayLink?
+    /// 加载动画首帧的系统时间戳，用于计算已播放时长。
     private var loadAnimationStartTimestamp: CFTimeInterval = 0
+    /// 加载动画揭示进度，取值范围为 0...1。
     private var loadAnimationProgress: CGFloat = 1
 
     /// 代码创建 View 时调用，完成父类初始化后统一执行视图基础配置。
@@ -46,9 +68,9 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
     /// 系统触发重绘时调用；View 负责准备数据，真正的路径绘制交给 Drawer。
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext(), let visibleRange else { return }
-        // View 只向 Drawer 传递当前选中区间，不参与任何路径绘制。
-        let selectedRange = selectedRangeIndex.flatMap { index in
-            activeRanges.indices.contains(index) ? activeRanges[index] : nil
+        // 选中区间完全移出可视窗口时只隐藏 tooltip，保留选中状态以便移回后恢复显示。
+        let visibleSelectedRange = selectedRange.flatMap { range in
+            isRangeVisible(range, in: visibleRange) ? range : nil
         }
         drawer.draw(
             context: context,
@@ -56,7 +78,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             model: chartModel,
             visibleRange: visibleRange,
             blocks: stateBlocks,
-            selectedRange: selectedRange,
+            selectedRange: visibleSelectedRange,
             revealProgress: loadAnimationProgress
         )
     }
@@ -78,7 +100,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             visibleRange = nil
             stateBlocks = []
             activeRanges = []
-            selectedRangeIndex = nil
+            selectedRange = nil
             loadAnimationProgress = 1
             setNeedsDisplay()
             return
@@ -86,6 +108,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
 
         loadAnimationProgress = chartModel.enableLoadAnimation ? 0 : 1
         dataRange = range
+        selectedRange = nil
         let shouldUseExistingRange = chartModel.minX < chartModel.maxX
         let minX = shouldUseExistingRange ? chartModel.minX : range.lowerBound
         let maxX = shouldUseExistingRange ? chartModel.maxX : range.upperBound
@@ -215,32 +238,27 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         guard let visibleRange else {
             stateBlocks = []
             activeRanges = []
-            selectedRangeIndex = nil
+            selectedRange = nil
             return
         }
 
         // 多个连续相同 y 值只生成一个状态块，避免内部出现多余接缝和圆角。
         stateBlocks = makeStateBlocks(points: chartModel.points, visibleRange: visibleRange)
         activeRanges = stateBlocks.filter { $0.value == 1 }.map(\.range)
-        if let selectedRangeIndex, activeRanges.indices.contains(selectedRangeIndex) {
-            self.selectedRangeIndex = selectedRangeIndex
-        } else {
-            selectedRangeIndex = nil
-        }
     }
 
-    /// 处理点击选中逻辑；只允许选中连续的 y=1 区间。
+    /// 处理点击选中逻辑；选中距离触点时间最近的 y=1 区间。
     @objc private func didTap(_ gesture: UITapGestureRecognizer) {
         stopLoadAnimation(finish: true)
         stopDeceleration()
         guard chartModel.showsSelection else { return }
         let location = gesture.location(in: self)
         if isPointInsideSelectedTooltip(location) {
-            selectedRangeIndex = nil
+            selectedRange = nil
             setNeedsDisplay()
             return
         }
-        // 点击命中 y=1 区间时显示 tooltip；点击其他区域时取消当前 tooltip。
+        // 点击任意图表位置时，吸附到最近的 y=1 区间。
         updateSelection(at: location, clearWhenMiss: true)
     }
 
@@ -266,6 +284,8 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             _ = shiftVisibleRange(by: dataOffsetFromViewTranslation(translation.x))
         case .ended:
             if isBrowsingSelection {
+                // 使用手势结束位置完成最后一次吸附，避免终点未触发 changed 时停在前一个区间。
+                updateSelection(at: gesture.location(in: self), clearWhenMiss: false)
                 isBrowsingSelection = false
                 return
             }
@@ -278,7 +298,7 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
         }
     }
 
-    /// 根据触点位置更新 tooltip 选中区间；点击空白处时可选择清空选中状态。
+    /// 根据触点时间选择最近的 y=1 区间；没有可选区间时可选择清空状态。
     private func updateSelection(at location: CGPoint, clearWhenMiss: Bool) {
         guard let visibleRange else { return }
         let timestamp = drawer.timestamp(
@@ -287,29 +307,62 @@ final class BinaryTimelineChartView: UIView, UIGestureRecognizerDelegate {
             model: chartModel,
             visibleRange: visibleRange
         )
-        if let index = activeRanges.firstIndex(where: { $0.contains(timestamp) }) {
-            selectedRangeIndex = index
+        if let range = nearestActiveRange(to: timestamp) {
+            selectedRange = range
         } else if clearWhenMiss {
-            selectedRangeIndex = nil
+            selectedRange = nil
         }
         setNeedsDisplay()
+    }
+
+    /// 返回触点时间距离最近的 y=1 区间；区间内距离为 0，区间外按最近边界计算。
+    private func nearestActiveRange(to timestamp: TimeInterval) -> Range<TimeInterval>? {
+        var nearestRange: Range<TimeInterval>?
+        var nearestDistance = TimeInterval.greatestFiniteMagnitude
+
+        for range in activeRanges {
+            let distance: TimeInterval
+            if timestamp < range.lowerBound {
+                distance = range.lowerBound - timestamp
+            } else if timestamp > range.upperBound {
+                distance = timestamp - range.upperBound
+            } else {
+                distance = 0
+            }
+
+            // 距离相同时保留时间更早的区间，避免临界位置来回跳变。
+            if distance < nearestDistance {
+                nearestDistance = distance
+                nearestRange = range
+            }
+        }
+
+        return nearestRange
     }
 
     /// 判断触点是否落在当前 tooltip 内；只有命中 tooltip 才接管拖动浏览。
     private func isPointInsideSelectedTooltip(_ point: CGPoint) -> Bool {
         guard chartModel.showsSelection,
               let visibleRange,
-              let selectedRangeIndex,
-              activeRanges.indices.contains(selectedRangeIndex) else {
+              let selectedRange,
+              isRangeVisible(selectedRange, in: visibleRange) else {
             return false
         }
         let rect = drawer.tooltipRect(
             bounds: bounds,
             model: chartModel,
             visibleRange: visibleRange,
-            range: activeRanges[selectedRangeIndex]
+            range: selectedRange
         )
         return rect.contains(point)
+    }
+
+    /// 判断状态区间是否至少有一部分位于当前可视时间范围内。
+    private func isRangeVisible(
+        _ range: Range<TimeInterval>,
+        in visibleRange: Range<TimeInterval>
+    ) -> Bool {
+        range.lowerBound < visibleRange.upperBound && range.upperBound > visibleRange.lowerBound
     }
 
     /// 处理双指缩放，缩放中心固定在手势开始的位置。

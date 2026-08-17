@@ -2,15 +2,19 @@ import UIKit
 
 /// 二值时间轴的原始数据点。x 为任意时间戳，y 只保留 0 或 1。
 final class BinaryTimelinePointModel {
+    /// 状态发生或被采样时的 Unix 时间戳，单位为秒。
     var x: TimeInterval
+    /// 内部保存的归一化状态，始终为 0 或 1。
     private var storedY: Int
 
+    /// 二值状态；赋入 0 时保存为 0，其他值统一保存为 1。
     var y: Int {
         get { storedY }
         // 对外赋值时统一归一化，避免 Drawer 处理非法状态值。
         set { storedY = newValue == 0 ? 0 : 1 }
     }
 
+    /// 创建一个时间状态点，并立即将状态归一化为 0 或 1。
     init(x: TimeInterval, y: Int) {
         self.x = x
         storedY = y == 0 ? 0 : 1
@@ -19,16 +23,24 @@ final class BinaryTimelinePointModel {
 
 /// 二值时间轴的通用数据和外观配置。
 final class BinaryTimelineChartModel {
+    /// 时间轴原始数据点；View 重载数据时会按时间戳升序排列。
     var points: [BinaryTimelinePointModel]
 
     // MARK: - Colors
 
+    /// 整个图表的背景色。
     var backgroundColor = UIColor.white
+    /// y=0 状态块及渐变连接线底端的颜色。
     var inactiveColor = UIColor(red: 0.89, green: 0.95, blue: 0.98, alpha: 1)
+    /// y=1 状态块及渐变连接线顶端的颜色。
     var activeColor = UIColor(red: 0.98, green: 0.22, blue: 0.24, alpha: 1)
+    /// 底部时间刻度文本颜色。
     var axisTextColor = UIColor(white: 0.48, alpha: 1)
+    /// 选中提示框背景色。
     var tooltipBackgroundColor = UIColor(white: 0.04, alpha: 1)
+    /// 选中提示框内的文本颜色。
     var tooltipTextColor = UIColor.white
+    /// 提示框与选中状态块之间引导线的颜色。
     var selectionLineColor = UIColor(white: 0.72, alpha: 1)
 
     // MARK: - Layout
@@ -80,15 +92,24 @@ final class BinaryTimelineChartModel {
 
     // MARK: - Selection
 
+    /// 是否允许显示和拖动选中提示框。
     var showsSelection = true
+    /// 提示框顶部相对 View 顶部的位置，单位为 pt。
     var tooltipTop: CGFloat = 8
+    /// 提示框内文本左右留白，单位为 pt。
     var tooltipHorizontalPadding: CGFloat = 12
+    /// 提示框内文本上下留白，单位为 pt。
     var tooltipVerticalPadding: CGFloat = 9
+    /// 提示框圆角半径，单位为 pt。
     var tooltipCornerRadius: CGFloat = 9
+    /// 提示框两行文本使用的字体。
     var tooltipFont = UIFont.systemFont(ofSize: 15)
+    /// 选中引导线宽度，单位为 pt。
     var selectionLineWidth: CGFloat = 1
+    /// 选中引导线的虚线线段与间隔长度，单位为 pt。
     var selectionLineDash: [CGFloat] = [2, 3]
 
+    /// 使用指定数据点创建图表配置；其余外观和交互参数使用默认值。
     init(points: [BinaryTimelinePointModel] = []) {
         self.points = points
     }
@@ -96,10 +117,14 @@ final class BinaryTimelineChartModel {
 
 /// View 将连续相同状态的数据点合并后生成的绘制区间。
 struct BinaryTimelineStateBlock {
+    /// 状态块起始时间戳，单位为秒。
     let start: TimeInterval
+    /// 状态块结束时间戳，单位为秒，不包含该边界。
     let end: TimeInterval
+    /// 当前区间的二值状态，0 为非活动，1 为活动。
     let value: Int
 
+    /// 将起止时间包装为左闭右开的时间范围，供绘制和选中逻辑复用。
     var range: Range<TimeInterval> { start..<end }
 }
 

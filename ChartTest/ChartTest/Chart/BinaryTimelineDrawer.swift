@@ -12,6 +12,7 @@ final class BinaryTimelineDrawer {
         selectedRange: Range<TimeInterval>?,
         revealProgress: CGFloat = 1
     ) {
+        // 背景先覆盖整个 View，后续状态、刻度和 tooltip 按层级依次叠加。
         model.backgroundColor.setFill()
         context.fill(bounds)
 
@@ -31,10 +32,12 @@ final class BinaryTimelineDrawer {
             inactiveY: inactiveY,
             revealProgress: revealProgress
         )
+        // 坐标轴不参与从左到右的揭示动画，开关打开时始终完整绘制。
         if model.showsAxisLabels {
             drawAxis(bounds: bounds, model: model, visibleRange: visibleRange, plotRect: plotRect)
         }
 
+        // 加载动画结束后才显示选中内容，避免 tooltip 覆盖尚未揭示的状态块。
         if model.showsSelection, revealProgress >= 1, let selectedRange {
             drawSelection(
                 context: context,
@@ -70,6 +73,7 @@ final class BinaryTimelineDrawer {
         range: Range<TimeInterval>
     ) -> CGRect {
         let plotRect = plotRect(in: bounds, model: model)
+        // tooltip 始终锚定在活动区间的时间中点，而不是可见色块的像素中点。
         let centerX = xPosition(
             (range.lowerBound + range.upperBound) * 0.5,
             visibleRange: visibleRange,
@@ -237,11 +241,13 @@ final class BinaryTimelineDrawer {
         visibleRange: Range<TimeInterval>,
         plotRect: CGRect
     ) {
+        // 轴文本的字体与颜色集中从 Model 读取，所有自适应刻度保持同一视觉样式。
         let attributes: [NSAttributedString.Key: Any] = [
             .font: model.axisFont,
             .foregroundColor: model.axisTextColor
         ]
         let labelY = bounds.height - model.axisLabelBottom
+        // 当前可视时长同时决定刻度间隔和日期显示格式。
         let axisInfo = dateAdaptiveStamps(visibleRange: visibleRange)
         for timestamp in axisInfo.stamps {
             let text = dateString(timestamp, format: axisInfo.format)
@@ -327,6 +333,7 @@ final class BinaryTimelineDrawer {
         model: BinaryTimelineChartModel,
         range: Range<TimeInterval>
     ) -> CGSize {
+        // tooltip 的两行文本与实际绘制内容必须一致，否则命中区域会出现偏差。
         let duration = max(0, Int(range.upperBound - range.lowerBound))
         let hours = duration / 3600
         let minutes = (duration % 3600) / 60
@@ -350,6 +357,7 @@ final class BinaryTimelineDrawer {
         model: BinaryTimelineChartModel,
         plotRect: CGRect
     ) -> CGRect {
+        // 只限制 tooltip 框，不改变选中区间和引导线所对应的真实时间位置。
         let minTooltipX = plotRect.minX
         let maxTooltipX = max(plotRect.minX, plotRect.maxX - size.width)
         let tooltipX = min(
@@ -434,6 +442,7 @@ final class BinaryTimelineDrawer {
         guard start < end else { return [] }
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
+        // current 先对齐到不早于起点的第一个自然时间边界。
         var current: Date?
 
         switch step {
@@ -478,6 +487,7 @@ final class BinaryTimelineDrawer {
         }
 
         guard var date = current else { return [] }
+        // 日期组件归一化可能落到起点之前，继续按同一步长向后校正。
         while date < startDate {
             guard let next = calendar.date(byAdding: step.calendarComponent, value: step.value, to: date) else {
                 return []
@@ -486,6 +496,7 @@ final class BinaryTimelineDrawer {
         }
 
         var result: [TimeInterval] = []
+        // Calendar 负责跨日、跨月和夏令时变化，避免直接累加秒数产生时间偏移。
         while date <= endDate {
             result.append(date.timeIntervalSince1970)
             guard let next = calendar.date(byAdding: step.calendarComponent, value: step.value, to: date) else {
@@ -513,13 +524,19 @@ final class BinaryTimelineDrawer {
 
 /// BinaryTimelineDrawer 内部使用的自然时间步长。
 private enum BinaryTimelineTimeStep {
+    /// 以指定分钟数对齐和递增。
     case minutes(Int)
+    /// 以指定小时数对齐和递增。
     case hours(Int)
+    /// 以指定天数对齐和递增。
     case days(Int)
+    /// 以指定月数对齐和递增。
     case months(Int)
 }
 
+/// 将内部时间步长转换成 Calendar 可执行的组件和值。
 private extension BinaryTimelineTimeStep {
+    /// Calendar 执行日期递增时使用的组件类型。
     var calendarComponent: Calendar.Component {
         switch self {
         case .minutes:
@@ -533,6 +550,7 @@ private extension BinaryTimelineTimeStep {
         }
     }
 
+    /// 每次对 Calendar 组件增加的步长值。
     var value: Int {
         switch self {
         case .minutes(let value),
