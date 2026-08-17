@@ -41,7 +41,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     }
 
     private func initBinaryTimelineData() {
-        let startOfDay = Calendar.current.startOfDay(for: Date())
+        let startOfDay = Calendar.current.startOfDay(for: Date().dateByAddingDays(days: -1) ?? Date())
         func timestamp(hour: Int, minute: Int) -> TimeInterval {
             Calendar.current.date(
                 bySettingHour: hour,
@@ -52,9 +52,11 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         }
 
         binaryTimelineChartView.chartModel = BinaryTimelineChartModel(points: [
-            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 1),
-//            BinaryTimelinePointModel(x: timestamp(hour: 1, minute: 0), y: 0),
-//            BinaryTimelinePointModel(x: timestamp(hour: 2, minute: 0), y: 0),
+//            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: -1)?.timeIntervalSince1970 ?? 0, y: 0),
+
+            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 0),
+
+            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 4, minute: 0), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 5, minute: 0), y: 1),
@@ -69,8 +71,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 5), y: 1),
             BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 25), y: 0),
             BinaryTimelinePointModel(x: timestamp(hour: 18, minute: 40), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 20, minute: 55), y: 1),
-            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 1)
+            BinaryTimelinePointModel(x: timestamp(hour: 23, minute: 59), y: 1),
+            BinaryTimelinePointModel(x: timestamp(hour: 23, minute: 59)+50, y: 0),
+                        BinaryTimelinePointModel(x: Date().dateByAddingDays(days: -1)?.dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 0),
+
 
         ])
     }

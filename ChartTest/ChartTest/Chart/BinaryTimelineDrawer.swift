@@ -416,17 +416,23 @@ final class BinaryTimelineDrawer {
     /// 参照 LineChartView 的逻辑，根据当前时间跨度生成自适应刻度和日期格式。
     private func dateAdaptiveStamps(visibleRange: Range<TimeInterval>) -> (stamps: [TimeInterval], format: String) {
         let range = visibleRange.upperBound - visibleRange.lowerBound
-        if range <= 1800 {
+        if range <= 900 {
+            return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .minutes(3)), "HH:mm")
+        }else if range <= 1800 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .minutes(5)), "HH:mm")
         } else if range <= 3600 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .minutes(10)), "HH:mm")
+        }else if range <= 3600 * 3 {
+            return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .minutes(30)), "HH:mm")
         } else if range <= 3600 * 6 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .hours(1)), "HH:mm")
         } else if range <= 3600 * 12 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .hours(2)), "HH:mm")
         } else if range <= 3600 * 24 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .hours(4)), "HH:mm")
-        } else if range <= 3600 * 24 * 7 {
+        } else if range <= 3600 * 24 * 2 {
+            return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .hours(8)), "HH:mm")
+        }else if range <= 3600 * 24 * 7 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .days(1)), "EEE")
         } else if range <= 3600 * 24 * 14 {
             return (alignedTimestamps(start: visibleRange.lowerBound, end: visibleRange.upperBound, step: .days(2)), "MM/dd")
