@@ -8,7 +8,6 @@
 import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
-    //日历模式变更回调
     @objc optional func lineChartViewDateModeChanged(chartView:LineChartView,mode:DateMode)
     //显示窗口最大最小X值回调
     @objc optional func lineChartViewXRangeChanged(chartView:LineChartView,min:Double,max:Double)
