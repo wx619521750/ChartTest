@@ -9,7 +9,6 @@ import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
     @objc optional func lineChartViewDateModeChanged(chartView:LineChartView,mode:DateMode)
-    //显示窗口最大最小X值回调
     @objc optional func lineChartViewXRangeChanged(chartView:LineChartView,min:Double,max:Double)
     //用户拖动、缩放或惯性滑动后的显示窗口回调
     @objc optional func lineChartViewXRangeChangedByUserInteraction(chartView:LineChartView,min:Double,max:Double)
