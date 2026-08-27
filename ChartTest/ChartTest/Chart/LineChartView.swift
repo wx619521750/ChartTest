@@ -8,6 +8,7 @@
 import UIKit
 
 @objc protocol LineChartViewDelegate:NSObjectProtocol{
+    //日历模式变更回调
     @objc optional func lineChartViewDateModeChanged(chartView:LineChartView,mode:DateMode)
     //显示窗口最大最小X值回调
     @objc optional func lineChartViewXRangeChanged(chartView:LineChartView,min:Double,max:Double)
@@ -101,25 +102,21 @@ import UIKit
     func dealModels(){
         //根据窗口大小获取可展示的数据
         var vasivledata = [ChartPointModel]()
-        let leftData = chartModel.lineModel.points.last(where: {$0.x<=chartModel.minX})
-        let rightData = chartModel.lineModel.points.first(where: {$0.x>=chartModel.maxX})
-        if let leftData = leftData,let rightData = rightData{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x>=leftData.x)&&($0.x<=rightData.x)
-            })
-        }
-        if let leftData = leftData,rightData == nil{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x>=leftData.x)
-            })
-        }
-        if leftData == nil,let rightData = rightData{
-            vasivledata = chartModel.lineModel.points.filter({
-                ($0.x<=rightData.x)
-            })
-        }
-        if leftData == nil, rightData == nil{
-            vasivledata = chartModel.lineModel.points
+        let points = chartModel.lineModel.points
+        if !points.isEmpty {
+            let referencePointCount: Int
+            switch chartModel.lineModel.datalineStyle {
+            case .monotoneCubic, .catmullRom:
+                referencePointCount = 2
+            case .straight, .bezier:
+                referencePointCount = 1
+            }
+
+            let leftIndex = points.lastIndex(where: { $0.x <= chartModel.minX })
+            let rightIndex = points.firstIndex(where: { $0.x >= chartModel.maxX })
+            let startIndex = max(0, (leftIndex ?? 0) - (referencePointCount - 1))
+            let endIndex = min(points.count - 1, (rightIndex ?? (points.count - 1)) + (referencePointCount - 1))
+            vasivledata = Array(points[startIndex...endIndex])
         }
         switch chartModel.yRangeType {
         case .selfAdaptAll:
@@ -777,6 +774,8 @@ class ChartLineModel{
 //    var datalineStyle:DataLineStyle = .straight(width: 2, color: UIColor.blue)
     //线段类型
     var datalineStyle:DataLineStyle = .bezier(width: 2, color: .black)
+    //数据线阴影，nil 表示不绘制阴影
+    var dataLineShadow: DataLineShadow?
     //数据点数组
     var points:[ChartPointModel] = [ChartPointModel]()
     //需要绘制的区域的数据
@@ -786,6 +785,19 @@ class ChartLineModel{
 
 
 
+}
+
+//数据线阴影配置
+struct DataLineShadow {
+    var color: UIColor
+    var offset: CGSize
+    var blur: CGFloat
+
+    init(color: UIColor, offset: CGSize = .zero, blur: CGFloat) {
+        self.color = color
+        self.offset = offset
+        self.blur = max(0, blur)
+    }
 }
 
 //空白区域模型
@@ -936,6 +948,7 @@ enum AxisStepType{
     case dateAdapt
     case distance(distace:CGFloat,align:CGFloat?)
     case seprateCount(count:UInt8)
+    case seprateCountWithAllData(count:UInt8)
     case none
 }
 

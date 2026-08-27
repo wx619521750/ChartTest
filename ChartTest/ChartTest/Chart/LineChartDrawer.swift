@@ -202,6 +202,15 @@ class LineChartDrawer {
             )
         }
 
+        if let shadow = chartModel.lineModel.dataLineShadow {
+            drawDataLineShadow(
+                ctx: ctx,
+                path: paths.linePath,
+                lineWidth: lineWidth,
+                shadow: shadow
+            )
+        }
+
         switch chartModel.lineModel.datalineStyle {
         case .straight(let width, let color):
             ctx.setLineWidth(width)
@@ -249,6 +258,24 @@ class LineChartDrawer {
         
         ctx.restoreGState()
         
+    }
+
+    /// 单独描边生成阴影，避免后续线条渐变的裁剪路径把阴影一并裁掉。
+    private func drawDataLineShadow(
+        ctx: CGContext,
+        path: CGPath,
+        lineWidth: CGFloat,
+        shadow: DataLineShadow
+    ) {
+        ctx.saveGState()
+        ctx.setLineWidth(lineWidth)
+        ctx.setLineJoin(.round)
+        ctx.setLineCap(.round)
+        ctx.setStrokeColor(shadow.color.cgColor)
+        ctx.setShadow(offset: shadow.offset, blur: shadow.blur, color: shadow.color.cgColor)
+        ctx.addPath(path)
+        ctx.strokePath()
+        ctx.restoreGState()
     }
 
     //一次遍历生成曲线路径和曲线下方面积路径，避免背景和线条重复计算贝塞尔曲线
@@ -953,12 +980,17 @@ class LineChartDrawer {
                 break
             }
 
-        case .distance, .seprateCount:
-            let steps = generateAxisSteps(
-                min: chartModel.minX,
-                max: chartModel.maxX,
-                type: chartModel.bottomGraduationStepType
-            )
+        case .distance, .seprateCount, .seprateCountWithAllData:
+            let steps: [CGFloat]
+            if case .seprateCountWithAllData(let count) = chartModel.bottomGraduationStepType {
+                steps = generateBottomAxisStepsWithAllData(count: count)
+            } else {
+                steps = generateAxisSteps(
+                    min: chartModel.minX,
+                    max: chartModel.maxX,
+                    type: chartModel.bottomGraduationStepType
+                )
+            }
             switch chartModel.bottomAxisLabelStyel {
             case .bottom(let color, let font, let offset):
                 for item in steps {
@@ -1155,7 +1187,31 @@ class LineChartDrawer {
                 result.append(value)
             }
             return result
+        case .seprateCountWithAllData:
+            // 该类型只支持底部 X 轴，由 generateBottomAxisStepsWithAllData 处理。
+            return []
         default:return []
+        }
+    }
+
+    /// 按全部原始数据的 X 范围生成固定刻度，并只返回当前可视区内的部分。
+    private func generateBottomAxisStepsWithAllData(count: UInt8) -> [CGFloat] {
+        let xValues = chartModel.lineModel.points.map(\.x)
+        guard let dataMinX = xValues.min(), let dataMaxX = xValues.max() else {
+            return []
+        }
+        guard dataMinX < dataMaxX else {
+            return dataMinX >= chartModel.minX && dataMinX <= chartModel.maxX ? [dataMinX] : []
+        }
+
+        let allSteps = generateAxisSteps(
+            min: dataMinX,
+            max: dataMaxX,
+            type: .seprateCount(count: count)
+        )
+        let tolerance = max(0.0001, (dataMaxX - dataMinX) * 0.000000001)
+        return allSteps.filter {
+            $0 >= chartModel.minX - tolerance && $0 <= chartModel.maxX + tolerance
         }
     }
     
