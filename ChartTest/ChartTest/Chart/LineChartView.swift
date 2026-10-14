@@ -24,6 +24,8 @@ import UIKit
     @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double,color:UIColor,font:UIFont)->NSAttributedString?
     //回调底部首尾时间标签 X 值，同时传入当前标签配置的颜色和字体
     @objc optional func lineChartViewBottomAxisMaxMinFormatStr(chartView:LineChartView,x:Double,color:UIColor,font:UIFont)->NSAttributedString
+    //回调日期自适应刻度；未实现或返回 nil 时使用默认日期刻度
+    @objc optional func lineChartViewDateAdaptStamps(chartView:LineChartView,minX:Double,maxX:Double)->DateAdaptStampsModel?
 
     /// 当前点击的点的格式化字符串
     /// - Parameters:
@@ -39,7 +41,7 @@ import UIKit
 
 @objcMembers class LineChartView: UIView,UIGestureRecognizerDelegate {
     weak var delegate:LineChartViewDelegate?
-    private lazy var drawer = LineChartDrawer(chartView: self)
+    lazy var drawer = LineChartDrawer(chartView: self)
     var chartModel = ChartModel(){
         didSet{
             dealData()

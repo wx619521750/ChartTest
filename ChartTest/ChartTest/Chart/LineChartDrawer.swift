@@ -932,10 +932,14 @@ class LineChartDrawer {
 
         switch chartModel.bottomGraduationStepType {
         case .dateAdapt:
-            let trup = getDateAdaptStamps()
+            let trup = chartView.delegate?.lineChartViewDateAdaptStamps?(
+                chartView: chartView,
+                minX: Double(chartModel.minX),
+                maxX: Double(chartModel.maxX)
+            ) ?? getDateAdaptStamps()
             switch chartModel.bottomAxisLabelStyel {
             case .bottom(let color, let font,let offset):
-                for item in trup.0{
+                for item in trup.stamps{
                     let x = ptPointFromPoint(point: .init(x: item, y: 0)).x
                     let y = layer.bounds.height-chartModel.chartContentInsert.bottom+(offset ?? 0)
                     let date = Date.init(timeIntervalSince1970: item)
@@ -946,7 +950,7 @@ class LineChartDrawer {
                         color: color,
                         font: font
                     ) ?? NSAttributedString(
-                        string: date.toString(format: trup.1),
+                        string: date.toString(format: trup.format),
                         attributes: [.foregroundColor: color, .font: font]
                     )
                     UIGraphicsPushContext(ctx)
@@ -1215,7 +1219,8 @@ class LineChartDrawer {
         }
     }
     
-    func getDateAdaptStamps()->([TimeInterval],format:String){
+    /// 根据当前可视时间范围生成默认的自适应日期刻度。
+    func getDateAdaptStamps() -> DateAdaptStampsModel {
         var stamps = [TimeInterval]()
         let range = chartModel.maxX - chartModel.minX
         var dateFormat = "HH:mm"
@@ -1254,7 +1259,7 @@ class LineChartDrawer {
             stamps = alignedTimestamps(start: chartModel.minX, end: chartModel.maxX, step: .months(Int(count)))
             dateFormat = "MMM"
         }
-        return (stamps,dateFormat)
+        return DateAdaptStampsModel(stamps: stamps, format: dateFormat)
     }
     
     func drawAxisMaxMinLable(layer:CALayer,ctx:CGContext,chartModel:ChartModel,data:[ChartPointModel]){

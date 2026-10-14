@@ -278,25 +278,68 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         )
     }
 
-    func lineChartViewAxisGraduationFormatStr(chartView: LineChartView, direction: AxisDirection, value: Double, color: UIColor, font: UIFont) -> NSAttributedString? {
-        switch direction {
-        case .top:
-            break
-        case .bottom:
-
-            let date = Date.init(timeIntervalSince1970: value)
-            let str = date.toString(format: "yyyy")
-            return NSAttributedString(string: str, attributes: [.foregroundColor:color, .font:font])
-        case .left:
-            break
-        case .right:
-            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:color, .font:font])
-        }
-        return nil
-    }
+//    func lineChartViewAxisGraduationFormatStr(chartView: LineChartView, direction: AxisDirection, value: Double, color: UIColor, font: UIFont) -> NSAttributedString? {
+//        switch direction {
+//        case .top:
+//            break
+//        case .bottom:
+//
+//            let date = Date.init(timeIntervalSince1970: value)
+//            let str = date.toString(format: "yyyy")
+//            return NSAttributedString(string: str, attributes: [.foregroundColor:color, .font:font])
+//        case .left:
+//            break
+//        case .right:
+//            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:color, .font:font])
+//        }
+//        return nil
+//    }
 
     func lineChartViewBottomAxisMaxMinFormatStr(chartView: LineChartView, x: Double, color: UIColor, font: UIFont) -> NSAttributedString {
         let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
         return NSAttributedString(string: date, attributes: [.font:font, .foregroundColor:color])
     }
+    
+    func lineChartViewDateAdaptStamps(chartView: LineChartView, minX: Double, maxX: Double) -> DateAdaptStampsModel? {
+        var stamps = [TimeInterval]()
+        let range = maxX - minX
+        var dateFormat = "HH:mm"
+        if range <= 1800{
+            dateFormat = "HH:mm"
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .minutes(5))
+        }else if range <= 3600{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .minutes(10))
+            dateFormat = "HH:mm:ss"
+        }else if range <= 3600*6{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(2))
+            dateFormat = "HH:mm:ss"
+        }else if range <= 3600*12{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(2))
+            dateFormat = "HH:mm"
+        }else if range <= 3600*24{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(4))
+            dateFormat = "HH:mm"
+        }else if range <= 3600*24*7{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(1))
+            dateFormat = "EEE"
+        }else if range <= 3600*24*14{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(2))
+            dateFormat = "MM/dd"
+        }else if range <= 3600*24*30{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(5))
+            dateFormat = "MM/dd"
+        }else if range <= 3600*24*30*6{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(1))
+            dateFormat = "MMM"
+        }else if range <= 3600*24*30*12{
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(2))
+            dateFormat = "MMM"
+        }else{
+            let count = range/6/(3600*24*30)
+            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(Int(count)))
+            dateFormat = "MMM"
+        }
+        return DateAdaptStampsModel(stamps: stamps, format: dateFormat)
+    }
+    
 }

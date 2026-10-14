@@ -114,6 +114,22 @@ import UIKit
     }
 }
 
+/// 日期自适应刻度的时间戳和显示格式。
+/// `stamps` 使用 Double 数组；桥接到 Objective-C 后对应 NSNumber 数组。
+@objcMembers class DateAdaptStampsModel: NSObject {
+    /// 刻度对应的 Unix 时间戳数组。
+    var stamps: [Double]
+    /// 每个时间戳默认使用的日期格式。
+    var format: String
+
+    /// 创建 Objective-C 可用的日期刻度模型。
+    init(stamps: [Double], format: String) {
+        self.stamps = stamps
+        self.format = format
+        super.init()
+    }
+}
+
 
 enum YRangeType{
     case selfAdaptAll //所有数据最大最小Y值
