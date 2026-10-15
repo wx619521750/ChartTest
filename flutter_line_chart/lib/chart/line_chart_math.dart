@@ -25,11 +25,8 @@ class TimeIntervalStep {
   final int value;
 }
 
-class DateTicks {
-  const DateTicks({required this.stamps, required this.format});
-
-  final List<double> stamps;
-  final String format;
+class DateTicks extends DateAdaptStampsModel {
+  const DateTicks({required super.stamps, required super.format});
 }
 
 class LineChartMath {
@@ -98,6 +95,10 @@ class LineChartMath {
       return <ChartPointModel>[];
     }
 
+    final referencePointCount = switch (model.lineModel.dataLineStyle.kind) {
+      DataLineKind.monotoneCubic || DataLineKind.catmullRom => 2,
+      DataLineKind.straight || DataLineKind.bezier => 1,
+    };
     ChartPointModel? leftData;
     ChartPointModel? rightData;
     for (final point in points) {
@@ -110,15 +111,29 @@ class LineChartMath {
     }
 
     if (leftData != null && rightData != null) {
-      return points
-          .where((point) => point.x >= leftData!.x && point.x <= rightData!.x)
-          .toList();
+      final start = math.max(
+        0,
+        points.indexOf(leftData!) - (referencePointCount - 1),
+      );
+      final end = math.min(
+        points.length - 1,
+        points.indexOf(rightData!) + (referencePointCount - 1),
+      );
+      return points.sublist(start, end + 1);
     }
     if (leftData != null) {
-      return points.where((point) => point.x >= leftData!.x).toList();
+      final start = math.max(
+        0,
+        points.indexOf(leftData!) - (referencePointCount - 1),
+      );
+      return points.sublist(start);
     }
     if (rightData != null) {
-      return points.where((point) => point.x <= rightData!.x).toList();
+      final end = math.min(
+        points.length - 1,
+        points.indexOf(rightData!) + (referencePointCount - 1),
+      );
+      return points.sublist(0, end + 1);
     }
     return List<ChartPointModel>.of(points);
   }
@@ -172,7 +187,7 @@ class LineChartMath {
 
   static List<HorizontalEmptyAreaModel> filterPointsByXDistance(
     List<ChartPointModel> points, {
-    double threshold = 7200,
+    required double threshold,
   }) {
     if (points.length <= 1) {
       return <HorizontalEmptyAreaModel>[];
@@ -258,6 +273,27 @@ class LineChartMath {
     }
 
     result.add(data.last);
+    final minPoint = data.reduce((a, b) => a.y < b.y ? a : b);
+    final maxPoint = data.reduce((a, b) => a.y > b.y ? a : b);
+    if (!result.any((point) => identical(point, minPoint))) {
+      result.add(minPoint);
+    }
+    if (!result.any((point) => identical(point, maxPoint))) {
+      result.add(maxPoint);
+    }
+    final protected = <ChartPointModel>{data.first, data.last, minPoint, maxPoint};
+    if (selected != null) {
+      protected.add(selected);
+    }
+    while (result.length > threshold) {
+      final removeIndex = result.lastIndexWhere(
+        (point) => !protected.contains(point) && point.dataType != ChartPointDataType.gap,
+      );
+      if (removeIndex < 0) {
+        break;
+      }
+      result.removeAt(removeIndex);
+    }
     return _uniqueByXType(result)..sort((a, b) => a.x.compareTo(b.x));
   }
 
@@ -323,13 +359,45 @@ class LineChartMath {
         }
         final step = (max - min) / (count - 1);
         return List<double>.generate(count, (index) => min + step * index);
+      case AxisStepKind.separateCountWithAllData:
+        return <double>[];
       case AxisStepKind.dateAdapt:
       case AxisStepKind.none:
         return <double>[];
     }
   }
 
-  static DateTicks getDateAdaptStamps(ChartModel model, Size size) {
+  static List<double> generateBottomAxisStepsWithAllData(
+    ChartModel model,
+    int count,
+  ) {
+    final xValues = model.lineModel.points.map((point) => point.x).toList();
+    if (xValues.isEmpty) {
+      return <double>[];
+    }
+    final dataMin = xValues.reduce(math.min);
+    final dataMax = xValues.reduce(math.max);
+    if (dataMin == dataMax) {
+      return dataMin >= model.minX && dataMin <= model.maxX
+          ? <double>[dataMin]
+          : <double>[];
+    }
+    final allSteps = generateAxisSteps(
+      min: dataMin,
+      max: dataMax,
+      type: AxisStepType.separateCount(count: count),
+    );
+    final tolerance = math.max(0.0001, (dataMax - dataMin) * 0.000000001);
+    return allSteps
+        .where(
+          (value) =>
+              value >= model.minX - tolerance &&
+              value <= model.maxX + tolerance,
+        )
+        .toList();
+  }
+
+  static DateAdaptStampsModel getDateAdaptStamps(ChartModel model, Size size) {
     final range = model.maxX - model.minX;
     var dateFormat = 'HH:mm';
     late final TimeIntervalStep step;

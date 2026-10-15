@@ -19,6 +19,8 @@ typedef RightAxisDataMaxMinTextFormatter =
 typedef AxisGraduationTextFormatter =
     TextSpan? Function(AxisLabelPlacement direction, double value);
 typedef BottomAxisMaxMinTextFormatter = TextSpan Function(double x);
+typedef DateAdaptStampsFormatter =
+    DateAdaptStampsModel? Function(double minX, double maxX);
 
 enum _TextAnchor {
   minXMinY,
@@ -45,6 +47,7 @@ class LineChartPainter extends CustomPainter {
     this.rightAxisDataMaxMinTextFormatter,
     this.axisGraduationTextFormatter,
     this.bottomAxisMaxMinTextFormatter,
+    this.dateAdaptStampsFormatter,
   });
 
   final ChartModel chartModel;
@@ -58,12 +61,15 @@ class LineChartPainter extends CustomPainter {
   final RightAxisDataMaxMinTextFormatter? rightAxisDataMaxMinTextFormatter;
   final AxisGraduationTextFormatter? axisGraduationTextFormatter;
   final BottomAxisMaxMinTextFormatter? bottomAxisMaxMinTextFormatter;
+  final DateAdaptStampsFormatter? dateAdaptStampsFormatter;
+  late Size _lastPaintSize;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) {
       return;
     }
+    _lastPaintSize = size;
     _drawAxis(canvas, size);
     _drawLine(canvas, size);
     _drawEmptyArea(canvas, size);
@@ -136,6 +142,7 @@ class LineChartPainter extends CustomPainter {
       rect.bottom + lineWidth * 0.5,
     );
     final paths = _buildLinePaths(size, data);
+    final areaPaths = _buildAreaPaths(size, data);
     if (paths.isEmpty) {
       return;
     }
@@ -152,6 +159,65 @@ class LineChartPainter extends CustomPainter {
       canvas.drawPath(path, fallbackPaint);
     }
     canvas.restore();
+
+    final shadow = chartModel.lineModel.dataLineShadow;
+    if (shadow != null && shadow.blur >= 0) {
+      final shadowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = lineWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = shadow.color
+        ..maskFilter = shadow.blur > 0
+            ? MaskFilter.blur(BlurStyle.normal, shadow.blur)
+            : null;
+      canvas.save();
+      canvas.translate(shadow.offset.dx, shadow.offset.dy);
+      canvas.clipRect(clipRect);
+      for (final path in paths) {
+        canvas.drawPath(path, shadowPaint);
+      }
+      canvas.restore();
+    }
+
+    final backgroundRanges = chartModel.verticalBackgroundColorRanges;
+    if (backgroundRanges != null && backgroundRanges.isNotEmpty) {
+      for (final range in backgroundRanges) {
+        final top = LineChartMath.pointToOffset(
+          chartModel,
+          size,
+          0,
+          range.top,
+        ).dy;
+        final bottom = LineChartMath.pointToOffset(
+          chartModel,
+          size,
+          0,
+          range.bottom,
+        ).dy;
+        final band = Rect.fromLTRB(
+          rect.left,
+          math.min(top, bottom),
+          rect.right,
+          math.max(top, bottom),
+        );
+        final paint = Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [range.topColor, range.bottomColor],
+          ).createShader(band);
+        canvas.save();
+        canvas.clipRect(clipRect);
+        for (final areaPath in areaPaths) {
+          canvas.save();
+          canvas.clipPath(areaPath);
+          canvas.drawRect(band, paint);
+          canvas.restore();
+        }
+        canvas.restore();
+      }
+    }
 
     final colorRanges = chartModel.verticalColorRanges;
     for (var index = 0; index < colorRanges.length; index += 1) {
@@ -182,7 +248,11 @@ class LineChartPainter extends CustomPainter {
         ..strokeWidth = lineWidth
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = range.color;
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [range.topColor, range.bottomColor],
+        ).createShader(band);
       canvas.save();
       canvas.clipRect(clipRect);
       canvas.clipRect(band, doAntiAlias: false);
@@ -193,55 +263,325 @@ class LineChartPainter extends CustomPainter {
     }
   }
 
-  List<Path> _buildLinePaths(Size size, List<ChartPointModel> data) {
+  List<Path> _buildAreaPaths(Size size, List<ChartPointModel> data) {
     final paths = <Path>[];
-    Path? currentPath;
-    ChartPointModel? previousItem;
+    var segment = <ChartPointModel>[];
+    void flushSegment() {
+      if (segment.length < 2) {
+        segment = <ChartPointModel>[];
+        return;
+      }
+      final points = segment
+          .map(
+            (item) =>
+                LineChartMath.pointToOffset(chartModel, size, item.x, item.y),
+          )
+          .toList();
+      final rect = LineChartMath.chartRect(chartModel, size);
+      final path = Path()
+        ..moveTo(points.first.dx, rect.bottom)
+        ..lineTo(points.first.dx, points.first.dy);
+      _appendSegmentCommands(path, points);
+      path
+        ..lineTo(points.last.dx, rect.bottom)
+        ..close();
+      paths.add(path);
+      segment = <ChartPointModel>[];
+    }
+
     for (final item in data) {
       if (item.dataType == ChartPointDataType.gap) {
-        currentPath = null;
-        previousItem = null;
-        continue;
-      }
-
-      final point = LineChartMath.pointToOffset(
-        chartModel,
-        size,
-        item.x,
-        item.y,
-      );
-      if (currentPath == null || previousItem == null) {
-        currentPath = Path()..moveTo(point.dx, point.dy);
-        paths.add(currentPath);
+        flushSegment();
       } else {
-        final previousPoint = LineChartMath.pointToOffset(
-          chartModel,
-          size,
-          previousItem.x,
-          previousItem.y,
-        );
-        switch (chartModel.lineModel.dataLineStyle.kind) {
-          case DataLineKind.straight:
-            currentPath.lineTo(point.dx, point.dy);
-          case DataLineKind.bezier:
-            const tension = 0.5;
-            final deltaX = point.dx - previousPoint.dx;
-            currentPath.cubicTo(
-              previousPoint.dx + deltaX * tension,
-              previousPoint.dy,
-              point.dx - deltaX * tension,
-              point.dy,
-              point.dx,
-              point.dy,
-            );
-        }
+        segment.add(item);
       }
-      previousItem = item;
     }
+    flushSegment();
     return paths;
   }
 
+  void _appendSegmentCommands(Path path, List<Offset> points) {
+    final style = chartModel.lineModel.dataLineStyle;
+    switch (style.kind) {
+      case DataLineKind.straight:
+        for (final point in points.skip(1)) {
+          path.lineTo(point.dx, point.dy);
+        }
+      case DataLineKind.bezier:
+        for (var index = 1; index < points.length; index += 1) {
+          final start = points[index - 1];
+          final end = points[index];
+          final dx = end.dx - start.dx;
+          _appendCurveOrLine(
+            path,
+            start: start,
+            end: end,
+            control1: Offset(start.dx + dx * 0.5, start.dy),
+            control2: Offset(end.dx - dx * 0.5, end.dy),
+          );
+        }
+      case DataLineKind.monotoneCubic:
+        final controls = _monotoneCubicControlPoints(points);
+        for (var index = 0; index < controls.length; index += 1) {
+          _appendCurveOrLine(
+            path,
+            start: points[index],
+            end: points[index + 1],
+            control1: controls[index].$1,
+            control2: controls[index].$2,
+          );
+        }
+      case DataLineKind.catmullRom:
+        final controls = _catmullRomControlPoints(points);
+        for (var index = 0; index < controls.length; index += 1) {
+          _appendCurveOrLine(
+            path,
+            start: points[index],
+            end: points[index + 1],
+            control1: controls[index].$1,
+            control2: controls[index].$2,
+          );
+        }
+    }
+  }
+
+  List<Path> _buildLinePaths(Size size, List<ChartPointModel> data) {
+    final paths = <Path>[];
+    var segment = <ChartPointModel>[];
+
+    void flushSegment() {
+      if (segment.isEmpty) {
+        return;
+      }
+      final points = segment
+          .map(
+            (item) =>
+                LineChartMath.pointToOffset(chartModel, size, item.x, item.y),
+          )
+          .toList();
+      paths.add(_buildSegmentPath(points));
+      segment = <ChartPointModel>[];
+    }
+
+    for (final item in data) {
+      if (item.dataType == ChartPointDataType.gap) {
+        flushSegment();
+        continue;
+      }
+      segment.add(item);
+    }
+    flushSegment();
+    return paths;
+  }
+
+  Path _buildSegmentPath(List<Offset> points) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    if (points.length < 2) {
+      return path;
+    }
+
+    final style = chartModel.lineModel.dataLineStyle;
+    switch (style.kind) {
+      case DataLineKind.straight:
+        for (final point in points.skip(1)) {
+          path.lineTo(point.dx, point.dy);
+        }
+      case DataLineKind.bezier:
+        for (var index = 1; index < points.length; index += 1) {
+          final start = points[index - 1];
+          final end = points[index];
+          final dx = end.dx - start.dx;
+          _appendCurveOrLine(
+            path,
+            start: start,
+            end: end,
+            control1: Offset(start.dx + dx * 0.5, start.dy),
+            control2: Offset(end.dx - dx * 0.5, end.dy),
+          );
+        }
+      case DataLineKind.monotoneCubic:
+        final controls = _monotoneCubicControlPoints(points);
+        for (var index = 0; index < controls.length; index += 1) {
+          _appendCurveOrLine(
+            path,
+            start: points[index],
+            end: points[index + 1],
+            control1: controls[index].$1,
+            control2: controls[index].$2,
+          );
+        }
+      case DataLineKind.catmullRom:
+        final controls = _catmullRomControlPoints(points);
+        for (var index = 0; index < controls.length; index += 1) {
+          _appendCurveOrLine(
+            path,
+            start: points[index],
+            end: points[index + 1],
+            control1: controls[index].$1,
+            control2: controls[index].$2,
+          );
+        }
+    }
+    return path;
+  }
+
+  void _appendCurveOrLine(
+    Path path, {
+    required Offset start,
+    required Offset end,
+    required Offset control1,
+    required Offset control2,
+  }) {
+    if (chartModel.bezierToLineMinDistance > 0 &&
+        (end.dx - start.dx).abs() < chartModel.bezierToLineMinDistance) {
+      path.lineTo(end.dx, end.dy);
+      return;
+    }
+    path.cubicTo(
+      control1.dx,
+      control1.dy,
+      control2.dx,
+      control2.dy,
+      end.dx,
+      end.dy,
+    );
+  }
+
+  List<(Offset, Offset)> _monotoneCubicControlPoints(List<Offset> points) {
+    if (points.length < 2) {
+      return <(Offset, Offset)>[];
+    }
+    const minimumDistance = 0.0001;
+    final intervals = <double>[];
+    final slopes = <double>[];
+    for (var index = 0; index < points.length - 1; index += 1) {
+      final dx = points[index + 1].dx - points[index].dx;
+      intervals.add(dx);
+      slopes.add(
+        dx > minimumDistance
+            ? (points[index + 1].dy - points[index].dy) / dx
+            : 0,
+      );
+    }
+    final tangents = List<double>.filled(points.length, 0);
+    tangents.first = slopes.first;
+    tangents.last = slopes.last;
+    for (var index = 1; index < tangents.length - 1; index += 1) {
+      final previousSlope = slopes[index - 1];
+      final nextSlope = slopes[index];
+      if (previousSlope * nextSlope <= 0) {
+        tangents[index] = 0;
+        continue;
+      }
+      final previousInterval = math.max(intervals[index - 1], minimumDistance);
+      final nextInterval = math.max(intervals[index], minimumDistance);
+      final firstWeight = 2 * nextInterval + previousInterval;
+      final secondWeight = nextInterval + 2 * previousInterval;
+      tangents[index] =
+          (firstWeight + secondWeight) /
+          (firstWeight / previousSlope + secondWeight / nextSlope);
+    }
+    return List<(Offset, Offset)>.generate(points.length - 1, (index) {
+      final distance = intervals[index] / 3;
+      return (
+        Offset(
+          points[index].dx + distance,
+          points[index].dy + tangents[index] * distance,
+        ),
+        Offset(
+          points[index + 1].dx - distance,
+          points[index + 1].dy - tangents[index + 1] * distance,
+        ),
+      );
+    });
+  }
+
+  List<(Offset, Offset)> _catmullRomControlPoints(List<Offset> points) {
+    if (points.length < 2) {
+      return <(Offset, Offset)>[];
+    }
+    final controls = <(Offset, Offset)>[];
+    for (var index = 0; index < points.length - 1; index += 1) {
+      final point1 = points[index];
+      final point2 = points[index + 1];
+      final point0 = index > 0
+          ? points[index - 1]
+          : Offset(2 * point1.dx - point2.dx, 2 * point1.dy - point2.dy);
+      final point3 = index + 2 < points.length
+          ? points[index + 2]
+          : Offset(2 * point2.dx - point1.dx, 2 * point2.dy - point1.dy);
+      final time0 = 0.0;
+      final time1 = time0 + _catmullRomParameterDistance(point0, point1);
+      final time2 = time1 + _catmullRomParameterDistance(point1, point2);
+      final time3 = time2 + _catmullRomParameterDistance(point2, point3);
+      final duration = time2 - time1;
+      final tangent1 = _catmullRomTangent(
+        point0,
+        point1,
+        point2,
+        time0,
+        time1,
+        time2,
+      );
+      final tangent2 = _catmullRomTangent(
+        point1,
+        point2,
+        point3,
+        time1,
+        time2,
+        time3,
+      );
+      final minimumX = math.min(point1.dx, point2.dx);
+      final maximumX = math.max(point1.dx, point2.dx);
+      controls.add((
+        Offset(
+          math.min(
+            maximumX,
+            math.max(minimumX, point1.dx + tangent1.dx * duration / 3),
+          ),
+          point1.dy + tangent1.dy * duration / 3,
+        ),
+        Offset(
+          math.min(
+            maximumX,
+            math.max(minimumX, point2.dx - tangent2.dx * duration / 3),
+          ),
+          point2.dy - tangent2.dy * duration / 3,
+        ),
+      ));
+    }
+    return controls;
+  }
+
+  Offset _catmullRomTangent(
+    Offset previous,
+    Offset current,
+    Offset next,
+    double previousTime,
+    double currentTime,
+    double nextTime,
+  ) {
+    final previousDuration = currentTime - previousTime;
+    final nextDuration = nextTime - currentTime;
+    final totalDuration = nextTime - previousTime;
+    return Offset(
+      (current.dx - previous.dx) / previousDuration -
+          (next.dx - previous.dx) / totalDuration +
+          (next.dx - current.dx) / nextDuration,
+      (current.dy - previous.dy) / previousDuration -
+          (next.dy - previous.dy) / totalDuration +
+          (next.dy - current.dy) / nextDuration,
+    );
+  }
+
+  double _catmullRomParameterDistance(Offset start, Offset end) {
+    return math.max(math.sqrt((end - start).distance), 0.0001);
+  }
+
   void _drawEmptyArea(Canvas canvas, Size size) {
+    if (chartModel.gapStyle.kind != GapKind.distance) {
+      return;
+    }
     final rect = LineChartMath.chartRect(chartModel, size);
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -305,7 +645,9 @@ class LineChartPainter extends CustomPainter {
     if (chartModel.bottomAxisStepType.kind == AxisStepKind.dateAdapt &&
         chartModel.bottomAxisLabelStyle.placement ==
             AxisLabelPlacement.bottom) {
-      final ticks = LineChartMath.getDateAdaptStamps(chartModel, size);
+      final ticks =
+          dateAdaptStampsFormatter?.call(chartModel.minX, chartModel.maxX) ??
+          LineChartMath.getDateAdaptStamps(chartModel, size);
       for (final stamp in ticks.stamps) {
         final x = LineChartMath.pointToOffset(chartModel, size, stamp, 0).dx;
         final y =
@@ -368,28 +710,68 @@ class LineChartPainter extends CustomPainter {
         _drawGraduation(canvas, Offset(rect.right, y), false);
       }
     }
+
+    final bottomStyle = chartModel.bottomAxisLabelStyle;
+    if (bottomStyle.placement == AxisLabelPlacement.bottom &&
+        chartModel.bottomAxisStepType.kind != AxisStepKind.dateAdapt) {
+      final stepType = chartModel.bottomAxisStepType;
+      final steps = stepType.kind == AxisStepKind.separateCountWithAllData
+          ? LineChartMath.generateBottomAxisStepsWithAllData(
+              chartModel,
+              stepType.count,
+            )
+          : LineChartMath.generateAxisSteps(
+              min: chartModel.minX,
+              max: chartModel.maxX,
+              type: stepType,
+            );
+      for (final value in steps) {
+        final x = LineChartMath.pointToOffset(chartModel, size, value, 0).dx;
+        final y = size.height - inset.bottom + bottomStyle.offset;
+        final text =
+            axisGraduationTextFormatter?.call(
+              AxisLabelPlacement.bottom,
+              value,
+            ) ??
+            TextSpan(text: value.toStringAsFixed(1));
+        _drawText(
+          canvas,
+          text,
+          Offset(x, y),
+          _TextAnchor.centerXMinY,
+          bottomStyle.textStyle,
+        );
+        _drawGraduation(canvas, Offset(x, rect.bottom), true);
+      }
+    }
   }
 
   void _drawGraduation(Canvas canvas, Offset origin, bool bottomAxis) {
-    if (chartModel.graduationType.kind != GraduationKind.line) {
+    final style = bottomAxis
+        ? chartModel.bottomGraduationType
+        : chartModel.rightGraduationType;
+    if (style.kind == GraduationKind.none) {
       return;
     }
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = chartModel.graduationType.width
-      ..color = chartModel.graduationType.color;
+      ..strokeWidth = style.width
+      ..color = style.color;
+    final rect = LineChartMath.chartRect(chartModel, _lastPaintSize);
+    final length =
+        style.length ??
+        (bottomAxis ? rect.bottom - rect.top : rect.right - rect.left);
+    final end = bottomAxis
+        ? Offset(origin.dx, rect.bottom - length)
+        : Offset(rect.right - length, origin.dy);
+    if (style.kind == GraduationKind.dashLine && style.dashPattern.isNotEmpty) {
+      _drawDashedLine(canvas, origin, end, paint, style.dashPattern);
+      return;
+    }
     if (bottomAxis) {
-      canvas.drawLine(
-        origin,
-        origin.translate(0, -chartModel.graduationType.length),
-        paint,
-      );
+      canvas.drawLine(origin, end, paint);
     } else {
-      canvas.drawLine(
-        origin,
-        origin.translate(-chartModel.graduationType.length, 0),
-        paint,
-      );
+      canvas.drawLine(origin, end, paint);
     }
   }
 

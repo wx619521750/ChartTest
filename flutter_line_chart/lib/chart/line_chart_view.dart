@@ -34,6 +34,12 @@ typedef ChartAxisGraduationTextFormatter =
     );
 typedef ChartBottomAxisMaxMinTextFormatter =
     TextSpan Function(FlutterLineChartViewState chartView, double x);
+typedef ChartDateAdaptStampsFormatter =
+    DateAdaptStampsModel? Function(
+      FlutterLineChartViewState chartView,
+      double minX,
+      double maxX,
+    );
 
 class FlutterLineChartView extends StatefulWidget {
   const FlutterLineChartView({
@@ -57,6 +63,7 @@ class FlutterLineChartView extends StatefulWidget {
     this.axisGraduationTextFormatter,
     this.bottomAxisMaxMinFormatter,
     this.bottomAxisMaxMinTextFormatter,
+    this.dateAdaptStampsFormatter,
   });
 
   final ChartModel model;
@@ -78,6 +85,7 @@ class FlutterLineChartView extends StatefulWidget {
   final ChartAxisGraduationTextFormatter? axisGraduationTextFormatter;
   final BottomAxisMaxMinFormatter? bottomAxisMaxMinFormatter;
   final ChartBottomAxisMaxMinTextFormatter? bottomAxisMaxMinTextFormatter;
+  final ChartDateAdaptStampsFormatter? dateAdaptStampsFormatter;
 
   @override
   FlutterLineChartViewState createState() => FlutterLineChartViewState();
@@ -172,15 +180,21 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   void _dealModels({bool notifyYRange = true}) {
     final visible = LineChartMath.visibleData(_chartModel);
     LineChartMath.updateYRange(_chartModel, visible);
-    _chartModel.lineModel.emptyAreas = LineChartMath.filterPointsByXDistance(
-      visible,
-    );
+    _chartModel.lineModel.emptyAreas = switch (_chartModel.gapStyle.kind) {
+      GapKind.none => <HorizontalEmptyAreaModel>[],
+      GapKind.distance => LineChartMath.filterPointsByXDistance(
+        visible,
+        threshold: _chartModel.gapStyle.distance,
+      ),
+    };
     _chartModel.lineModel.pointsShouldDraw = LineChartMath.resampleLTTB(
       data: visible,
       threshold: 200,
       selected: _chartModel.tappedItem,
     );
-    _addGapModels();
+    if (_chartModel.gapStyle.kind == GapKind.distance) {
+      _addGapModels();
+    }
     if (notifyYRange) {
       _notifyYRangeChanged();
     }
@@ -202,6 +216,9 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   }
 
   void _applyDateMode(DateMode mode) {
+    if (mode == DateMode.none) {
+      return;
+    }
     _chartModel.minX = _chartModel.maxX - mode.duration.inSeconds.toDouble();
   }
 
@@ -388,10 +405,11 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
         _tempMinX;
     var newMinX = locationX - (locationX - _tempMinX) * (1 / details.scale);
     var newMaxX = locationX + (_tempMaxX - locationX) * (1 / details.scale);
-    if (newMaxX - newMinX < 3600) {
+    if (newMaxX - newMinX < _chartModel.minimumXRange) {
       final center = (_chartModel.maxX + _chartModel.minX) * 0.5;
-      newMinX = center - 1800;
-      newMaxX = center + 1800;
+      final halfRange = _chartModel.minimumXRange * 0.5;
+      newMinX = center - halfRange;
+      newMaxX = center + halfRange;
     }
     _changeXRange(min: newMinX, max: newMaxX, isUserInteraction: true);
   }
@@ -702,6 +720,8 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
                     axisGraduationTextFormatter: _axisGraduationTextFormatter,
                     bottomAxisMaxMinTextFormatter:
                         _bottomAxisMaxMinTextFormatter,
+                    dateAdaptStampsFormatter: (minX, maxX) =>
+                        widget.dateAdaptStampsFormatter?.call(this, minX, maxX),
                   ),
                 ),
               ),

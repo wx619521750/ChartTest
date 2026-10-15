@@ -50,11 +50,13 @@ enum XSChartType {
   }
 }
 
-enum DateMode { hour, day, week, month, year }
+enum DateMode { none, hour, day, week, month, year }
 
 extension DateModeDuration on DateMode {
   Duration get duration {
     switch (this) {
+      case DateMode.none:
+        return Duration.zero;
       case DateMode.hour:
         return const Duration(hours: 1);
       case DateMode.day:
@@ -70,6 +72,8 @@ extension DateModeDuration on DateMode {
 
   String get label {
     switch (this) {
+      case DateMode.none:
+        return 'None';
       case DateMode.hour:
         return 'Hour';
       case DateMode.day:
@@ -86,7 +90,7 @@ extension DateModeDuration on DateMode {
 
 enum ChartPointDataType { data, gap }
 
-enum DataLineKind { straight, bezier }
+enum DataLineKind { straight, bezier, monotoneCubic, catmullRom }
 
 class DataLineStyle {
   const DataLineStyle({
@@ -100,6 +104,12 @@ class DataLineStyle {
 
   const DataLineStyle.bezier({required this.width, required this.color})
     : kind = DataLineKind.bezier;
+
+  const DataLineStyle.monotoneCubic({required this.width, required this.color})
+    : kind = DataLineKind.monotoneCubic;
+
+  const DataLineStyle.catmullRom({required this.width, required this.color})
+    : kind = DataLineKind.catmullRom;
 
   final DataLineKind kind;
   final double width;
@@ -226,7 +236,13 @@ class AxisLabelStyle {
   );
 }
 
-enum AxisStepKind { dateAdapt, distance, separateCount, none }
+enum AxisStepKind {
+  dateAdapt,
+  distance,
+  separateCount,
+  separateCountWithAllData,
+  none,
+}
 
 class AxisStepType {
   const AxisStepType._({
@@ -243,6 +259,9 @@ class AxisStepType {
 
   const AxisStepType.separateCount({required int count})
     : this._(kind: AxisStepKind.separateCount, count: count);
+
+  const AxisStepType.separateCountWithAllData({required int count})
+    : this._(kind: AxisStepKind.separateCountWithAllData, count: count);
 
   const AxisStepType.none() : this._(kind: AxisStepKind.none);
 
@@ -301,18 +320,19 @@ class XRangeType {
   final double distanceByNow;
 }
 
-enum GraduationKind { line, none }
+enum GraduationKind { line, dashLine, none }
 
 class GraduationType {
   const GraduationType._({
     required this.kind,
-    this.length = 0,
+    this.length,
     this.width = 0,
     this.color = Colors.transparent,
+    this.dashPattern = const <double>[],
   });
 
   const GraduationType.line({
-    required double length,
+    double? length,
     required double width,
     required Color color,
   }) : this._(
@@ -322,12 +342,40 @@ class GraduationType {
          color: color,
        );
 
+  const GraduationType.dashLine({
+    double? length,
+    required double width,
+    required Color color,
+    required List<double> lengths,
+  }) : this._(
+         kind: GraduationKind.dashLine,
+         length: length,
+         width: width,
+         color: color,
+         dashPattern: lengths,
+       );
+
   const GraduationType.none() : this._(kind: GraduationKind.none);
 
   final GraduationKind kind;
-  final double length;
+  final double? length;
   final double width;
   final Color color;
+  final List<double> dashPattern;
+}
+
+enum GapKind { none, distance }
+
+class GapStyle {
+  const GapStyle._({required this.kind, this.distance = 0});
+
+  const GapStyle.none() : this._(kind: GapKind.none);
+
+  const GapStyle.distance(double distance)
+    : this._(kind: GapKind.distance, distance: distance);
+
+  final GapKind kind;
+  final double distance;
 }
 
 class HorizontalEmptyAreaModel {
@@ -346,12 +394,18 @@ class VerticalColorRange {
   const VerticalColorRange({
     required this.top,
     required this.bottom,
-    required this.color,
-  });
+    Color? color,
+    Color? topColor,
+    Color? bottomColor,
+  }) : topColor = topColor ?? color ?? Colors.transparent,
+       bottomColor = bottomColor ?? color ?? Colors.transparent;
 
   final double top;
   final double bottom;
-  final Color color;
+  final Color topColor;
+  final Color bottomColor;
+
+  Color get color => topColor;
 }
 
 class HorizontalLine {
@@ -403,6 +457,7 @@ class ChartPointModel {
 class ChartLineModel {
   ChartLineModel({
     DataLineStyle? dataLineStyle,
+    this.dataLineShadow,
     List<ChartPointModel>? points,
     List<ChartPointModel>? pointsShouldDraw,
     List<HorizontalEmptyAreaModel>? emptyAreas,
@@ -414,12 +469,14 @@ class ChartLineModel {
        emptyAreas = emptyAreas ?? <HorizontalEmptyAreaModel>[];
 
   DataLineStyle dataLineStyle;
+  DataLineShadow? dataLineShadow;
   List<ChartPointModel> points;
   List<ChartPointModel> pointsShouldDraw;
   List<HorizontalEmptyAreaModel> emptyAreas;
 
   ChartLineModel copy() => ChartLineModel(
     dataLineStyle: dataLineStyle,
+    dataLineShadow: dataLineShadow,
     points: points.map((point) => point.copy()).toList(),
     pointsShouldDraw: pointsShouldDraw.map((point) => point.copy()).toList(),
     emptyAreas: emptyAreas
@@ -432,6 +489,18 @@ class ChartLineModel {
         )
         .toList(),
   );
+}
+
+class DataLineShadow {
+  const DataLineShadow({
+    required this.color,
+    this.offset = Offset.zero,
+    this.blur = 0,
+  });
+
+  final Color color;
+  final Offset offset;
+  final double blur;
 }
 
 class MaxMinModel {
@@ -453,6 +522,13 @@ class XYTextModel {
 
   final TextSpan xText;
   final TextSpan yText;
+}
+
+class DateAdaptStampsModel {
+  const DateAdaptStampsModel({required this.stamps, required this.format});
+
+  final List<double> stamps;
+  final String format;
 }
 
 class ChartPalette {
@@ -528,6 +604,10 @@ class ChartModel {
     List<HorizontalLine>? horizontalLines,
     List<VerticalLine>? verticalLines,
     List<VerticalColorRange>? verticalColorRanges,
+    this.verticalBackgroundColorRanges,
+    this.gapStyle = const GapStyle.none(),
+    this.bezierToLineMinDistance = 2,
+    this.minimumXRange = 3600,
     this.dateMode = DateMode.day,
     this.minX = 0,
     this.maxX = 0,
@@ -538,10 +618,18 @@ class ChartModel {
     this.xRangeType = const XRangeType.unlimited(),
     this.horizontalAxisFullFrame = true,
     this.verticalAxisFullFrame = false,
-    this.graduationType = const GraduationType.none(),
+    GraduationType? graduationType,
+    GraduationType? bottomGraduationType,
+    GraduationType? rightGraduationType,
     this.enableDeceleration = true,
     this.chartType = XSChartType.radon,
   }) : lineModel = lineModel ?? ChartLineModel(),
+       _bottomGraduationType =
+           bottomGraduationType ??
+           graduationType ??
+           const GraduationType.none(),
+       _rightGraduationType =
+           rightGraduationType ?? graduationType ?? const GraduationType.none(),
        horizontalLines =
            horizontalLines ??
            const <HorizontalLine>[
@@ -624,6 +712,10 @@ class ChartModel {
   List<HorizontalLine> horizontalLines;
   List<VerticalLine> verticalLines;
   List<VerticalColorRange> verticalColorRanges;
+  List<VerticalColorRange>? verticalBackgroundColorRanges;
+  GapStyle gapStyle;
+  double bezierToLineMinDistance;
+  double minimumXRange;
   DateMode dateMode;
   double minX;
   double maxX;
@@ -634,9 +726,31 @@ class ChartModel {
   XRangeType xRangeType;
   bool horizontalAxisFullFrame;
   bool verticalAxisFullFrame;
-  GraduationType graduationType;
   bool enableDeceleration;
   XSChartType chartType;
+
+  GraduationType _bottomGraduationType;
+  GraduationType _rightGraduationType;
+
+  GraduationType get bottomGraduationType => _bottomGraduationType;
+
+  set bottomGraduationType(GraduationType value) {
+    _bottomGraduationType = value;
+  }
+
+  GraduationType get rightGraduationType => _rightGraduationType;
+
+  set rightGraduationType(GraduationType value) {
+    _rightGraduationType = value;
+  }
+
+  /// Backwards-compatible alias for the previous single graduation setting.
+  GraduationType get graduationType => _bottomGraduationType;
+
+  set graduationType(GraduationType value) {
+    _bottomGraduationType = value;
+    _rightGraduationType = value;
+  }
 
   ChartModel copy() => ChartModel(
     lineModel: lineModel.copy(),
@@ -661,6 +775,12 @@ class ChartModel {
     horizontalLines: List<HorizontalLine>.of(horizontalLines),
     verticalLines: List<VerticalLine>.of(verticalLines),
     verticalColorRanges: List<VerticalColorRange>.of(verticalColorRanges),
+    verticalBackgroundColorRanges: verticalBackgroundColorRanges == null
+        ? null
+        : List<VerticalColorRange>.of(verticalBackgroundColorRanges!),
+    gapStyle: gapStyle,
+    bezierToLineMinDistance: bezierToLineMinDistance,
+    minimumXRange: minimumXRange,
     dateMode: dateMode,
     minX: minX,
     maxX: maxX,
@@ -671,7 +791,8 @@ class ChartModel {
     xRangeType: xRangeType,
     horizontalAxisFullFrame: horizontalAxisFullFrame,
     verticalAxisFullFrame: verticalAxisFullFrame,
-    graduationType: graduationType,
+    bottomGraduationType: bottomGraduationType,
+    rightGraduationType: rightGraduationType,
     enableDeceleration: enableDeceleration,
     chartType: chartType,
   );
@@ -691,11 +812,7 @@ class ChartModel {
     );
     enableDeceleration = true;
     topAxisLineStyle = const ChartLineStyle.none();
-    rightAxisLineStyle = const ChartLineStyle.dashLine(
-      width: 1,
-      color: ChartPalette.axisLineColor,
-      lengths: [5, 5],
-    );
+    rightAxisLineStyle = const ChartLineStyle.none();
     leftAxisLineStyle = const ChartLineStyle.none();
     bottomAxisLineStyle = const ChartLineStyle.dashLine(
       width: 1,
@@ -711,7 +828,7 @@ class ChartModel {
       color: ChartPalette.rightLabelColor,
       fontSize: 11,
     );
-    rightAxisStepType = const AxisStepType.distance(distance: 30, align: 30);
+    rightAxisStepType = const AxisStepType.none();
     rightAxisMaxMinStyle = const AxisLabelStyle.none();
     rightAxisDataMaxMinStyle = const AxisLabelStyle.left(
       color: ChartPalette.rightLabelColor,
@@ -749,7 +866,7 @@ class ChartModel {
     ];
     verticalColorRanges = <VerticalColorRange>[
       VerticalColorRange(
-        top: 1000,
+        top: 100000000,
         bottom: maxThreshold,
         color: ChartPalette.lineColorRed,
       ),
@@ -767,6 +884,8 @@ class ChartModel {
     horizontalAxisFullFrame = true;
     verticalAxisFullFrame = false;
     graduationType = const GraduationType.none();
+    gapStyle = const GapStyle.distance(7200);
+    minimumXRange = 3600;
     xRangeType = const XRangeType.distanceByNow(3600 * 24 * 365);
   }
 
@@ -817,6 +936,8 @@ class ChartModel {
     horizontalAxisFullFrame = true;
     verticalAxisFullFrame = false;
     graduationType = const GraduationType.none();
+    gapStyle = const GapStyle.distance(7200);
+    minimumXRange = 3600;
     xRangeType = const XRangeType.distanceByNow(3600 * 24 * 365);
   }
 
@@ -867,6 +988,8 @@ class ChartModel {
     horizontalAxisFullFrame = true;
     verticalAxisFullFrame = false;
     graduationType = const GraduationType.none();
+    gapStyle = const GapStyle.distance(7200);
+    minimumXRange = 3600;
     xRangeType = const XRangeType.distanceByNow(3600 * 24 * 365);
   }
 }
