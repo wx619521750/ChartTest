@@ -386,7 +386,7 @@ extension ChartModel{
 
     private func setupRadonStyle(minThreshold: Double, maxThreshold: Double) {
 
-        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 0)
+        chartContentInsert = .init(top: 8, left: 40, bottom: 40, right: 40)
         yRangeType = .selfAdaptVisibleWithMinMax(min: minThreshold, max: maxThreshold)
         lineModel.datalineStyle = .bezier(width: 3, color: .black)
         enableDeceleration = true
@@ -403,7 +403,7 @@ extension ChartModel{
 
         horizontalLines = [
             .init(y: maxThreshold, lineStyle: .dashLine(width: 1, color: .lineColorRed, lengths: [5, 5]),
-                  lableStyle: .left(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
+                  lableStyle: .right(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
             .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]

@@ -718,7 +718,6 @@ class LineChartDrawer {
                 UIGraphicsPopContext()
             case .right(let color, let font, let offset):
                 point.x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
-                let point = ptPointFromPoint(point: .init(x: 0, y: horizontalLine.y))
                 if point.y<chartModel.chartContentInsert.top||point.y>layer.bounds.height-chartModel.chartContentInsert.bottom{
                     continue
                 }
