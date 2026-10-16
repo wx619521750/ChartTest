@@ -16,6 +16,8 @@ typedef HorizontalLineTextFormatter = TextSpan Function(double y);
 typedef TappedItemTextFormatter = XYTextModel Function(ChartPointModel item);
 typedef RightAxisDataMaxMinTextFormatter =
     MaxMinTextModel Function(double min, double max);
+typedef RightAxisDataAverageFormatter = String Function(double value);
+typedef RightAxisDataAverageTextFormatter = TextSpan Function(double value);
 typedef AxisGraduationTextFormatter =
     TextSpan? Function(AxisLabelPlacement direction, double value);
 typedef BottomAxisMaxMinTextFormatter = TextSpan Function(double x);
@@ -45,6 +47,8 @@ class LineChartPainter extends CustomPainter {
     this.horizontalLineTextFormatter,
     this.tappedItemTextFormatter,
     this.rightAxisDataMaxMinTextFormatter,
+    this.rightAxisDataAverageFormatter,
+    this.rightAxisDataAverageTextFormatter,
     this.axisGraduationTextFormatter,
     this.bottomAxisMaxMinTextFormatter,
     this.dateAdaptStampsFormatter,
@@ -59,6 +63,8 @@ class LineChartPainter extends CustomPainter {
   final HorizontalLineTextFormatter? horizontalLineTextFormatter;
   final TappedItemTextFormatter? tappedItemTextFormatter;
   final RightAxisDataMaxMinTextFormatter? rightAxisDataMaxMinTextFormatter;
+  final RightAxisDataAverageFormatter? rightAxisDataAverageFormatter;
+  final RightAxisDataAverageTextFormatter? rightAxisDataAverageTextFormatter;
   final AxisGraduationTextFormatter? axisGraduationTextFormatter;
   final BottomAxisMaxMinTextFormatter? bottomAxisMaxMinTextFormatter;
   final DateAdaptStampsFormatter? dateAdaptStampsFormatter;
@@ -76,6 +82,7 @@ class LineChartPainter extends CustomPainter {
     _drawAxisLabels(canvas, size);
     _drawAxisMaxMinLabels(canvas, size);
     _drawAxisDataMaxMinLabels(canvas, size);
+    _drawAxisDataAverageLabel(canvas, size);
     _drawHVLines(canvas, size);
     _drawSelectedItem(canvas, size);
   }
@@ -915,6 +922,64 @@ class LineChartPainter extends CustomPainter {
       Offset(rect.left, maxPoint.dy),
       Offset(maxLineEnd, maxPoint.dy),
       dashPaint,
+      const [6, 3],
+    );
+  }
+
+  void _drawAxisDataAverageLabel(Canvas canvas, Size size) {
+    final labelStyle = chartModel.rightAxisDataAverageStyle;
+    if (!labelStyle.isVisible) {
+      return;
+    }
+    final visibleData = chartModel.lineModel.pointsShouldDraw
+        .where(
+          (point) =>
+              point.x >= chartModel.minX &&
+              point.x <= chartModel.maxX &&
+              point.dataType == ChartPointDataType.data,
+        )
+        .toList();
+    if (visibleData.isEmpty) {
+      return;
+    }
+    final average =
+        visibleData.map((point) => point.y).reduce((a, b) => a + b) /
+        visibleData.length;
+    final rect = LineChartMath.chartRect(chartModel, size);
+    final point = LineChartMath.pointToOffset(chartModel, size, 0, average);
+    final x =
+        size.width - chartModel.chartContentInset.right + labelStyle.offset;
+    final anchor = labelStyle.placement == AxisLabelPlacement.right
+        ? _TextAnchor.minXCenterY
+        : _TextAnchor.maxXCenterY;
+    final text =
+        rightAxisDataAverageTextFormatter?.call(average) ??
+        TextSpan(
+          text:
+              rightAxisDataAverageFormatter?.call(average) ??
+              average.toStringAsFixed(1),
+        );
+    final textSize = _drawText(
+      canvas,
+      text,
+      Offset(x, point.dy),
+      anchor,
+      labelStyle.textStyle,
+      backgroundColor: Colors.white.withValues(alpha: 0.8),
+      cornerRadius: 0,
+    );
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0xffc4c4c4).withValues(alpha: 0.5);
+    final lineEnd = anchor == _TextAnchor.maxXCenterY
+        ? x - textSize.width
+        : rect.right;
+    _drawDashedLine(
+      canvas,
+      Offset(rect.left, point.dy),
+      Offset(lineEnd, point.dy),
+      paint,
       const [6, 3],
     );
   }

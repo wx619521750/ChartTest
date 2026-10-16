@@ -601,6 +601,7 @@ class ChartModel {
       color: Colors.black,
       fontSize: 12,
     ),
+    this.rightAxisDataAverageStyle = const AxisLabelStyle.none(),
     List<HorizontalLine>? horizontalLines,
     List<VerticalLine>? verticalLines,
     List<VerticalColorRange>? verticalColorRanges,
@@ -709,6 +710,7 @@ class ChartModel {
   AxisLabelStyle leftAxisMaxMinStyle;
   AxisLabelStyle rightAxisMaxMinStyle;
   AxisLabelStyle rightAxisDataMaxMinStyle;
+  AxisLabelStyle rightAxisDataAverageStyle;
   List<HorizontalLine> horizontalLines;
   List<VerticalLine> verticalLines;
   List<VerticalColorRange> verticalColorRanges;
@@ -772,6 +774,7 @@ class ChartModel {
     leftAxisMaxMinStyle: leftAxisMaxMinStyle,
     rightAxisMaxMinStyle: rightAxisMaxMinStyle,
     rightAxisDataMaxMinStyle: rightAxisDataMaxMinStyle,
+    rightAxisDataAverageStyle: rightAxisDataAverageStyle,
     horizontalLines: List<HorizontalLine>.of(horizontalLines),
     verticalLines: List<VerticalLine>.of(verticalLines),
     verticalColorRanges: List<VerticalColorRange>.of(verticalColorRanges),
@@ -831,6 +834,10 @@ class ChartModel {
     rightAxisStepType = const AxisStepType.none();
     rightAxisMaxMinStyle = const AxisLabelStyle.none();
     rightAxisDataMaxMinStyle = const AxisLabelStyle.left(
+      color: ChartPalette.rightLabelColor,
+      fontSize: 11,
+    );
+    rightAxisDataAverageStyle = const AxisLabelStyle.right(
       color: ChartPalette.rightLabelColor,
       fontSize: 11,
     );

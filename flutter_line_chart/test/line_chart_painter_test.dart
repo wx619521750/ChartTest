@@ -187,4 +187,75 @@ void main() {
 
     expect(redPixels, greaterThan(20));
   });
+
+  test('visible data average uses rich formatter before plain formatter', () {
+    final model = ChartModel()
+      ..chartContentInset = const EdgeInsets.fromLTRB(0, 0, 40, 0)
+      ..minX = 0
+      ..maxX = 1
+      ..minY = 0
+      ..maxY = 100
+      ..topAxisLineStyle = const ChartLineStyle.none()
+      ..bottomAxisLineStyle = const ChartLineStyle.none()
+      ..leftAxisLineStyle = const ChartLineStyle.none()
+      ..rightAxisLineStyle = const ChartLineStyle.none()
+      ..topAxisLabelStyle = const AxisLabelStyle.none()
+      ..bottomAxisLabelStyle = const AxisLabelStyle.none()
+      ..leftAxisLabelStyle = const AxisLabelStyle.none()
+      ..rightAxisLabelStyle = const AxisLabelStyle.none()
+      ..topAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..bottomAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..leftAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisDataMaxMinStyle = const AxisLabelStyle.none()
+      ..rightAxisDataAverageStyle = const AxisLabelStyle.right(
+        color: Colors.black,
+        fontSize: 11,
+      )
+      ..horizontalLines = <HorizontalLine>[]
+      ..verticalColorRanges = <VerticalColorRange>[];
+    model.lineModel.pointsShouldDraw = <ChartPointModel>[
+      ChartPointModel(x: -1, y: 90),
+      ChartPointModel(x: 0.2, y: 20),
+      ChartPointModel(x: 0.5, y: 80, dataType: ChartPointDataType.gap),
+      ChartPointModel(x: 0.8, y: 40),
+      ChartPointModel(x: 2, y: 100),
+    ];
+
+    double? formattedAverage;
+    var plainFormatterCalled = false;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    LineChartPainter(
+      chartModel: model,
+      rightAxisDataAverageFormatter: (_) {
+        plainFormatterCalled = true;
+        return 'plain';
+      },
+      rightAxisDataAverageTextFormatter: (value) {
+        formattedAverage = value;
+        return const TextSpan(text: 'rich');
+      },
+    ).paint(canvas, const Size(120, 100));
+    recorder.endRecording().dispose();
+
+    expect(formattedAverage, 30);
+    expect(plainFormatterCalled, isFalse);
+  });
+
+  test('chart model copy keeps visible data average style', () {
+    final model = ChartModel()
+      ..rightAxisDataAverageStyle = const AxisLabelStyle.right(
+        color: Colors.red,
+        fontSize: 13,
+        offset: 2,
+      );
+
+    final copy = model.copy();
+
+    expect(copy.rightAxisDataAverageStyle.placement, AxisLabelPlacement.right);
+    expect(copy.rightAxisDataAverageStyle.color, Colors.red);
+    expect(copy.rightAxisDataAverageStyle.fontSize, 13);
+    expect(copy.rightAxisDataAverageStyle.offset, 2);
+  });
 }

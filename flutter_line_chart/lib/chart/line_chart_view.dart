@@ -26,6 +26,8 @@ typedef ChartRightAxisDataMaxMinTextFormatter =
       double min,
       double max,
     );
+typedef ChartRightAxisDataAverageTextFormatter =
+    TextSpan Function(FlutterLineChartViewState chartView, double value);
 typedef ChartAxisGraduationTextFormatter =
     TextSpan? Function(
       FlutterLineChartViewState chartView,
@@ -59,6 +61,8 @@ class FlutterLineChartView extends StatefulWidget {
     this.tappedItemTextFormatter,
     this.rightAxisDataMaxMinFormatter,
     this.rightAxisDataMaxMinTextFormatter,
+    this.rightAxisDataAverageFormatter,
+    this.rightAxisDataAverageTextFormatter,
     this.axisGraduationFormatter,
     this.axisGraduationTextFormatter,
     this.bottomAxisMaxMinFormatter,
@@ -81,6 +85,9 @@ class FlutterLineChartView extends StatefulWidget {
   final ChartTappedItemTextFormatter? tappedItemTextFormatter;
   final RightAxisDataMaxMinFormatter? rightAxisDataMaxMinFormatter;
   final ChartRightAxisDataMaxMinTextFormatter? rightAxisDataMaxMinTextFormatter;
+  final RightAxisDataAverageFormatter? rightAxisDataAverageFormatter;
+  final ChartRightAxisDataAverageTextFormatter?
+  rightAxisDataAverageTextFormatter;
   final AxisGraduationFormatter? axisGraduationFormatter;
   final ChartAxisGraduationTextFormatter? axisGraduationTextFormatter;
   final BottomAxisMaxMinFormatter? bottomAxisMaxMinFormatter;
@@ -665,6 +672,15 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
     );
   }
 
+  TextSpan _rightAxisDataAverageTextFormatter(double value) {
+    return widget.rightAxisDataAverageTextFormatter?.call(this, value) ??
+        TextSpan(
+          text:
+              widget.rightAxisDataAverageFormatter?.call(value) ??
+              value.toStringAsFixed(1),
+        );
+  }
+
   TextSpan? _axisGraduationTextFormatter(
     AxisLabelPlacement direction,
     double value,
@@ -717,6 +733,8 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
                     tappedItemTextFormatter: _tappedItemTextFormatter,
                     rightAxisDataMaxMinTextFormatter:
                         _rightAxisDataMaxMinTextFormatter,
+                    rightAxisDataAverageTextFormatter:
+                        _rightAxisDataAverageTextFormatter,
                     axisGraduationTextFormatter: _axisGraduationTextFormatter,
                     bottomAxisMaxMinTextFormatter:
                         _bottomAxisMaxMinTextFormatter,
