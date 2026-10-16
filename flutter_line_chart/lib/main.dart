@@ -271,6 +271,7 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
             onXRangeChangedWithChart: _handleXRangeChanged,
             onXRangeChangedByUserInteraction: _handleUserXRangeChanged,
             onYRangeChangedWithChart: _handleYRangeChanged,
+            rightAxisDataAverageTextFormatter: _formatRightAxisDataAverage,
             // horizontalLineTextFormatter: _formatHorizontalLine,
             // tappedItemTextFormatter: _formatTappedItem,
             // rightAxisDataMaxMinTextFormatter: _formatRightAxisDataRange,
@@ -285,6 +286,7 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
   Widget _buildDateModeControl() {
     return SegmentedButton<DateMode>(
       segments: const [
+        ButtonSegment(value: DateMode.hour, label: Text('Hour')),
         ButtonSegment(value: DateMode.day, label: Text('Day')),
         ButtonSegment(value: DateMode.week, label: Text('Week')),
         ButtonSegment(value: DateMode.month, label: Text('Month')),
@@ -428,6 +430,16 @@ class _ChartDemoPageState extends State<ChartDemoPage> {
     return MaxMinTextModel(
       max: TextSpan(text: 'Max:${max.floor()}', style: _demoTextStyle),
       min: TextSpan(text: 'Min:${min.floor()}', style: _demoTextStyle),
+    );
+  }
+
+  TextSpan _formatRightAxisDataAverage(
+    FlutterLineChartViewState chartView,
+    double value,
+  ) {
+    return TextSpan(
+      text: '${value.toStringAsFixed(1)}AVG',
+      style: _demoTextStyle,
     );
   }
 

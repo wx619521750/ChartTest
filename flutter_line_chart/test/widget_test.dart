@@ -136,6 +136,32 @@ void main() {
     expect(model.rightAxisDataAverageStyle.placement, AxisLabelPlacement.right);
   });
 
+  testWidgets('hour range switches the chart date mode to hour', (
+    tester,
+  ) async {
+    final points = <ChartPointModel>[
+      ChartPointModel(x: 0, y: 1),
+      ChartPointModel(x: 7200, y: 2),
+    ];
+    final key = GlobalKey<FlutterLineChartViewState>();
+    final model = ChartModel.fromPoints(points: points, type: XSChartType.radon)
+      ..xRangeType = const XRangeType.limitedByData();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 360,
+          child: FlutterLineChartView(key: key, model: model),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    key.currentState!.changeXRange(min: 3600, max: 7200);
+
+    expect(key.currentState!.chartModel.dateMode, DateMode.hour);
+  });
+
   test('each chart style keeps its own chart content inset', () {
     final expectedInsets = <XSChartType, EdgeInsets>{
       XSChartType.radon: const EdgeInsets.fromLTRB(40, 8, 40, 40),

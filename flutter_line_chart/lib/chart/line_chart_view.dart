@@ -260,7 +260,9 @@ class FlutterLineChartViewState extends State<FlutterLineChartView>
   void _autoChangeDateMode() {
     final range = _chartModel.maxX - _chartModel.minX;
     final oldMode = _chartModel.dateMode;
-    if (range <= 3600 * 24) {
+    if (range <= 3600) {
+      _chartModel.dateMode = DateMode.hour;
+    } else if (range <= 3600 * 24) {
       _chartModel.dateMode = DateMode.day;
     } else if (range <= 3600 * 24 * 7) {
       _chartModel.dateMode = DateMode.week;
