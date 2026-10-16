@@ -31,6 +31,7 @@ class LineChartDrawer {
         drawAxisLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawAxisDataMaxMinLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
+        drawAxisDataAverageLable(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawHVLine(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
         drawItemCircle(layer: layer, ctx: ctx, chartModel: chartModel, data: chartModel.lineModel.pointsShouldDraw)
     }
@@ -1439,6 +1440,66 @@ class LineChartDrawer {
     
 
     
+    /// 绘制当前可视数据平均值；标签保持在平均值对应的真实 Y，不参与最大最小值避让。
+    func drawAxisDataAverageLable(layer: CALayer, ctx: CGContext, chartModel: ChartModel, data: [ChartPointModel]) {
+        let visibleData = data.filter {
+            $0.x >= chartModel.minX && $0.x <= chartModel.maxX && $0.dataType == .data
+        }
+        guard !visibleData.isEmpty else { return }
+        let average = visibleData.map(\.y).reduce(0, +) / CGFloat(visibleData.count)
+        let lineY = ptPointFromPoint(point: .init(x: 0, y: average)).y
+        let padding = UIEdgeInsets.zero
+
+        switch chartModel.rightAxisDataAvarageStyle {
+        case .left(let color, let font, let offset):
+            let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
+            let text = chartView.delegate?.lineChartViewRightAxisDataAverageFormatStr?(
+                chartView: chartView,
+                value: average,
+                color: color,
+                font: font
+            ) ?? NSAttributedString(
+                string: String(format: "%.1f", average),
+                attributes: [.foregroundColor: color, .font: font]
+            )
+            UIGraphicsPushContext(ctx)
+            let size = drawText(text, point: CGPoint(x: x, y: lineY), anchor: .maxxcentery, backgroundColor: .white.withAlphaComponent(0.8), cornerRadius: 0, padding: padding)
+            UIGraphicsPopContext()
+            ctx.saveGState()
+            ctx.setLineWidth(1)
+            ctx.setStrokeColor(UIColor(white: 0.77, alpha: 0.5).cgColor)
+            ctx.setLineDash(phase: 0, lengths: [6, 3])
+            ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: lineY))
+            ctx.addLine(to: CGPoint(x: x-size.width, y: lineY))
+            ctx.strokePath()
+            ctx.restoreGState()
+        case .right(let color, let font, let offset):
+            let x = layer.bounds.width-chartModel.chartContentInsert.right+(offset ?? 0)
+            let text = chartView.delegate?.lineChartViewRightAxisDataAverageFormatStr?(
+                chartView: chartView,
+                value: average,
+                color: color,
+                font: font
+            ) ?? NSAttributedString(
+                string: String(format: "%.1f", average),
+                attributes: [.foregroundColor: color, .font: font]
+            )
+            UIGraphicsPushContext(ctx)
+            drawText(text, point: CGPoint(x: x, y: lineY), anchor: .minxcentery, backgroundColor: .white.withAlphaComponent(0.8), cornerRadius: 0, padding: padding)
+            UIGraphicsPopContext()
+            ctx.saveGState()
+            ctx.setLineWidth(1)
+            ctx.setStrokeColor(UIColor(white: 0.77, alpha: 0.5).cgColor)
+            ctx.setLineDash(phase: 0, lengths: [6, 3])
+            ctx.move(to: CGPoint(x: chartModel.chartContentInsert.left, y: lineY))
+            ctx.addLine(to: CGPoint(x: layer.bounds.width-chartModel.chartContentInsert.right, y: lineY))
+            ctx.strokePath()
+            ctx.restoreGState()
+        default:
+            break
+        }
+    }
+
     func rightAxisDataMaxMinDrawY(visibleData:[ChartPointModel], font:UIFont,insert:UIEdgeInsets,distance:Double)->(Double,Double){
         let strSize = NSAttributedString(string: "00.00", attributes: [.font:font]).size()
         

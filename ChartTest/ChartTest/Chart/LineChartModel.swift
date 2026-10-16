@@ -55,6 +55,7 @@ import UIKit
     
     //右部数据最大最小值配置
     var rightAxisDataMaxMinStyel:AxisLabelStyle = .none
+    var rightAxisDataAvarageStyle:AxisLabelStyle = .none
 
     
     //横向线段配置
@@ -399,11 +400,13 @@ extension ChartModel{
         rightAxisLabelStyel       = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
         rightAxisMaxMinStyel      = .none
         rightAxisDataMaxMinStyel  = .left(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+        rightAxisDataAvarageStyle  = .right(color: .rightLabelColor,  font: .systemFont(ofSize: 11), offset: 0)
+
         bottomAxisMaxMinStyel     = .bottom(color: .rightLabelColor, font: .systemFont(ofSize: 11), offset: 0)
 
         horizontalLines = [
             .init(y: maxThreshold, lineStyle: .dashLine(width: 1, color: .lineColorRed, lengths: [5, 5]),
-                  lableStyle: .right(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
+                  lableStyle: .left(color: .lineColorRed, font: .systemFont(ofSize: 11), offset: 0)),
             .init(y: minThreshold, lineStyle: .dashLine(width: 1, color: .lineColorGreen,  lengths: [5, 5]),
                   lableStyle: .left(color: .lineColorGreen,  font: .systemFont(ofSize: 11), offset: 0))
         ]

@@ -342,4 +342,10 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         return DateAdaptStampsModel(stamps: stamps, format: dateFormat)
     }
     
+    func lineChartViewRightAxisDataAverageFormatStr(chartView: LineChartView, value: Double, color: UIColor, font: UIFont) -> NSAttributedString {
+        
+        let date = "\(String(String.init(format: "%.1f", value)))AVG"
+        return NSAttributedString(string: date, attributes: [.font:font, .foregroundColor:color])
+    }
+    
 }

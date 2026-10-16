@@ -20,6 +20,8 @@ import UIKit
     @objc optional func lineChartViewHLineFormatAttributeStr(chartView:LineChartView,y:Double,color:UIColor,font:UIFont)->NSAttributedString
     //回调右侧最值标签 Y 值，同时传入当前标签配置的颜色和字体
     @objc optional func lineChartViewRightAxisDataMaxMinFormatStr(chartView:LineChartView,min:Double,max:Double,color:UIColor,font:UIFont)->MaxMinAttrModel
+    //回调当前可视数据平均值，返回平均值富文本
+    @objc optional func lineChartViewRightAxisDataAverageFormatStr(chartView:LineChartView,value:Double,color:UIColor,font:UIFont)->NSAttributedString
     //回调坐标轴刻度值，同时传入对应方向标签配置的颜色和字体
     @objc optional func lineChartViewAxisGraduationFormatStr(chartView:LineChartView,direction:AxisDirection,value:Double,color:UIColor,font:UIFont)->NSAttributedString?
     //回调底部首尾时间标签 X 值，同时传入当前标签配置的颜色和字体
