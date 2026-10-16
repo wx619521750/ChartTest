@@ -148,7 +148,7 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     
     lazy var segmentView: SegmentView = {
         let view = SegmentView.init(frame: .init(x: 20, y: 800, width: UIScreen.main.bounds.width-40, height: 44))
-        view.titles = ["day","week","month","year"]
+        view.titles = ["hour","day","week","month","year"]
         view.tag = 101
 
         view.delegate = self
@@ -195,10 +195,11 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
     func segmentView(_ segmentView: SegmentView, selectedIndex: Int) {
         let mode: DateMode
         switch selectedIndex {
-        case 0: mode = .day
-        case 1: mode = .week
-        case 2: mode = .month
-        case 3: mode = .year
+        case 0: mode = .hour
+        case 1: mode = .day
+        case 2: mode = .week
+        case 3: mode = .month
+        case 4: mode = .year
         default: return
         }
         radonChartView.changeDateMode(mode: mode)
@@ -214,16 +215,16 @@ class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate
         case .hour:
             segmentView.selectIndex(index: 0, withDelegate: false)
         case .day:
-            segmentView.selectIndex(index: 0, withDelegate: false)
-
-        case .week:
             segmentView.selectIndex(index: 1, withDelegate: false)
 
-        case .month:
+        case .week:
             segmentView.selectIndex(index: 2, withDelegate: false)
 
-        case .year:
+        case .month:
             segmentView.selectIndex(index: 3, withDelegate: false)
+
+        case .year:
+            segmentView.selectIndex(index: 4, withDelegate: false)
 
         case .none:
             break

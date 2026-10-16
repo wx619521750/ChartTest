@@ -132,6 +132,8 @@ void main() {
     );
 
     expect(model.horizontalLines.map((line) => line.y), <double>[150, 75]);
+    expect(model.rightAxisDataAverageStyle.isVisible, isTrue);
+    expect(model.rightAxisDataAverageStyle.placement, AxisLabelPlacement.right);
   });
 
   test('each chart style keeps its own chart content inset', () {

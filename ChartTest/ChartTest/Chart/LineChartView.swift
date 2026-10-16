@@ -379,7 +379,7 @@ import UIKit
     private func autoChangeDateMode(){
         let range = chartModel.maxX - chartModel.minX
         if range <= 3600{
-            chartModel.dateMode = .day
+            chartModel.dateMode = .hour
         }else if range <= 3600*24{
             chartModel.dateMode = .day
         }else if range <= 3600*24*7{
