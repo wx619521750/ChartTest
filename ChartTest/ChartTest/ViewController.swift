@@ -2,351 +2,56 @@
 //  ViewController.swift
 //  ChartTest
 //
-//  Created by Carlo on 1/13/26.
+//  Created by Carlo on 10/19/26.
 //
 
 import UIKit
-
-class ViewController: UIViewController,SegmentViewDelegate,LineChartViewDelegate {
+import SnapKit
+class ViewController: UIViewController {
+    
+    var arr = ["chart","floor"]
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
-        view.backgroundColor = .lightGray
-        view.addSubview(scrollView)
-        scrollView.addSubview(radonChartView)
-        scrollView.addSubview(temperatureChartView)
-        scrollView.addSubview(humidityChartView)
-        scrollView.addSubview(segmentView)
-        scrollView.addSubview(minDatePicker)
-        scrollView.addSubview(maxDatePicker)
-        DispatchQueue.main.asyncAfter(deadline: .now()+5, execute: {
-            
-            self.scrollView.addSubview(self.binaryTimelineChartView)
-            self.initBinaryTimelineData()
-        })
-        initChartData()
-    }
-
-    func initChartData() {
-        let points = loadChartPoints()
-        radonChartView.chartModel = ChartModel(points: points, type: .radon)
-        temperatureChartView.chartModel = ChartModel(points: points, type: .temperature)
-        humidityChartView.chartModel = ChartModel(points: points, type: .humidity)
-        syncVisibleRange(
-            min: radonChartView.chartModel.minX,
-            max: radonChartView.chartModel.maxX,
-            source: radonChartView
-        )
-    }
-
-    private func initBinaryTimelineData() {
-        let startOfDay = Calendar.current.startOfDay(for: Date().dateByAddingDays(days: -1) ?? Date())
-        func timestamp(hour: Int, minute: Int) -> TimeInterval {
-            Calendar.current.date(
-                bySettingHour: hour,
-                minute: minute,
-                second: 0,
-                of: startOfDay
-            )?.timeIntervalSince1970 ?? startOfDay.timeIntervalSince1970
-        }
-
-        binaryTimelineChartView.chartModel = BinaryTimelineChartModel(points: [
-//            BinaryTimelinePointModel(x: Date().dateIgnoringTime()?.dateByAddingDays(days: -1)?.timeIntervalSince1970 ?? 0, y: 0),
-
-            BinaryTimelinePointModel(x: timestamp(hour: 0, minute: 0), y: 0),
-
-            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 3, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 4, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 5, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 6, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 7, minute: 0), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 8, minute: 0), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 8, minute: 1), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 9, minute: 0), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 13, minute: 46), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 14, minute: 46), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 15, minute: 39), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 5), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 16, minute: 25), y: 0),
-            BinaryTimelinePointModel(x: timestamp(hour: 18, minute: 40), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 23, minute: 59), y: 1),
-            BinaryTimelinePointModel(x: timestamp(hour: 23, minute: 59)+50, y: 0),
-                        BinaryTimelinePointModel(x: Date().dateByAddingDays(days: -1)?.dateIgnoringTime()?.dateByAddingDays(days: 1)?.timeIntervalSince1970 ?? 0, y: 0),
-
-
-        ])
-    }
-
-    func loadChartPoints() -> [ChartPoint] {
-        var points = [ChartPoint]()
-        if let data = loadData() {
-            for (key,value) in data{
-                for str in value{
-                    let strs = str.components(separatedBy: ",")
-                    guard strs.count >= 2 else { continue }
-                    let dateStr = key+strs[0]
-                    let x = Date.dateFromString(str: dateStr, format: "yyyyMMddHHmmss")?.timeIntervalSince1970 ?? 0
-                    let y = Double(strs[1]) ?? 0
-                    let item = ChartPoint()
-                    item.x = x
-                    item.y = y
-                    points.append(item)
-                }
-            }
-        }
-        return points
-    }
-    
-    func loadData() -> [String: [String]]? {
-        guard let url = Bundle.main.url(
-            forResource: "aaa",
-            withExtension: "json"
-        ) else {
-            print("文件不存在")
-            return nil
-        }
-
-        do {
-            let data = try Data(contentsOf: url)
-            let dict = try JSONDecoder().decode(
-                [String: [String]].self,
-                from: data
-            )
-            return dict
-        } catch {
-            print("解析失败:", error)
-            return nil
-        }
-    }
-
-    
-    private func makeChartView(y: CGFloat) -> LineChartView {
-        let view = LineChartView()
-        view.frame = .init(x: 20, y: y, width: UIScreen.main.bounds.width-40, height: 240)
         view.backgroundColor = .white
+        view.addSubview(tableview)
+        tableview.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+    }
+    
+
+    lazy var tableview: UITableView = {
+        let view = UITableView.init(frame: .zero, style: .grouped)
         view.delegate = self
-        return view
-    }
-
-    lazy var radonChartView = makeChartView(y: 20)
-    lazy var temperatureChartView = makeChartView(y: 280)
-    lazy var humidityChartView = makeChartView(y: 540)
-
-    private var chartViews: [LineChartView] {
-        [radonChartView, temperatureChartView, humidityChartView]
-    }
-    
-    
-    lazy var scrollView: UIScrollView = {
-        let view = UIScrollView()
-        view.contentSize = .init(width: UIScreen.main.bounds.width, height: 1200)
-        view.frame = .init(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-        return view
-    }()
-    
-    lazy var segmentView: SegmentView = {
-        let view = SegmentView.init(frame: .init(x: 20, y: 800, width: UIScreen.main.bounds.width-40, height: 44))
-        view.titles = ["hour","day","week","month","year"]
-        view.tag = 101
-
-        view.delegate = self
-        return view
-    }()
-    
-    lazy var minDatePicker: UIDatePicker = {
-        let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 844, width: UIScreen.main.bounds.width-40, height: 44)
-        view.datePickerMode = .dateAndTime
-        view.addTarget(self,
-                            action: #selector(dateChanged(_:)),
-                            for: .valueChanged)
-        return view
-    }()
-    lazy var maxDatePicker: UIDatePicker = {
-        let view = UIDatePicker()
-        view.frame = .init(x: 20, y: 888, width: UIScreen.main.bounds.width-40, height: 44)
-        view.datePickerMode = .dateAndTime
-        view.addTarget(self,
-                            action: #selector(dateChanged(_:)),
-                            for: .valueChanged)
+        view.dataSource = self
+        view.backgroundColor = .white
         return view
     }()
 
-    lazy var binaryTimelineChartView: BinaryTimelineChartView = {
-        let view = BinaryTimelineChartView(
-            frame: CGRect(x: 20, y: 952, width: UIScreen.main.bounds.width - 40, height: 220)
-        )
-        return view
-    }()
-    
-    @objc func dateChanged(_ sender: UIDatePicker) {
-        let selectedDate = sender.date
-        print("选择的日期: \(selectedDate)")
+}
 
-        syncVisibleRange(
-            min: minDatePicker.date.timeIntervalSince1970,
-            max: maxDatePicker.date.timeIntervalSince1970,
-            source: nil
-        )
+extension ViewController:UITableViewDelegate,UITableViewDataSource{
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return arr.count
     }
     
-    func segmentView(_ segmentView: SegmentView, selectedIndex: Int) {
-        let mode: DateMode
-        switch selectedIndex {
-        case 0: mode = .hour
-        case 1: mode = .day
-        case 2: mode = .week
-        case 3: mode = .month
-        case 4: mode = .year
-        default: return
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell.init(style: .subtitle, reuseIdentifier: "aaa")
+        cell.textLabel?.text = arr[indexPath.row]
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 50
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.row == 0{
+            self.navigationController?.pushViewController(ChartViewController(), animated: true)
         }
-        radonChartView.changeDateMode(mode: mode)
-        syncVisibleRange(
-            min: radonChartView.chartModel.minX,
-            max: radonChartView.chartModel.maxX,
-            source: radonChartView
-        )
-    }
-    
-    func lineChartViewDateModeChanged(chartView: LineChartView, mode: DateMode) {
-        switch mode {
-        case .hour:
-            segmentView.selectIndex(index: 0, withDelegate: false)
-        case .day:
-            segmentView.selectIndex(index: 1, withDelegate: false)
-
-        case .week:
-            segmentView.selectIndex(index: 2, withDelegate: false)
-
-        case .month:
-            segmentView.selectIndex(index: 3, withDelegate: false)
-
-        case .year:
-            segmentView.selectIndex(index: 4, withDelegate: false)
-
-        case .none:
-            break
+        if indexPath.row == 1{
+            self.navigationController?.pushViewController(RoomPlanViewController(), animated: true)
         }
     }
-    
-    
-    func lineChartViewXRangeChanged(chartView: LineChartView, min: Double, max: Double) {
-        minDatePicker.date = Date(timeIntervalSince1970: min)
-        maxDatePicker.date = Date(timeIntervalSince1970: max)
-    }
-
-    func lineChartViewXRangeChangedByUserInteraction(chartView: LineChartView, min: Double, max: Double) {
-        syncVisibleRange(min: min, max: max, source: chartView)
-    }
-
-    private func syncVisibleRange(min: Double, max: Double, source: LineChartView?) {
-        guard min < max else { return }
-
-        minDatePicker.date = Date(timeIntervalSince1970: min)
-        maxDatePicker.date = Date(timeIntervalSince1970: max)
-        for chartView in chartViews where chartView !== source {
-            chartView.changeXRange(min: min, max: max)
-        }
-    }
-    
-    func lineChartViewHLineFormatAttributeStr(chartView: LineChartView, y: Double, color: UIColor, font: UIFont) -> NSAttributedString {
-        return NSAttributedString(string: "\(y)", attributes: [
-            .foregroundColor: color,
-            .font: font
-        ])
-    }
-
-
-    func lineChartViewTapedItemFormatStrs(chartView: LineChartView, x: Double, y: Double, color: UIColor, font: UIFont) -> XYAttrModel {
-        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
-        return XYAttrModel(
-            xAttr: NSAttributedString(string: date, attributes: [.font:font, .foregroundColor:color]),
-            yAttr: NSAttributedString(string: "\(y)℃", attributes: [.font:font, .foregroundColor:color])
-        )
-    }
-
-
-    func lineChartViewRightAxisDataMaxMinFormatStr(chartView: LineChartView, min: Double, max: Double, color: UIColor, font: UIFont) -> MaxMinAttrModel {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: color
-        ]
-        return MaxMinAttrModel(
-            max: NSAttributedString(string: "Max:\(floor(max))", attributes: attributes),
-            min: NSAttributedString(string: "Min:\(floor(min))", attributes: attributes)
-        )
-    }
-
-//    func lineChartViewAxisGraduationFormatStr(chartView: LineChartView, direction: AxisDirection, value: Double, color: UIColor, font: UIFont) -> NSAttributedString? {
-//        switch direction {
-//        case .top:
-//            break
-//        case .bottom:
-//
-//            let date = Date.init(timeIntervalSince1970: value)
-//            let str = date.toString(format: "yyyy")
-//            return NSAttributedString(string: str, attributes: [.foregroundColor:color, .font:font])
-//        case .left:
-//            break
-//        case .right:
-//            return NSAttributedString(string: String(format: "%.1f", value), attributes: [.foregroundColor:color, .font:font])
-//        }
-//        return nil
-//    }
-
-    func lineChartViewBottomAxisMaxMinFormatStr(chartView: LineChartView, x: Double, color: UIColor, font: UIFont) -> NSAttributedString {
-        let date = Date.init(timeIntervalSince1970: x).toString(format: "yyyy/MM/dd HH:mm")
-        return NSAttributedString(string: date, attributes: [.font:font, .foregroundColor:color])
-    }
-    
-    func lineChartViewDateAdaptStamps(chartView: LineChartView, minX: Double, maxX: Double) -> DateAdaptStampsModel? {
-        var stamps = [TimeInterval]()
-        let range = maxX - minX
-        var dateFormat = "HH:mm"
-        if range <= 1800{
-            dateFormat = "HH:mm"
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .minutes(5))
-        }else if range <= 3600{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .minutes(10))
-            dateFormat = "HH:mm:ss"
-        }else if range <= 3600*6{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(2))
-            dateFormat = "HH:mm:ss"
-        }else if range <= 3600*12{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(2))
-            dateFormat = "HH:mm"
-        }else if range <= 3600*24{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .hours(4))
-            dateFormat = "HH:mm"
-        }else if range <= 3600*24*7{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(1))
-            dateFormat = "EEE"
-        }else if range <= 3600*24*14{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(2))
-            dateFormat = "MM/dd"
-        }else if range <= 3600*24*30{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .days(5))
-            dateFormat = "MM/dd"
-        }else if range <= 3600*24*30*6{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(1))
-            dateFormat = "MMM"
-        }else if range <= 3600*24*30*12{
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(2))
-            dateFormat = "MMM"
-        }else{
-            let count = range/6/(3600*24*30)
-            stamps = chartView.drawer.alignedTimestamps(start: minX, end: maxX, step: .months(Int(count)))
-            dateFormat = "MMM"
-        }
-        return DateAdaptStampsModel(stamps: stamps, format: dateFormat)
-    }
-    
-    func lineChartViewRightAxisDataAverageFormatStr(chartView: LineChartView, value: Double, color: UIColor, font: UIFont) -> NSAttributedString {
-        
-        let date = "\(String(String.init(format: "%.1f", value)))AVG"
-        return NSAttributedString(string: date, attributes: [.font:font, .foregroundColor:color])
-    }
-    
 }
